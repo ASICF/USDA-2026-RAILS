@@ -725,11 +725,11 @@ class FinalDelivery < ApplicationRecord
             # get the poly_id without the extension if it was split
             poly_id = filename_arr[3]
 
-            if filename_without_extension == "ortho_MA_15_7313209800H0ZA0007_A_20231004"
+            if filename_without_extension == "ortho_MA_15_7313209800H0ZA0007_A_20241004"
                 poly_id = "7313209800H0ZA0007_A"
-            elsif filename_without_extension == "ortho_MA_15_7313209800H0ZA0007_B_20231005"
+            elsif filename_without_extension == "ortho_MA_15_7313209800H0ZA0007_B_20241005"
                 poly_id = "7313209800H0ZA0007_B"
-            elsif filename_without_extension == "ortho_ND_15_ND_08_WAHL_20230629"
+            elsif filename_without_extension == "ortho_ND_15_ND_08_WAHL_20240629"
                 poly_id = "ND_08_WAHL"
             end
 
@@ -1046,10 +1046,10 @@ class FinalDelivery < ApplicationRecord
     def self.pass_to_validation
 
         # input_directory, packing_slip, current_user
-        input_directory = "P:\\Vol_2\\_236567_SL\\03_FrameBase\\236567_MN\\Tiles_Dump\\Final_Delivery_20231207_MN"
-        # P:\Vol_2\_236567_SL\03_FrameBase\236567_MN\Tiles_Dump\Final_Delivery_20231207_MN
+        input_directory = "P:\\Vol_2\\_236567_SL\\03_FrameBase\\236567_MN\\Tiles_Dump\\Final_Delivery_20241207_MN"
+        # P:\Vol_2\_236567_SL\03_FrameBase\236567_MN\Tiles_Dump\Final_Delivery_20241207_MN
 
-        packing_slip = PackingSlip.find_by(name: "20231207_MN")
+        packing_slip = PackingSlip.find_by(name: "20241207_MN")
 
         current_user = User.admins.first
 
@@ -1071,10 +1071,10 @@ class FinalDelivery < ApplicationRecord
         split_folder = "/vol2/_236567_SL/03_FrameBase/236567_MN/Tiles_Dump/Big_Tiles/"
 
         # Set the Final Delivery Folder
-        final_delivery_folder = "/vol2/_236567_SL/03_FrameBase/236567_MN/Tiles_Dump/Final_Delivery_20231207_MN/"
+        final_delivery_folder = "/vol2/_236567_SL/03_FrameBase/236567_MN/Tiles_Dump/Final_Delivery_20241207_MN/"
 
         # Query the PackingSlip
-        packing_slip = PackingSlip.find_by(name: "20231207_MN")
+        packing_slip = PackingSlip.find_by(name: "20241207_MN")
 
         # Throw error if the packing slip is not found
         raise Exception, "Could not find matching Packing Slip in the app: #{packing_slip.name}" if packing_slip.nil?
@@ -1302,7 +1302,7 @@ class FinalDelivery < ApplicationRecord
 
         p "BUILD TILE INDEX"
 
-        geotag_path = "/vol2/_236567_SL/03_FrameBase/236567_MN/Tiles_Dump/Final_Delivery_20231207_MN/SL/"
+        geotag_path = "/vol2/_236567_SL/03_FrameBase/236567_MN/Tiles_Dump/Final_Delivery_20241207_MN/SL/"
 
         # Iterate 
         Dir.glob("#{geotag_path}/*").each do |folder|
@@ -1353,25 +1353,25 @@ class FinalDelivery < ApplicationRecord
                     end
 
                     # overrides
-                    if filename == "ortho_IL_15_655A1296005XJ_1_20230320"
+                    if filename == "ortho_IL_15_655A1296005XJ_1_20240320"
                         original_poly_id = "655A1296005XJ_1"
                         final_poly_id = "655A1296005XJ_1"
-                    elsif filename == "ortho_IL_15_655A1296005XJ_2_20230329"
+                    elsif filename == "ortho_IL_15_655A1296005XJ_2_20240329"
                         original_poly_id = "655A1296005XJ_2"
                         final_poly_id = "655A1296005XJ_2"
-                    elsif filename == "ortho_IL_15_665A1295005RH_1_20230329"
+                    elsif filename == "ortho_IL_15_665A1295005RH_1_20240329"
                         original_poly_id = "665A1295005RH_1"
                         final_poly_id = "665A1295005RH_1"
-                    elsif filename == "ortho_IL_15_665A1295005RH_2_20230319"
+                    elsif filename == "ortho_IL_15_665A1295005RH_2_20240319"
                         original_poly_id = "665A1295005RH_2"
                         final_poly_id = "665A1295005RH_2"
-                    elsif filename == "ortho_MA_15_7313209800H0ZA0007_A_20231004"
+                    elsif filename == "ortho_MA_15_7313209800H0ZA0007_A_20241004"
                         original_poly_id = "7313209800H0ZA0007_A"
                         final_poly_id = "7313209800H0ZA0007_A"
-                    elsif filename == "ortho_MA_15_7313209800H0ZA0007_B_20231005"
+                    elsif filename == "ortho_MA_15_7313209800H0ZA0007_B_20241005"
                         original_poly_id = "7313209800H0ZA0007_B"
                         final_poly_id = "7313209800H0ZA0007_B"
-                    elsif filename == "ortho_ND_15_ND_08_WAHL_20230629"
+                    elsif filename == "ortho_ND_15_ND_08_WAHL_20240629"
                         original_poly_id = "ND_08_WAHL"
                         final_poly_id = "ND_08_WAHL"
                     end

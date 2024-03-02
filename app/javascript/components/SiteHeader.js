@@ -29,7 +29,7 @@ const SiteHeader = (props) => {
           text={
             <Header inverted as="h5" style={{ margin: 0 }}>
               <Icon name="globe" />
-              <Header.Content>USDA 2023</Header.Content>
+              <Header.Content>USDA 2024</Header.Content>
             </Header>
           }
         >
@@ -88,7 +88,7 @@ const SiteHeader = (props) => {
             trigger={
               <Header inverted as="h5" style={{ margin: 0 }}>
                 <Icon name="globe" />
-                <Header.Content>USDA 2023</Header.Content>
+                <Header.Content>USDA 2024</Header.Content>
               </Header>
             }
           >

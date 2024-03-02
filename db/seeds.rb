@@ -618,7 +618,7 @@
 #         amount: row[:total].to_d,
 #         flight_amount: row[:flight_price].to_d,
 #         production_amount: row[:prod_price].to_d,
-#         start_date: "2023-02-09",
+#         start_date: "2024-02-09",
 #         end_date: "2024-02-08",
 #         state: state
 #     )
@@ -642,7 +642,7 @@
 #             company_alias: company.alias,
 #             phase: 100,
 #             cost: flight_rate.to_d,
-#             start_date: "2023-02-09",
+#             start_date: "2024-02-09",
 #             end_date: "2024-02-08",
 #             state: state,
 #             company: company
@@ -655,7 +655,7 @@
 #             company_alias: company.alias,
 #             phase: 300,
 #             cost: prod_rate.to_d,
-#             start_date: "2023-02-09",
+#             start_date: "2024-02-09",
 #             end_date: "2024-02-08",
 #             state: state,
 #             company: company

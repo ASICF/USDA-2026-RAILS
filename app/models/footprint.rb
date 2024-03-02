@@ -1250,14 +1250,14 @@ class Footprint < ApplicationRecord
 
     #     tile_id = []
 
-    #     Footprint.where(flight_date: "2023-09-23", strip_frame: strip_frames).each do |footprint|
+    #     Footprint.where(flight_date: "2024-09-23", strip_frame: strip_frames).each do |footprint|
 
-    #         footprint.update(flight_date: "2023-09-22")
+    #         footprint.update(flight_date: "2024-09-22")
 
     #         footprint.tiles.each do |tile|
     #             tile_id << tile.id
-    #             tile.update(flight_date: "2023-09-22")
-    #             tile.easement.update(flight_date: "2023-09-22")
+    #             tile.update(flight_date: "2024-09-22")
+    #             tile.easement.update(flight_date: "2024-09-22")
     #         end
 
     #     end

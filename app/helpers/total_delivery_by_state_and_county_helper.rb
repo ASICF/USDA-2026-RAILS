@@ -1,0 +1,2 @@
+module TotalDeliveryByStateAndCountyHelper
+end

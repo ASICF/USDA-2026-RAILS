@@ -1,0 +1,5 @@
+<%= react_component("Forms/User", {
+    record: @user, 
+    roles: User::ROLES,
+    token: form_authenticity_token
+}) %>

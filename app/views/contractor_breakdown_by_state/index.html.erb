@@ -1,0 +1,88 @@
+<div class="ui breadcrumb">
+    <div class="section">Reports</div>
+    <span class="divider">/</span>
+    <div class="active section">Contractor Breakdown by State</div>
+</div>
+
+<div class="ui divider"></div>
+
+<%= form_tag contractor_breakdown_by_state_report_path, method: :get, id: "contractor_breakdown_by_state", class: "ui form" do %>
+
+    <div class="four fields">
+        <div class="required field">
+            <label>State:</label>
+            <div class="ui fluid search selection dropdown">
+                <input type="hidden" name="state_id">
+                <i class="dropdown icon"></i>
+                <div class="default text"></div>
+                <div class="menu">
+                    <div class="item" data-value="ALL">All</div>
+                    <div class="ui divider"></div>
+                    <% @states.each do |state| %>
+                        <div class="item" data-value="<%= state.id %>"><%= "#{state.name}" %></div>
+                    <% end %>
+                </div>
+            </div>
+        </div>
+        <div class="required field">
+            <%= render 'shared/project', all: true %>
+        </div>
+        <div class="required field">
+            <label>Contractor:</label>
+            <div class="ui fluid search selection dropdown">
+                <input type="hidden" name="contractor_id">
+                <i class="dropdown icon"></i>
+                <div class="default text"></div>
+                <div class="menu">
+                    <div class="item" data-value="ALL">All</div>
+                    <div class="ui divider"></div>
+                    <% @companies.each do |company| %>
+                        <div class="item" data-value="<%= company.id %>"><%= company.name %></div>
+                    <% end %>
+                </div>
+            </div>
+        </div>
+        <div class="field">
+            <label>Month:</label>
+            <div class="month-dropdown ui fluid search selection dropdown" data-year="<%= Rails.application.secrets.project_year %>">
+                <input type="hidden" name="month">
+                <i class="dropdown icon"></i>
+                <div class="default text"></div>
+                <div class="menu">
+                    <div class="item" data-value="ALL">All</div>
+                    <div class="ui divider"></div>
+                    <% @months.each do |month| %>
+                        <div class="item" data-value="<%= month %>"><%= "#{Date::MONTHNAMES[month]} #{Rails.application.secrets.project_year}" %></div>
+                    <% end %>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="two fields">
+        <div class="required field">
+            <label>Date Flown From:</label>
+            <div class="ui calendar form-calendar">
+                <div class="ui input left icon">
+                    <i class="calendar icon"></i>
+                    <%= text_field_tag :date_flown_from, params[:date_flown_from], autocomplete: :off %>
+                </div>
+            </div>
+        </div>
+        <div class="required field">
+            <label>Date Flown To:</label>
+            <div class="ui calendar form-calendar">
+                <div class="ui input left icon">
+                    <i class="calendar icon"></i>
+                    <%= text_field_tag :date_flown_end, params[:date_flown_end], autocomplete: :off %>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ui divider"></div>
+
+    <%= submit_tag "Submit", class: "ui primary right floated button" %>
+    <div class="clear"></div>
+
+<% end %> 

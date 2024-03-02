@@ -1,0 +1,28 @@
+<% content_for :template, "large-screen" %>
+
+<div class="ui breadcrumb">
+    <div class="section">Reports</div>
+    <span class="divider">/</span>
+    <%= link_to "Flight Crew", flight_crew_report_path, class: "section", data: { turbolinks: false } %>
+    <span class="divider">/</span>
+    <div class="section"><%= params[:state_id] == "ALL" ? "All States" : @state.name %></div>
+    <span class="divider">/</span>
+    <div class="active section"><%= @project.kind_of?(Array) ? "NRI and SL" : @project %></div>
+    <span class="divider">/</span>
+    <div class="section"><%= params[:contractor_id] == "ALL" ? "All Contractors" : Company.find(params[:contractor_id]).name %></div>
+    <span class="divider">/</span>
+    <div class="active section"><%= "#{Time.parse(params[:date_flown_from]).strftime("%m/%d/%Y")} - #{Time.parse(params[:date_flown_end]).strftime("%m/%d/%Y")}" %></div>
+</div>
+
+<div class="clear"></div>
+<div class="ui divider"></div>
+
+<% if params[:contractor_id] == "ALL" && params[:state_id] == "ALL" %>
+    <%= render "flight_crew_report/render/all_states_contractor" %>
+<% elsif params[:state_id] == "ALL" %>
+    <%= render "flight_crew_report/render/all_states_by_contractor" %>
+<% elsif params[:contractor_id] == "ALL" %>
+    <%= render "flight_crew_report/render/all_contractors_by_state" %>
+<% else %>
+    <%= render "flight_crew_report/render/state_and_contractor" %>
+<% end %>

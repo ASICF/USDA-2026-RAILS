@@ -1,0 +1,7 @@
+<% 
+    options = Rails.application.secrets.active_projects.map {|project| [project, project]}
+    # @projects = Rails.application.secrets.active_projects
+    # options.unshift(['NRI/SL','All']) if all 
+%>
+<label>Project:</label>
+<%= select_tag :project, options_for_select(options, "SL"), class: 'ui fluid search selection dropdown' %>

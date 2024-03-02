@@ -1,0 +1,102 @@
+<div class="ui breadcrumb">
+    <div class="section">Reports</div>
+    <span class="divider">/</span>
+    <%= link_to "Packing Slip Worksheet", packing_slip_worksheets_path, class: "section" %>
+    <span class="divider">/</span>
+    <div class="active section"><%= @packing_slip.project %></div>
+    <span class="divider">/</span>
+    <div class="active section"><%= @packing_slip.name %></div>
+</div>
+
+<%= link_to export_packing_slip_worksheet_path(params[:psn]), target: "_blank", class: "ui small right floated button" do %>
+    <i class="ui file pdf icon"></i>Export
+<% end %>
+
+<div class="ui divider"></div>
+
+<table class="ui sortable center aligned celled striped table" style="margin-bottom: 2em;">
+    <thead>
+        <tr>
+            <th>State</th>
+            <th>County</th>
+            <th>Fips</th>
+            <th>Easements</th>
+            <th>Acres</th>
+        </tr>
+    </thead>
+    <tbody>
+
+    <% 
+        total_states = 0
+        total_counties = 0
+        total_easements = 0
+        total_acres = 0
+    %>
+
+    <%
+        # Get the unique states from the packing slip records
+        # => can be multiple packing slips so expect array
+
+        states = @packing_slip.tiles.pluck(:state_id).uniq.map{|s| State.find(s)}
+
+    %>
+
+    <% states.each do |state| %>
+
+        <% 
+            first = true 
+            total_states += 1
+        %>
+
+        <% state.tiles.includes(:county).where(packing_slip: @packing_slip).order("counties.name asc").pluck(:county_id).uniq.map{|c| County.find(c)}.each do |county| %>
+
+            <%
+
+                # sum doesn't work due to a bug with Postgres and Rails so iterate the tiles and calculate the totals
+                ids = []
+                easements = 0
+                acres = 0
+                Tile.where(packing_slip: @packing_slip, state: state, county: county).each do |tile|
+                    # if the tile id exists in the ids array then skip it
+                    if ids.include? tile.easement_id
+                        next
+                    else
+                        # calculate the easement counts and acres by adding the tile easement acreage
+                        easements += 1
+                        acres += tile.easement.acres
+                        ids << tile.easement_id
+                    end
+                end
+
+                if first
+                    state_name = state.name
+                    first = false
+                end
+
+                total_counties += 1
+                total_easements += easements
+                total_acres += acres
+
+            %>
+
+            <tr>
+                <td><%= state_name %></td>
+                <td><%= county.name %></td>
+                <td><%= county.full_fips %></td>
+                <td><%= easements %></td>
+                <td><%= acres %></td>
+            </tr>
+        <% end %>
+    <% end %>
+    </tbody>
+    <tfoot>
+        <tr>
+            <th><b><%= pluralize(total_states, 'State') %></b></th>
+            <th><b><%= pluralize(total_counties, 'County') %></b></th>
+            <th></th>
+            <th><b><%= total_easements %></b></th>
+            <th><b><%= total_acres %></b></th>
+        </tr>
+    </tfoot>
+</table>
+<br/>

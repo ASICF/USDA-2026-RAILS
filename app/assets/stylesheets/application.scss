@@ -1,0 +1,681 @@
+/*
+ * This is a manifest file that'll be compiled into application.css, which will include all the files
+ * listed below.
+ *
+ * Any CSS and SCSS file within this directory, lib/assets/stylesheets, or any plugin's
+ * vendor/assets/stylesheets directory can be referenced here using a relative path.
+ *
+ * You're free to add application-wide styles to this file and they'll appear at the bottom of the
+ * compiled file so the styles you add here take precedence over styles defined in any other CSS/SCSS
+ * files in this directory. Styles in this file should be added after the last require_* statement.
+ * It is generally better to create a new file per style scope.
+ *
+ *= require normalize-rails
+ *= require semantic-ui-calendar
+ *= require_tree .
+ *= require_self
+ */
+@import "animate.css/animate";
+@import "semantic-ui";
+
+// variables
+$green: #36AE7C;
+$light_green: #44C58F;
+$dark_green: #309C6F;
+$light_gray: #e2e0e0;
+$dark_gray: #a8a8a8;
+$light_red: #EE6D6D;
+$red: #EB5353;
+$dark_red: #E73636;
+$yellow: #ffcb4c;
+$light_yellow: #f9d780;
+$orange: #F98623;
+$blue: #3d7199;
+$light_blue: #6D9FC5;
+$black: #2a2a2a;
+$white: #ffffff;
+$purple: #ae54ae;
+$light_purple: #fa8bfa;
+
+//Dashboard:
+.dashmessage{
+    background-color: $blue !important;
+    color: $white !important;
+    // animation: pulse;
+    // animation-duration: 1.75s;
+}
+  //Recent Activity User Background:
+// .dash-label {
+//   background-color: $blue !important;
+//   color: #fff !important;
+// }
+.icon-color {
+  color: $yellow !important;
+}
+//SL Statistics:
+.sl-card {
+  animation: fadeInLeft;
+    animation-duration: .75s;
+}
+
+// Dashboard At a Glance + Ready To Ship: 
+.responsive-statistic {
+  text-align: center;
+}
+// Mobile hidden: 
+// @media screen and (max-width: 768px) {
+//   .mobile_hidden {
+//     visibility: hidden;
+//   }
+// }
+//History Activity (Heatmap):
+.heatmap {
+  animation: fadeInRight;
+    animation-duration: .75s;
+}
+// .content-heatmap {
+//   height: 430px;
+// }
+
+.padding {
+  padding: .5em !important;
+}
+
+.no-padding {
+  padding: 0 !important;
+}
+
+.margin {
+  margin: .5em !important;
+}
+
+.no-margin {
+  margin: 0 !important;
+}
+
+.clear {
+  clear: both;
+}
+
+.ui.fluid.table {
+  width: 100%;
+}
+
+.text-center {
+  text-align: center !important;
+}
+
+.text-left {
+  text-align: left !important;
+}
+
+.text-right {
+  text-align: right !important;
+}
+
+.table-overflow {
+  overflow-y: auto;
+  margin-top: 1em;
+}
+
+body ::-webkit-scrollbar-thumb {
+  border-radius: 0;
+}
+
+tr.summary_row {
+  background-color: rgba(0, 0, 50, 0.02);
+}
+
+tr.total_row {
+  background-color: rgba(0, 0, 50, 0.08) !important;
+}
+
+// Color
+.positive {
+  background: $green !important;
+}
+.negative {
+  background: $red !important;
+}
+.dark-green {
+  background: $dark_green !important;
+}
+.light-green {
+  background: $light_green !important;
+}
+.yellow:not(.ui.card, .icon) {
+  background: $yellow !important;
+}
+.light-yellow {
+  background: $light_yellow !important;
+}
+.purple {
+  background: $purple !important;
+}
+.light-purple {
+  background: $light_purple !important;
+}
+
+.ui.green.labels .label,
+.ui.green.label {
+  background-color: $green !important;
+}
+
+i.green.icon {
+  color: $green !important;
+}
+.light-gray {
+  background-color: $light_gray
+}
+.ui.red.labels .label,
+.ui.red.label {
+  background-color: $red !important;
+}
+
+i.red.icon {
+  color: $red !important;
+}
+
+.ui.table i.icon {
+  margin: 0;
+}
+
+.ui.table tr.positive, .ui.table td.positive {
+  background-color: $light_green !important;
+}
+
+.ui.table tr.negative, .ui.table td.negative {
+  background-color: $light_red !important;
+  background: $light_red !important;
+}
+
+.ui.table td.green {
+  background: #bbeabb;
+}
+
+.ui.table td.light-blue {
+  background: #75c5ff;
+}
+
+.ui.table td.blue {
+  background: #8dc9ff;
+}
+
+.ui.table td.orange {
+  background: #ffde74;
+}
+
+.ui.table td.yellow {
+  background: #fffc81;
+}
+
+.ui.table td.light-red {
+  background: #ffd5d5;
+}
+
+.ui.table td.red {
+  background: #ff9d9d;
+}
+
+.ui.table td.black {
+  background: #6b6b6b;
+  color: #ffffff;
+}
+.ui.selectable.table tr:hover {
+  cursor: pointer;
+}
+//React Calendar Heatmap
+.react-calendar-heatmap {
+  padding-right: 0.5em;
+}
+.react-calendar-heatmap text {
+  font-size: 6px !important;
+  fill: $black !important;
+}
+
+.react-calendar-heatmap .react-calendar-heatmap-small-text {
+  font-size: 5px;
+}
+
+.react-calendar-heatmap rect:hover {
+  stroke: $black;
+  stroke-width: 1px;
+}
+
+/*
+ * Default color scale
+ */
+
+.react-calendar-heatmap .color-empty {
+  fill: $dark_gray;
+}
+
+.react-calendar-heatmap .color-filled {
+  fill: $blue !important;
+}
+.react-calendar-heatmap .color-0 {
+  fill: #7CA8CB;
+}
+.react-calendar-heatmap .color-1 {
+  fill: #6D9DC5;
+}
+.react-calendar-heatmap .color-2 {
+  fill: #5F94BF;
+}
+.react-calendar-heatmap .color-3 {
+  fill: #508AB9;
+}
+.react-calendar-heatmap .color-4 {
+  fill: #4680AF;
+}
+
+
+
+//Dashboard background
+.dash-container {
+  background-color: $light_gray !important;
+}
+// Application Layout
+.site-header {
+  height: 40px;
+  background: $blue !important;
+
+  .ui.dropdown .menu .item {
+    min-width: 150px;
+  }
+}
+.item .float .right {
+  height: inherit !important;
+}
+.second_dropdown {
+  background-color: $black !important;
+  color: $white !important;
+}
+.subheader-divider {
+  background-color: $light_gray !important;
+  padding: .75em 1.5em !important;
+  margin: 0 !important;
+  color: black !important;
+}
+.job_header {
+  float: right !important;
+}
+.site-container {
+  padding: 5em 1em 0em;
+}
+
+#site-sidebar {
+  background: #444444;
+
+  .header {
+    color: #FFFFFF;
+  }
+}
+
+.site-footer {
+  text-align: center;
+  padding: 2em;
+}
+
+.ui.breadcrumb:first-child {
+  margin-top: 1em;
+}
+
+.sub.label {
+  font-size: 0.95em;
+  font-style: italic;
+}
+
+.large-screen {
+  width: 80%;
+  height: 100%;
+  margin: 0 auto;
+}
+
+.full-screen {
+  width: 100%;
+  height: 100%;
+}
+//Checkmark and Destroy colors for Tables
+.red-delete {
+  color: $red;
+}
+.green-check {
+  color: $green;
+}
+// Templates
+body.full-screen,
+body.large-screen {
+  .site-container {
+    width: 100%;
+    height: 100%;
+    margin: 0 !important;
+  }
+}
+
+body.full-screen {
+  .site-container {
+    padding: 40px 0 0;
+  }
+}
+
+body.large-screen {
+  .site-container {
+    padding: 5em 0;
+  }
+}
+
+
+.react-root {
+  height: 100%;
+  overflow: hidden;
+
+  #pf_sidebar {
+    float: left;
+    height: 100%;
+    width: 325px;
+    background: #eeeeee;
+    border-right: 1px solid rgba(34, 36, 38, 0.15);
+    box-shadow: 0px 1px 2px 0 rgba(34, 36, 38, 0.15);
+    overflow: auto;
+
+    .menu {
+      border-radius: 0;
+      margin: 0;
+    }
+  }
+
+  #pf_content {
+    height: 100%;
+    width: auto;
+    overflow: hidden;
+
+    #pf_results {
+      height: 100%;
+      width: 100%;
+      overflow: auto;
+
+      .ui.table {
+        border-radius: 0;
+
+        #record_count {
+          background-color: #e6e6e6;
+          border-radius: 0;
+          padding: .75em;
+        }
+
+      }
+    }
+  }
+}
+#dropdown-two {
+  color: $black !important;
+  background-color: $white !important;
+}
+.dropdown_header {
+  background-color: $light_gray !important;
+}
+// Semantic UI Messages
+.ui.success.message {
+  background-color: $green !important;
+  color: #FFFFFF !important;
+
+  .header {
+    color: #FFFFFF !important;
+  }
+}
+
+.ui.error.message {
+  background-color: #B54444 !important;
+  color: #FFFFFF !important;
+
+  .header {
+    color: #FFFFFF !important;
+  }
+}
+
+.ui.notice.message {
+  background-color: $light_gray;
+}
+
+// Semantic UI buttons
+.ui.green.buttons .button,
+.ui.green.button {
+  background-color: $green;
+}
+
+.ui.green.buttons .button:hover,
+.ui.green.button:hover {
+  background-color: $dark_green;
+}
+
+.ui.red.buttons .button,
+.ui.red.button {
+  background-color: $red;
+}
+
+.ui.red.buttons .button:hover,
+.ui.red.button:hover {
+  background-color: $dark_red;
+}
+
+// Tiler Popup Window
+.site-header #tiler-status-button>i {
+  margin: 0 !important;
+}
+
+.site-header #tiler-status-popup {
+  top: 40px;
+  left: 1px;
+  bottom: auto;
+  right: auto;
+  width: 960px
+}
+
+//SL Statistics Hidden on Mobile: 
+@media screen and (max-width: 768px) {
+  .sl {
+    display: none;
+  }
+}
+@media print {
+
+  * {
+    transition: none !important;
+  }
+
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+
+    &.large-screen {
+      width: 100%;
+    }
+  }
+
+  .site-header {
+    display: none !important;
+  }
+
+  .site-container {
+    padding: 0em 1em 0em !important;
+  }
+
+  .ui.breadcrumb {
+    font-size: 0.85em !important;
+
+    i.dropdown.icon {
+      display: none !important;
+    }
+  }
+
+  .no_print,
+  .print-hidden {
+    display: none;
+  }
+
+}
+
+
+html.ios,
+html.ios body {
+  height: 100% !important;
+}
+
+/* Default styles for the menu */
+.top_menu {
+  background-color: $blue !important;
+}
+
+.top_menu .icon {
+  font-size: 1em !important
+}
+
+#site-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#site-header .ui.dropdown.item {
+  margin-right: 20px;
+}
+
+#site-header .ui.dropdown.item .menu {
+  width: 225px;
+}
+
+//Sidebar Mobile: 
+.side {
+ color: $white !important;
+background-color: $black !important;
+}
+.side-header {
+  background-color: $blue !important;
+}
+.side-header:hover {
+  background-color: $light_blue !important;
+}
+.sidebar_item_header {
+  background-color: $dark_gray !important;
+  color: $white !important;
+}
+.fullname {
+  color: $white !important;
+  background-color: $black !important;
+  opacity: 60%;
+}
+.home-sidebar {
+  padding: 20px !important;
+}
+
+/* Semantic UI has these classes, however they're only applicable to*/
+/* grids, containers, rows and columns.*/
+/* plus, there isn't any `mobile hidden`, `X hidden` class.*/
+/* this snippet is using the same class names and same approach*/
+/* plus a bit more but to all elements.*/
+/* see https://github.com/Semantic-Org/Semantic-UI/issues/1114*/
+
+/* Mobile */
+@media only screen and (max-width: 767px) {
+
+  [class*="mobile hidden"],
+  [class*="tablet only"]:not(.mobile),
+  [class*="computer only"]:not(.mobile),
+  [class*="large screen only"]:not(.mobile),
+  [class*="widescreen only"]:not(.mobile),
+  [class*="or lower hidden"] {
+    display: none !important;
+  }
+}
+
+/* Tablet / iPad Portrait */
+@media only screen and (min-width: 768px) and (max-width: 991px) {
+
+  [class*="mobile only"]:not(.tablet),
+  [class*="tablet hidden"],
+  [class*="computer only"]:not(.tablet),
+  [class*="large screen only"]:not(.tablet),
+  [class*="widescreen only"]:not(.tablet),
+  [class*="or lower hidden"]:not(.mobile) {
+    display: none !important;
+  }
+}
+
+/* Computer / Desktop / iPad Landscape */
+@media only screen and (min-width: 992px) and (max-width: 1199px) {
+
+  [class*="mobile only"]:not(.computer),
+  [class*="tablet only"]:not(.computer),
+  [class*="computer hidden"],
+  [class*="large screen only"]:not(.computer),
+  [class*="widescreen only"]:not(.computer),
+  [class*="or lower hidden"]:not(.tablet):not(.mobile) {
+    display: none !important;
+  }
+}
+
+/* Large Monitor */
+@media only screen and (min-width: 1200px) and (max-width: 1919px) {
+
+  [class*="mobile only"]:not([class*="large screen"]),
+  [class*="tablet only"]:not([class*="large screen"]),
+  [class*="computer only"]:not([class*="large screen"]),
+  [class*="large screen hidden"],
+  [class*="widescreen only"]:not([class*="large screen"]),
+  [class*="or lower hidden"]:not(.computer):not(.tablet):not(.mobile) {
+    display: none !important;
+  }
+}
+
+/* Widescreen Monitor */
+@media only screen and (min-width: 1920px) {
+
+  [class*="mobile only"]:not([class*="widescreen"]),
+  [class*="tablet only"]:not([class*="widescreen"]),
+  [class*="computer only"]:not([class*="widescreen"]),
+  [class*="large screen only"]:not([class*="widescreen"]),
+  [class*="widescreen hidden"],
+  [class*="widescreen or lower hidden"] {
+    display: none !important;
+  }
+}
+
+.no-sort {
+  cursor: default !important;
+}
+
+.no-sort:hover {
+  // background: #F9FAFB !important;
+  // background: inherit !important;
+  color: rgba(0, 0, 0, 0.8) !important;
+}
+
+.calendar-input .field, .calendar-input .field .input  {
+  width: 100%;
+}
+.calendar-input input {
+  width: inherit !important;
+}
+
+//Scrollbar
+body {
+  --sb-size: 10px;
+
+  scrollbar-color: $light_gray
+                   $black;
+}
+
+body::-webkit-scrollbar {
+  width: var(--sb-size) 
+}
+
+body::-webkit-scrollbar-track {
+  background: $black;
+
+}
+
+body::-webkit-scrollbar-thumb {
+  background: $dark_gray;
+  
+  }

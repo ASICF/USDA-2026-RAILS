@@ -1,0 +1,147 @@
+<% if @states.count > 0 %>
+
+    <div class="table-overflow" style="margin-bottom: 2em !important;text-align: center;">
+        <table class="ui center no-margin aligned celled striped unstackable table">
+            <thead>
+                <tr style="text-align: center;">
+                    <th>State</th>
+                    <th>Total Sites</th>
+                    <th>Total Sites Flown</th>
+                    <th>Total Acres</th>
+                    <th>Total Acres Flown</th>
+                    <th>ASI Accepted</th>
+                    <th>ASI Rejected</th>
+                    <th>USDA Accepted</th>
+                    <th>USDA Rejected</th>
+                    <th>Total Shipped</th>
+                    <th class="single line">% ASI Accepted</th>
+                    <th class="single line">% ASI Rejected</th>
+                    <th class="single line">% USDA Accepted</th>
+                    <th class="single line">% USDA Rejected</th>
+                    <th class="single line">% Total Shipped</th>
+                </tr>
+            </thead>
+            <tbody>
+
+            <% 
+                grand_total_sites = 0
+                grand_total_sites_flown = 0
+                grand_total_acres = 0
+                grand_total_acres_flown = 0
+                grand_total_asi_accepted = 0
+                grand_total_asi_rejected = 0
+                grand_total_shipped = 0
+                grand_total_usda_accepted = 0
+                grand_total_usda_rejected = 0 
+
+                total_sites = 0
+                total_sites_flown = 0
+                total_acres = 0
+                total_acres_flown = 0
+                total_asi_accepted = 0
+                total_asi_rejected = 0
+                total_shipped = 0
+                total_usda_accepted = 0
+                total_usda_rejected = 0 
+            %>
+
+            <% @states.each_with_index do |state, index| %>
+
+                <% 
+                    scoped_tiles = state.tiles.where(flight_date: @date_flown_from..@date_flown_end, project: @project)
+                    rejected_tiles = state.rejected_tiles.where(flight_date: @date_flown_from..@date_flown_end, project: @project)
+                    total_tiles = state.tiles.where(project: @project).count
+                    acres = state.easements.where(project: @project).sum(&:acres).to_f
+
+                    flown = scoped_tiles.count + rejected_tiles.count
+                    acres_flown = 0
+                    scoped_tiles.each do |tile|
+                        acres_flown += tile.easement.acres.to_f
+                    end
+                %>
+
+                <tr style="text-align: center;">
+                    <td><%= state.name %></td>
+                    <td><%= total_tiles %></td>
+                    <td><%= flown %></td>
+                    <td><%= number_with_delimiter(acres.round(2), delimiter: ',') %></td>
+                    <td><%= number_with_delimiter(acres_flown.round(2), delimiter: ',') %></td>
+                    <td><%= scoped_tiles.asi_accepted.count %></td>
+                    <td class="<%= "negative" if rejected_tiles.count > 0 %>"><%= rejected_tiles.count %></td>
+                    <td><%= scoped_tiles.usda_accepted.count %></td>
+                    <td class="<%= "negative" if scoped_tiles.usda_rejected.count > 0 %>"><%= scoped_tiles.usda_rejected.count %></td>
+                    <td><%= scoped_tiles.shipped.count %></td>
+                    <td class="positive"><%= (scoped_tiles.count.to_f / flown * 100).round(2) %></td>
+                    <td class="<%= "negative" if rejected_tiles.count > 0 %>" ><%= (rejected_tiles.count.to_f / flown * 100).round(2) %></td>
+                    <td class="positive"><%= (scoped_tiles.usda_accepted.count.to_f / flown * 100).round(2) %></td>
+                    <td class="<%= "negative" if scoped_tiles.usda_rejected.count > 0 %>"><%= (scoped_tiles.usda_rejected.count.to_f / flown * 100).round(2) %></td>
+                    <td class="positive"><%= (scoped_tiles.shipped.count.to_f / total_tiles * 100).round(2) %></td>
+                </tr>
+
+                <%
+                    total_sites += total_tiles
+                    total_sites_flown += flown
+                    total_acres += acres
+                    total_acres_flown += acres_flown
+                    total_asi_accepted += scoped_tiles.count
+                    total_asi_rejected += rejected_tiles.count
+                    total_shipped += scoped_tiles.shipped.count
+                    total_usda_accepted += scoped_tiles.usda_accepted.count
+                    total_usda_rejected += scoped_tiles.usda_rejected.count
+
+                    next_state = @states[index + 1]
+                    build_grand_total = false
+
+                    if next_state.nil?
+                        build_grand_total = true
+
+                        grand_total_sites += total_sites
+                        grand_total_sites_flown += total_sites_flown
+                        grand_total_acres += total_acres
+                        grand_total_acres_flown += total_acres_flown
+                        grand_total_asi_accepted += total_asi_accepted
+                        grand_total_asi_rejected += total_asi_rejected
+                        grand_total_usda_accepted += total_usda_accepted
+                        grand_total_usda_rejected += total_usda_rejected
+                        grand_total_shipped += total_shipped
+                    end
+
+                %>
+
+                <% if build_grand_total %>
+                    <tr class="total_row" style="text-align: center;">
+                        <td colspan="1"><b>Grand Total</b></td>
+                        <td><b><%= grand_total_sites %></b></td>
+                        <td><b><%= grand_total_sites_flown %></b></td>
+                        <td><b><%= number_with_delimiter(grand_total_acres.round(2), delimiter: ',') %></b></td>
+                        <td><b><%= number_with_delimiter(grand_total_acres_flown.round(2), delimiter: ',') %></b></td>
+                        <td><b><%= grand_total_asi_accepted %></b></td>
+                        <td><b><%= grand_total_asi_rejected %></b></td>
+                        <td><b><%= grand_total_usda_accepted %></b></td>
+                        <td><b><%= grand_total_usda_rejected %></b></td>
+                        <td><b><%= grand_total_shipped %></b></td>
+                        <td><b><%= (grand_total_asi_accepted.to_f / grand_total_sites_flown.to_f * 100).round(2) %></b></td>
+                        <td><b><%= (grand_total_asi_rejected.to_f / grand_total_sites_flown.to_f * 100).round(2) %></b></td>
+                        <td><b><%= (grand_total_usda_accepted.to_f / grand_total_sites_flown * 100).round(2) %></b></td>
+                        <td><b><%= (grand_total_usda_rejected.to_f / grand_total_sites_flown * 100).round(2) %></b></td>
+                        <td><b><%= (grand_total_shipped.to_f / grand_total_sites.to_f * 100).round(2) %></b></td>
+                    </tr>
+                    <% total_sites_flown = total_asi_accepted = total_asi_rejected = 0 %>
+                <% end %>
+
+            <% end %>
+            </tbody>
+        </table>
+    </div>
+
+<% else %>
+
+    <div class="ui message">
+        <div class="content">
+            <div class="header">
+                No Flights within this date range
+            </div>
+        </div>
+    </div>
+
+<% end %>

@@ -1,0 +1,82 @@
+
+<div class="ui breadcrumb">
+    <div class="section">Input</div>
+    <span class="divider">/</span>
+    <div class="active section">USDA Rejection</div>
+</div>
+
+<div class="ui divider"></div>
+
+<div class="ui fluid styled accordion">
+    <div class="title">
+        <i class="dropdown icon"></i>
+        Tool Info
+    </div>
+    <div class="content" style="padding: 1em 2em 2em;">
+
+        <div class="ui small header">Summary</div>
+        <p>Accepts a text file of PolyIDs and can either set the current date as the USDA Rejected Date or clear it. Providing a note will be added to the Tile's note field.</p>
+
+        <div class="ui divider"></div>
+
+        <div class="ui grid">
+            <div class="eight wide column">
+                <div class="ui small header">Inputs</div>
+                <ul class="ui list">
+                    <li>Text File of PolyIDs on new lines</li>
+                    <li>Notes describing the Rejection</li>
+                </ul>
+            </div>
+            <div class="eight wide column">
+                <div class="ui small header">Outputs</div>
+                <ul class="ui list">
+                    <li>None</li>
+                </ul>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div class="ui divider"></div>
+
+<%= form_tag usda_reject_path, multipart: true, method: :post, id: "usda_rejection_form", class: "ui form" do %>
+    
+    <div class="two fields">
+        <div class="required field">
+            <label>Text File</label>
+            <%= file_field_tag :file, accept: 'text/plain' %>
+        </div>
+        <div class="required field">
+            <label>Status</label>
+            <div class="ui fluid search selection dropdown">
+                <input type="hidden" name="status">
+                <i class="dropdown icon"></i>
+                <div class="default text"></div>
+                <div class="menu">
+                    <div class="item" data-value="reject">Reject</div>
+                    <div class="item" data-value="clear">Clear Rejection</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="fields">
+        <div class="four wide field">
+            <div class="ui checkbox" style="padding-top: 2em;">
+                <%= check_box_tag "clear_notes" %>
+                <label>Clear Notes Field</label>
+            </div>
+        </div>
+        <div class="twelve wide field">
+            <label>Notes</label>
+            <%= text_field_tag :notes %>
+        </div>
+    </div>
+
+    <div class="ui divider"></div>
+
+    <%= submit_tag "Submit", class: "ui primary right floated button" %>
+    <div class="clear"></div>
+
+<% end %>

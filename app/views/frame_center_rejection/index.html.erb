@@ -1,0 +1,65 @@
+<div class="ui breadcrumb">
+    <div class="section">Exports</div>
+    <span class="divider">/</span>
+    <div class="active section">Rejected Frame Centers</div>
+</div>
+
+
+
+
+<div class="ui divider"></div>
+<div class="clear"></div>
+
+<%  
+    count = 0
+%>
+
+<% if @states.count %>
+
+    <table class="ui sortable center aligned celled table" style="margin-bottom: 2em;">
+        <thead>
+            <tr>
+                <th>State</th>
+                <th>Flight Date</th>
+                <th>Total Rejections</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+        <% @states.order(:name).each do |state| %>
+
+            <% state.frame_centers.rejected.pluck(:flight_date).map {|fd| fd.to_date }.uniq.each do |flight_date| %>
+
+                <% count += state.frame_centers.rejected.where(flight_date: flight_date.all_day).count %>
+
+                <tr>
+                    <td><%= state.name %></td>
+                    <td><%= flight_date.strftime("%m/%d/%Y") %></td>
+                    <td><%= state.frame_centers.rejected.where(flight_date: flight_date.all_day).count %></td>
+                    <td class="collapsing"><%= link_to export_frame_center_rejection_path(state: state.id, flight_date: flight_date), class: "ui icon secondary button", method: :post do %>
+                        <i class="download icon"></i>
+                    <% end %></td>
+                </tr>
+            <% end %>
+        <% end %>
+        </tbody>
+        <tfoot>
+            <tr>
+                <th colspan="2"><b>Total:</b></th>
+                <th><b><%= count %></b></th>
+                <th></th>
+            </tr>
+        </tfoot>
+    </table>
+
+<% else %>
+
+    <div class="ui message">
+        <h4>No Frame Centers are Rejected</h4>
+    </div>
+
+<% end %>
+
+<%= react_component("PackingSlipSelection", {
+    rejections: @rejections
+}) %>

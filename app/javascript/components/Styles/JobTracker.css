@@ -1,0 +1,5 @@
+#job_tracker_popup .ui.list .list>.item>i.icon, 
+#job_tracker_popup .ui.list>.item>i.icon {
+    padding-right: 0 !important;
+    vertical-align: middle !important;
+}

@@ -1,0 +1,161 @@
+<% if @companies.count > 0 %>
+
+    <div class="table-overflow" style="margin-bottom: 2em !important;">
+        <table class="ui center no-margin aligned celled striped unstackable table" >
+            <thead>
+                <tr>
+                    <th>Company Name</th>
+                    <th>State</th>
+                    <th>Pilot</th>
+                    <th>SO</th>
+                    <th>Flown</th>
+                    <th>ASI Accepted</th>
+                    <th>ASI Rejected</th>
+                    <th>USDA Accepted</th>
+                    <th>USDA Rejected</th>
+                </tr>
+            </thead>
+            <tbody>
+
+                <% 
+                    grand_total_pilots = 0
+                    grand_total_sos = 0
+                    grand_total_flown = 0
+                    grand_total_asi_accepted = 0
+                    grand_total_asi_rejected = 0 
+                    grand_total_usda_accepted = 0
+                    grand_total_usda_rejected = 0
+                %>
+
+                <% @companies.each_with_index do |company, index| %>
+
+                    <% 
+                        total_pilots = 0
+                        total_sos = 0
+                        total_flown = 0
+                        total_asi_accepted = 0
+                        total_asi_rejected = 0 
+                        total_usda_accepted = 0
+                        total_usda_rejected = 0
+                    %>
+
+                    <% State.active.includes(:tiles).where(tiles: {flown_by: company, flight_date: @date_flown_from..@date_flown_end, project: @project}).order(:name).each do |state| %>
+
+                        <% 
+                            scoped_tiles = company.tiles.where(state: state, flight_date: @date_flown_from..@date_flown_end, project: @project)
+                            asi_rejected_tiles = company.rejected_tiles.where(state: state, flight_date: @date_flown_from..@date_flown_end, project: @project)
+
+                            flown = scoped_tiles.count + asi_rejected_tiles.count
+
+                            # pluck unique Pilots and SO
+                            pilots = scoped_tiles.pluck(:pilot).uniq | asi_rejected_tiles.pluck(:pilot).uniq
+                            total_pilots += pilots.count
+
+                            # pluck unique SO and SO
+                            sos = scoped_tiles.pluck(:sensor_operator).uniq | asi_rejected_tiles.pluck(:sensor_operator).uniq
+                            total_sos += sos.count
+
+                            total_flown += flown
+                            total_asi_accepted += scoped_tiles.asi_accepted.count
+                            total_asi_rejected += asi_rejected_tiles.count
+                            total_usda_accepted += scoped_tiles.usda_accepted.count
+                            total_usda_rejected += scoped_tiles.usda_rejected.count
+                        %>
+
+                        <% pilots.each do |pilot| %>
+
+                            <% 
+                                pilot_scoped_tiles = scoped_tiles.where(pilot: pilot)
+                                pilot_asi_rejected_tiles = asi_rejected_tiles.where(pilot: pilot)
+
+                                flown = pilot_scoped_tiles.count + pilot_asi_rejected_tiles.count
+                            %>
+
+                            <tr>
+                                <td class="collapsing"><%= company.name %></td>
+                                <td class="collapsing"><%= state.name %></td>
+                                <td><%= pilot || "NA" %></td>
+                                <td> - </td>
+                                <td><%= flown %></td>
+                                <td><%= pilot_scoped_tiles.asi_accepted.count %></td>
+                                <td class="<%= "negative" if pilot_asi_rejected_tiles.count > 0 %>"><%= pilot_asi_rejected_tiles.count %></td>
+                                <td><%= pilot_scoped_tiles.usda_accepted.count %></td>
+                                <td class="<%= "negative" if pilot_scoped_tiles.usda_rejected.count > 0 %>"><%= pilot_scoped_tiles.usda_rejected.count %></td>
+                            </tr>
+
+                        <% end %>
+
+                        <% sos.each do |so| %>
+
+                            <% 
+                                so_scoped_tiles = scoped_tiles.where(sensor_operator: so)
+                                so_asi_rejected_tiles = asi_rejected_tiles.where(sensor_operator: so)
+
+                                flown = so_scoped_tiles.count + so_asi_rejected_tiles.count
+                            %>
+
+                            <tr>
+                                <td class="collapsing"><%= company.name %></td>
+                                <td class="collapsing"><%= state.name %></td>
+                                <td> - </td>
+                                <td><%= so || "NA" %></td>
+                                <td><%= flown %></td>
+                                <td><%= so_scoped_tiles.asi_accepted.count %></td>
+                                <td class="<%= "negative" if so_asi_rejected_tiles.count > 0 %>"><%= so_asi_rejected_tiles.count %></td>
+                                <td><%= so_scoped_tiles.usda_accepted.count %></td>
+                                <td class="<%= "negative" if so_scoped_tiles.usda_rejected.count > 0 %>"><%= so_scoped_tiles.usda_rejected.count %></td>
+                            </tr>
+
+                        <% end %>
+
+                    <% end %>
+
+                    <tr class="total_row" >
+                        <td colspan="2"><b>Total</b></td>
+                        <td><b><%= number_with_delimiter total_pilots %> Pilots</b></td>
+                        <td><b><%= number_with_delimiter total_sos %> SO</b></td>
+                        <td><b><%= total_flown %></b></td>
+                        <td><b><%= total_asi_accepted %></b></td>
+                        <td><b><%= total_asi_rejected %></b></td>
+                        <td><b><%= total_usda_accepted %></b></td>
+                        <td><b><%= total_usda_rejected %></b></td>
+                    </tr>
+
+                    <% 
+                        grand_total_pilots += total_pilots
+                        grand_total_sos += total_sos
+                        grand_total_flown += total_flown
+                        grand_total_asi_accepted += total_asi_accepted
+                        grand_total_asi_rejected += total_asi_rejected
+                        grand_total_usda_accepted += total_usda_accepted
+                        grand_total_usda_rejected += total_usda_rejected
+                    %>
+
+                <% end %>
+
+                <tr class="total_row" >
+                    <td colspan="2"><b>Grand Total</b></td>
+                    <td><b><%= number_with_delimiter grand_total_pilots %> Pilots</b></td>
+                    <td><b><%= number_with_delimiter grand_total_sos %> SO</b></td>
+                    <td><b><%= grand_total_flown %></b></td>
+                    <td><b><%= grand_total_asi_accepted %></b></td>
+                    <td><b><%= grand_total_asi_rejected %></b></td>
+                    <td><b><%= grand_total_usda_accepted %></b></td>
+                    <td><b><%= grand_total_usda_rejected %></b></td>
+                </tr>
+
+            </tbody>
+        </table>
+    </div>
+
+<% else %>
+
+    <div class="ui message">
+        <div class="content">
+            <div class="header">
+                No Flights within this date range
+            </div>
+        </div>
+    </div>
+
+<% end %>

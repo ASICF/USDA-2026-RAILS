@@ -1,0 +1,34 @@
+
+
+"Company Name", "State", "Total Sites", "Total Flown", "ASI Accepted", "USDA Accepted", "Rejected", "% ASI Accepted", "% USDA Accepted", "% Rejected", "% Total Completed", <br/>
+
+
+<% @companies.each_with_index do |company, index| %>
+
+    <% 
+        total_sites = 0
+        total_flown = 0
+        total_asi_accepted = 0
+        total_usda_accepted = 0
+        total_rejected = 0 
+    %>
+
+    <% company.post_flight_records.pluck(:config_id).uniq.map { |c| Config.includes(:post_flight_records).find(c)}.sort_by {|c| c.state.name}.each do |config| %>
+
+        <% 
+            scoped_post_flight_records = company.post_flight_records.where(config: config, flight_date: @date_flown_from..@date_flown_end)
+        %>
+
+        "<%= company.name %>", "<%= config.state.name %>", "<%= config.pre_flight_records.count %>", "<%= scoped_post_flight_records.count %>", "<%= scoped_post_flight_records.flown.count %>", "<%= scoped_post_flight_records.flown.neg_approved.count %>", "<%= scoped_post_flight_records.not_flown.count %>", "<%= (scoped_post_flight_records.flown.count.to_f / scoped_post_flight_records.count * 100).round(2) %>", "<%= (scoped_post_flight_records.flown.neg_approved.count.to_f / scoped_post_flight_records.count * 100).round(2) %>", "<%= (scoped_post_flight_records.not_flown.count.to_f / scoped_post_flight_records.count * 100).round(2) %>", "<%= (scoped_post_flight_records.flown.count.to_f / config.pre_flight_records.count * 100).round(2) %>", <br/>
+
+        <% 
+            total_sites = config.pre_flight_records.count
+            total_flown += scoped_post_flight_records.flown.count
+            total_asi_accepted += scoped_post_flight_records.flown.count
+            total_usda_accepted += scoped_post_flight_records.flown.neg_approved.count
+            total_rejected += scoped_post_flight_records.not_flown.count
+        %>
+
+    <% end %>
+
+<% end %>

@@ -1,0 +1,174 @@
+<% content_for :template, "large-screen" %>
+
+<div class="ui breadcrumb">
+    <div class="section">Exports</div>
+    <span class="divider">/</span>
+    <%= link_to "County Status and Cut File", county_status_and_cut_files_path, class: "section" %>
+    <span class="divider">/</span>
+    <div class="active section"><%= @state.name %></div>
+</div>
+
+<%= form_tag generate_cut_file_path, multipart: true, method: :post, id: "generate_cut_file", class: "ui form" do %>
+
+    <div class="ui divider"></div>
+    <div class="ui fluid styled accordion">
+        <div class="title">
+            <i class="dropdown icon"></i>
+            Generate Cut File
+        </div>
+        <div class="content">
+
+            <%= hidden_field_tag :state_id, params[:state_id] %>
+
+            <div class="required field">
+                <label>Ortho Processing Date</label>
+                <div class="ui calendar form-calendar">
+                    <div class="ui input left icon">
+                        <i class="calendar icon"></i>
+                        <%= text_field_tag :ortho_processing_date, params[:ortho_processing_date], autocomplete: :off %>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ui divider"></div>
+
+            <%= submit_tag "Submit", class: "ui primary right floated button" %>
+            <div class="clear"></div>
+
+        </div>
+    </div>
+
+    <div class="ui divider"></div>
+
+    <% if @state.completed_counties.count == @state.active_counties.count %>
+
+        <% 
+            min_fly_by_date = @state.active_counties.first.tiles.flown.not_dumped.not_shipped.order(flight_date: :desc).pluck(:flight_date).first
+            @state.counties.each do |county|
+
+                county_min_fly = county.tiles.flown.not_dumped.not_shipped.order(flight_date: :desc).pluck(:flight_date).first
+
+                if county_min_fly.nil?
+                    next
+                end
+
+                if min_fly_by_date.nil?
+                    min_fly_by_date = county_min_fly
+                elsif county_min_fly > min_fly_by_date
+                    min_fly_by_date = county.tiles.flown.not_dumped.not_shipped.order(flight_date: :desc).pluck(:flight_date).first
+                end
+            end
+            
+            if min_fly_by_date.nil?
+                due_date = ship_date = nil
+            else
+                due_date = min_fly_by_date + 30.days
+                # Ship Date is the day before
+                ship_date = min_fly_by_date + 29.days
+                # If the ship date is a Friday, Saturday, or Sunday then ship it out on Thursday the week of
+                if ship_date.saturday? || ship_date.sunday?
+                    ship_date = ship_date.at_beginning_of_week + 4.days
+                end
+            end
+        %>
+
+        <div class="ui green segment">
+            <div class="ui small header">
+                <%= @state.completed_counties.count %> of <%= @state.active_counties.count %> Counties Completed for <%= @state.name %>
+            </div>
+            <ul>
+                <li>Due Date: <b><%= due_date.strftime("%A, %m/%d/%Y") %></b></li>
+                <li>Ship By: <b><%= ship_date.strftime("%A, %m/%d/%Y") %></b></li>
+            </ul>
+        </div>
+
+    <% else %>
+
+        <div class="ui red segment">
+            <div class="ui small header">
+                <%= @state.completed_counties.count %> of <%= @state.active_counties.count %> Counties Completed for <%= @state.name %>
+            </div>
+        </div>
+
+    <% end %>
+
+    <div class="ui divider"></div>
+
+    <% county_count = easement_count = easement_total = 0 %>
+
+    <div class="table-overflow" style="margin-bottom: 2em;">
+        <table class="ui sortable center aligned celled striped table">
+            <thead>
+                <tr>
+                    <th class="no-sort">
+                        <div id="toggle_all_checkbox" class="ui fitted checkbox">
+                            <input type="checkbox" >
+                        </div>
+                    </th>
+                    <th class="left aligned">County</th>
+                    <th>Fips</th>
+                    <th>All AT Done</th>
+                    <th>Projection</th>
+                    <th>Easements Not Shipped</th>
+                    <th>Total Easements</th>
+                    <th class="single line">Final Fly Date</th>
+                    <th class="single line">AT Start</th>
+                    <th class="single line">AT Done</th>
+                    <th class="single line">Ortho Processed</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% @state.active_counties.each do |county| %>
+
+                    <%
+                        # Calculate final fly date
+                        min_fly_by_date = county.tiles.flown.not_dumped.not_shipped.order(flight_date: :desc).pluck(:flight_date).first
+
+                        # Get today's date
+                        today = Time.now
+
+                        at_start_date = county.tiles.flown.not_dumped.not_shipped.at_started.order(at_start_date: :asc).pluck(:at_start_date).first
+                        at_done_date = county.tiles.flown.not_dumped.not_shipped.at_done.order(at_done_date: :asc).pluck(:at_done_date).first
+                        ortho_processing_date = county.tiles.not_dumped.not_shipped.ortho_processing.order(ortho_proc_date: :asc).pluck(:ortho_proc_date).first
+
+                        county_count += 1
+                        easement_count += county.tiles.flown.not_dumped.not_shipped.count
+                        easement_total += county.tiles.count
+                    %>
+
+                    <tr>
+                        <td class="collapsing">
+                            <% if county.tiles.dumped.shipped.count != county.tiles.count %>
+                                <div class="county_checkbox ui fitted checkbox">
+                                    <%= check_box_tag "counties[]", county.id %>
+                                </div>
+                            <% end %>
+                        </td>
+                        <td class="left aligned"><%= county.name %></td>
+                        <td><%= county.full_fips %></td>
+                        <td><%= county.tiles.at_done.count == county.tiles.count ? '<i class="green large checkmark icon"></i>'.html_safe : '<i class="red large remove icon"></i>'.html_safe %></td>
+                        <td><%= county.tiles.pluck(:utm_zone).uniq.join(', ') %></td>
+                        <td><%= county.tiles.flown.not_dumped.not_shipped.count %></td>
+                        <td><%= county.tiles.count %></td>
+                        <td><%= min_fly_by_date.nil? ? '' : min_fly_by_date.strftime("%m/%d/%Y") %></td>
+                        <td><%= at_start_date.nil? ? '' : at_start_date.strftime("%m/%d/%Y") %></td>
+                        <td><%= at_done_date.nil? ? '' : at_done_date.strftime("%m/%d/%Y") %></td>
+                        <td><%= ortho_processing_date.nil? ? '' : ortho_processing_date.strftime("%m/%d/%Y") %></td>
+                    </tr>
+                <% end %>
+            </tbody>
+            <tfoot>
+                <tr>
+                    <th></th>
+                    <th colspan="2"><b><%= pluralize(county_count, 'County') %></b></th>
+                    <th></th>
+                    <th></th>
+                    <th colspan="1"><b><%= easement_count %></b></th>
+                    <th colspan="1"><b><%= easement_total %></b></th>
+                    <th colspan="6"></th>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+<% end %>

@@ -1,0 +1,11 @@
+<% provide(:ignore_css, true) %>
+
+<% if params[:report_type] == "flight" %>
+    <% if ["CONTRACTOR", "STATE", "CONTRACTOR_STATE"].include? params[:config_id] %>
+        <%= render "flying_status_reports/export/flight_#{params[:state_id].downcase}_#{params[:output_type]}" %>
+    <% else %>
+        <%= render "flying_status_reports/export/flight_other_#{params[:output_type]}" %>
+    <% end %>
+<% else %>
+    <%= render "flying_status_reports/export/scan_#{params[:output_type]}" %>
+<% end %>

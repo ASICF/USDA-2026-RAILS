@@ -1,0 +1,40 @@
+<% content_for :template, "large-screen" %>
+<% web_log_upload = @history.web_log_uploads.first %>
+
+<div class="ui segment">
+    <table class="ui center aligned fluid very basic table">
+        <thead>
+            <tr class="center aligned">
+                <th>Message</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="collapsing"><%= @history.message %></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <table class="ui four column fluid very basic table">
+        <thead>
+            <tr class="center aligned">
+                <th>Created</th>
+                <th>Submitted By</th>
+                <th>Import Path</th>
+                <th>Total Imported</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="center aligned">
+                <td><%= @history.created_at.localtime.strftime("%m/%d/%Y %I:%M %p") %></td>
+                <td>
+                    <div class="ui label">
+                        <i class="user icon"></i> <%= @history.creator.full_name %>
+                    </div>
+                </td>
+                <td><%= web_log_upload.path %></td>
+                <td><%= web_log_upload.count %></td>
+            </tr>
+        </tbody>
+    </table>
+</div>

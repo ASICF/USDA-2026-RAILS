@@ -1,0 +1,16 @@
+<% content_for :template, "timeline full-screen no-scroll" %>
+
+<%
+    actions = [['All Actions','ALL']] + @action_types.collect { |a| [a, a] }
+    users = [['All Users','ALL']] + @users.collect { |u| {id: u.id, full_name: u.full_name} }
+%>
+
+<%= react_component("Reports/Timeline", {
+    records: @timeline,
+    actions: @action_types,
+    users:  @users.collect { |u| {id: u.id, full_name: u.full_name} },
+    action_type: params[:action_type] || "ALL",
+    user: params[:user] || "ALL",
+    date_from: params[:date_from] || "",
+    date_to: params[:date_to] || "",
+}, {style: "height: 100%;"} ) %>

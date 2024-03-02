@@ -1,0 +1,11 @@
+<% content_for :template %>
+<%= react_component("Reports/TileStatus/TileStatusShow", {
+    tile: @tile,
+    footprints: @footprints,
+    frame_centers: @frame_centers,
+    photo_index: @photo_index,
+    rejected_tiles: @rejected_tiles,
+    token: form_authenticity_token
+    # production_rate: @production_rate,
+    # flight_rate: @flight_rate,
+}) %>

@@ -1,0 +1,66 @@
+
+
+
+<div class="ui breadcrumb">
+    <div class="section">Exports</div>
+    <span class="divider">/</span>
+    <%= link_to "Frame Centers", export_frame_centers_path, class: "section" %>
+    <span class="divider">/</span>
+    <div class="active section">AT Block: <%= params[:at_block] %></div>
+</div>
+
+<div class="ui divider"></div>
+
+<script>
+    console.log(<%= raw @frame_centers.to_json %>);
+</script>
+
+<% if @frame_centers.count == 0 %>
+    <div class="ui segment">
+        <p>No Frame Centers Found based on AT Block</p>
+    </div>
+<% else %>    
+    <div class="ui clearing segment">
+        <h4 class="ui header">Found <%= @frame_centers.count %> Frame Centers based on AT Block</h4>
+        <div class="ui divider"></div>
+          <%= link_to execute_export_frame_centers_path(at_block: params[:at_block]), target: "_blank", class: "ui right floated primary tiny button" do %>
+            <i class="download icon"></i>
+            Download Text File
+          <% end %>
+    </div>
+
+    <div class="table-overflow" style="margin-bottom: 2em;">
+        <table class="ui unstackable sortable center aligned celled striped table" >
+            <thead>
+                <tr>
+                    <th>Strip Frame</th>
+                    <th>GPS Time</th>
+                    <th>X</th>
+                    <th>Y</th>
+                    <th>Z</th>
+                    <th>Omega</th>
+                    <th>Phi</th>
+                    <th>Kappa</th>
+                    <th>Latitude</th>
+                    <th>Longitude</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% @frame_centers.each do |record| %>
+                    <tr>
+                        <td><%= record.strip_frame %></td>
+                        <td><%= record.gpstime %></td>
+                        <td><%= record.x %></td>
+                        <td><%= record.y %></td>
+                        <td><%= record.z %></td>
+                        <td><%= record.omega %></td>
+                        <td><%= record.phi %></td>
+                        <td><%= record.kappa %></td>
+                        <td><%= record.latitude %></td>
+                        <td><%= record.longitude %></td>
+                    </tr>
+                <% end %>
+            </tbody>
+        </table>
+    </div>
+<% end %>

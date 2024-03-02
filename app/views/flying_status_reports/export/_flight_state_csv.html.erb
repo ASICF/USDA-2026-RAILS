@@ -1,0 +1,28 @@
+
+"Project ID", 
+"State", 
+"Total Sites", 
+"Total Flown", 
+"Accepted", 
+"Rejected", 
+"% Accepted", 
+"% Rejected", 
+"% Total Completed", <br/>
+
+<% @configs.sort_by {|c| c.state.name}.each_with_index do |config, index| %>
+
+    <% 
+        scoped_post_flight_records = config.post_flight_records.where(flight_date: @date_flown_from..@date_flown_end)
+    %>
+
+    "<%= config.project_no %>", 
+    "<%= config.state.name %>", 
+    "<%= config.pre_flight_records.count %>", 
+    "<%= scoped_post_flight_records.count %>", 
+    "<%= scoped_post_flight_records.flown.count %>", 
+    "<%= scoped_post_flight_records.not_flown.count %>", 
+    "<%= (scoped_post_flight_records.flown.count.to_f / scoped_post_flight_records.count * 100).round(2) %>", 
+    "<%= (scoped_post_flight_records.not_flown.count.to_f / scoped_post_flight_records.count * 100).round(2) %>", 
+    "<%= (scoped_post_flight_records.flown.count.to_f / config.pre_flight_records.count * 100).round(2) %>", <br/>
+
+<% end %>

@@ -1,0 +1,18 @@
+<div class="ui breadcrumb">
+    <div class="section">Exports</div>
+    <span class="divider">/</span>
+    <div class="active section">County Status and Cut File</div>
+</div>
+
+<div class="ui divider"></div>
+
+<div id="county_status_dropdown" class="ui fluid search selection dropdown">
+    <input type="hidden" name="state">
+    <i class="dropdown icon"></i>
+    <div class="default text">Select State</div>
+    <div class="menu">
+        <% @states.each do |state| %>
+            <a class="item" href="<%= county_status_and_cut_file_path(state) %>" data-turbolnks="false" ><%= state.name %></a>
+        <% end %>
+    </div>
+</div>

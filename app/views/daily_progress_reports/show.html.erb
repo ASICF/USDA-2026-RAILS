@@ -1,0 +1,44 @@
+<div class="ui breadcrumb">
+    <div class="section">Reports</div>
+    <span class="divider">/</span>
+    <div class="active section">Daily Progress Reports</div>
+    <span class="divider">/</span>
+    <div class="active section"><%= @flight_date.strftime("%m/%d/%Y") %></div>
+</div>
+
+<div class="ui divider"></div>
+
+<% if @flight_date && @result %>
+    <% empty = false%>
+
+    <% if @result[:nri_accepted].count || @result[:nri_rejected].count %>
+        <div class="ui segments">
+            <div class="ui secondary clearing segment">
+                <b>NRI Project:</b> <%= "NRI #{@flight_date.strftime("%d-%^b-%g")}" %>
+                <a href="mailto" class="ui right floated right labeled icon button">
+                    <i class="envelope icon"></i>
+                    Email
+                </a>
+            </div>
+            <div class="ui segment">
+                <p><%= "NRI #{@flight_date.strftime("%d-%^b-%g")}" %></p>
+            </div>
+
+            <% if @result[:nri_accepted].count %>
+                <div class="ui segment">
+                    <p>
+                        <% @result[:nri_accepted].each do |poly_id| %>
+                            <%= "#{@flight_date.strftime("%d-%^b-%g")}&emsp;#{poly_id}&emsp;A".html_safe %><br/>
+                        <% end %>
+                    </p>
+                </div>
+            <% end %>
+        </div>
+    <% end %>
+
+
+    <div class="ui message">
+        <div class="ui no-margin small header">No Flights recorded on </div>
+        <p>Choose the flight date to generate the report. A copy of the report will be generated and saved as a text file at: <i><b><%= Rails.application.secrets.report_folder_p_path %></b></i></p>
+    </div>
+<% end %>

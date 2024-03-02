@@ -1,0 +1,131 @@
+<% content_for :template, "large-screen" %>
+<% @upload = @history.uploads.first %>
+
+<div class="ui segment">
+    <table class="ui center aligned fluid very basic table">
+        <thead>
+            <tr class="center aligned">
+                <th>Message</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="collapsing"><%= @history.message %></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <table class="ui six column fluid very basic table">
+        <thead>
+            <tr class="center aligned">
+                <th>Number of Footprints</th>
+                <% if @history.action_type == "Upload Footprints (SL)" %>
+                    <th>Number of tiles</th>
+                <% else %>
+                    <th>Number of doqqs</th>
+                <% end %>
+                <th>Flight Date</th>
+                <th>Flown By</th>
+                <th>Pilot</th>
+                <th>Sensor Operator</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="center aligned">
+                <td><%= @upload.footprints.count %></td>
+                <td><%= @history.tiles.count ? @history.tiles.count : "NA" %></td>
+                <td><%= @upload.footprints.first.flight_date.present? ? @upload.footprints.first.flight_date.strftime("%m/%d/%Y") : "NA" %></td>
+                <td><%= @upload.footprints.first.flown_by_name.present? ? @upload.footprints.first.flown_by_name : "NA" %></td>
+                <td><%= @upload.footprints.first.pilot_name.present? ? @upload.footprints.first.pilot_name : "NA" %></td>
+                <td><%= @upload.footprints.first.camera_operator_name.present? ? @upload.footprints.first.camera_operator_name : "NA" %></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <table class="ui three column fluid very basic table">
+        <thead>
+            <tr class="center aligned">
+                <th>Created</th>
+                <th>Submitted By</th>
+                <th>Download</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="center aligned">
+                <td><%= @upload.created_at.localtime.strftime("%m/%d/%Y %I:%M %p") %></td>
+                <td>
+                    <div class="ui label">
+                        <i class="user icon"></i> <%= @upload.uploader.full_name %>
+                    </div>
+                </td>
+                <td>
+                    <%= link_to download_upload_original_path(@upload), target: "_blank", class: "ui tiny icon secondary button" do %>
+                        <i class="download icon"></i>
+                        Download
+                    <% end %>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<div class="ui divider"></div>
+<% if @history.tiles.count > 0 %>
+<table class="ui sortable center aligned celled striped table" style="margin-bottom: 2em;">
+    <thead>
+        <tr>
+            <th>PolyID</th>
+            <th>Project</th>
+            <th>Filename</th>
+            <th>Flight Date</th>
+            <th>County</th>
+            <th>State</th>
+            <th>UTM Zone</th>
+        </tr>
+    </thead>
+    <tbody>
+        <% @history.tiles.each do |record| %>
+            <tr>
+                <td><%= link_to record.poly_id, render_tile_status_report_path(record.poly_id), target: "_blank" %></td>
+                <td><%= record.project %></td>
+                <td><%= record.filename %></td>
+                <td><%= record.flight_date.present? ? record.flight_date.strftime("%m/%d/%Y") : "NA" %></td>
+                <td><%= record.county_name %></td>
+                <td><%= record.state_name %></td>
+                <td><%= record.utm_zone %></td>
+            </tr>
+        <% end %>
+    </tbody>
+</table>
+<% end %>
+
+<% if @history.doqqs.count > 0 %>
+    <table class="ui sortable center aligned celled striped table" style="margin-bottom: 2em;">
+        <thead>
+            <tr>
+                <th>QQ AFPO Name</th>
+                <th>Project No</th>
+                <th>Filename</th>
+                <th>Flight Date</th>
+                <th>County</th>
+                <th>State</th>
+                <th>UTM Zone</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% @history.doqqs.each do |record| %>
+                <tr>
+                    <td><%= record.qq_apfo_name %></td>
+                    <td><%= record.project_no %></td>
+                    <td><%= record.filename %></td>
+                    <td><%= record.flight_date.present? ? record.flight_date.strftime("%m/%d/%Y") : "NA" %></td>
+                    <td><%= record.county_name %></td>
+                    <td><%= record.state_name %></td>
+                    <td><%= record.utm_zone %></td>
+                </tr>
+            <% end %>
+        </tbody>
+    </table>
+<% end %>
+
+<br/>

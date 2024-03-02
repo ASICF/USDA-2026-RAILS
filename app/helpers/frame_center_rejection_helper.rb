@@ -1,0 +1,2 @@
+module FrameCenterRejectionHelper
+end

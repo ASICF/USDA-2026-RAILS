@@ -1,0 +1,20 @@
+// Place all the styles related to the Timeline controller here.
+// They will automatically be included in application.css.
+// You can use Sass (SCSS) here: http://sass-lang.com/
+
+body.timeline {
+    #sidebar {
+        float: left; 
+        width: 300px;
+        height: 100%;
+        background-color: #f5f5f5;
+        border-right: 1px solid rgba(34, 36, 38, 0.15);
+        box-shadow: 0px 1px 2px 0 rgba(34, 36, 38, 0.15);
+        padding: .5em;
+    }
+    #content {
+        margin-left: 300px;
+        height: 100%;
+        overflow: auto;
+    }
+}

@@ -1,0 +1,75 @@
+<% content_for :template, "large-screen" %>
+<% @upload = @history.uploads.first %>
+
+<div class="ui segment">
+    <table class="ui center aligned fluid very basic table">
+        <thead>
+            <tr class="center aligned">
+                <th>Message</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="collapsing"><%= @history.message %></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <table class="ui three column fluid very basic table">
+        <thead>
+            <tr class="center aligned">
+                <th>Created</th>
+                <th>Submitted By</th>
+                <th>Download</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="center aligned">
+                <td><%= @upload.created_at.localtime.strftime("%m/%d/%Y %I:%M %p") %></td>
+                <td>
+                    <div class="ui label">
+                        <i class="user icon"></i> <%= @upload.uploader.full_name %>
+                    </div>
+                </td>
+                <td>
+                    <%= link_to download_upload_original_path(@upload), target: "_blank", class: "ui tiny icon secondary button" do %>
+                        <i class="download icon"></i>
+                        Download
+                    <% end %>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+
+<div class="ui divider"></div>
+
+<table class="ui sortable center aligned celled striped table" style="margin-bottom: 2em;">
+    <thead>
+        <tr>
+            <th>Poly ID</th>
+            <th>Flight Date</th>
+            <th>Acres</th>
+            <th>County</th>
+            <th>State</th>
+            <th>Latitude</th>
+            <th>Longitude</th>
+            <th>Created At</th>
+        </tr>
+    </thead>
+    <tbody>
+        <% @upload.easements.each do |record| %>
+            <tr>
+                <td><%= link_to record.poly_id, render_tile_status_report_path(record.poly_id), target: "_blank" %></td>
+                <td><%= record.flight_date.present? ? record.flight_date.strftime("%m/%d/%Y %I:%M %p") : "NA" %></td>
+                <td><%= record.acres %></td>
+                <td><%= record.county_name %></td>
+                <td><%= record.state_name %></td>
+                <td><%= record.latitude %></td>
+                <td><%= record.longitude %></td>
+                <td><%= record.created_at.localtime.strftime("%m/%d/%Y %I:%M %p") %></td>
+            </tr>
+        <% end %>
+    </tbody>
+</table>

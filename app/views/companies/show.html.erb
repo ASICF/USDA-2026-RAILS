@@ -1,0 +1,23 @@
+<div class="ui breadcrumb">
+    <div class="section">Manage</div>
+    <span class="divider">/</span>
+    <%= link_to "Company", companies_path, class: "section" %>
+    <span class="divider">/</span>
+    <div class="active section"><%= @company.name %></div>
+</div>
+
+<div class="settings-dropdown ui icon top left pointing dropdown tiny primary right floated button">
+    <i class="plus icon"></i>
+    <div class="menu">
+        <div class="item">
+            <i class="plane icon"></i>
+            Plane
+        </div>
+        <div class="item">
+            <i class="camera icon"></i>
+            Camera
+        </div>
+    </div>
+</div>
+
+<div class="ui divider"></div>

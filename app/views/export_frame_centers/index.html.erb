@@ -1,0 +1,38 @@
+
+<div class="ui breadcrumb">
+    <div class="section">Exports</div>
+    <span class="divider">/</span>
+    <div class="active section">Frame Centers</div>
+</div>
+
+<div class="ui divider"></div>
+
+<div class="ui fluid styled accordion">
+    <div class="title">
+        <i class="dropdown icon"></i>
+        Tool Info
+    </div>
+    <div class="content" style="padding: 1em 2em 2em;">
+
+        <div class="ui no-margin small header">Summary</div>
+        <p>Exports a text file of Frame Centers based on AT Block Name provided by the associated Footprints.</p>
+
+    </div>
+</div>
+
+<div class="ui divider"></div>
+
+<script>
+    console.log(<%= raw @at_blocks.to_json %>);
+</script>
+
+<div id="export_frame_centers" class="ui fluid search selection dropdown">
+    <input type="hidden" name="state">
+    <i class="dropdown icon"></i>
+    <div class="default text">Select State</div>
+    <div class="menu">
+        <% @at_blocks.each do |record| %>
+            <a class="item" href="<%= generate_export_frame_centers_url(at_block: record) %>" data-turbolnks="false" ><%= record %></a>
+        <% end %>
+    </div>
+</div>

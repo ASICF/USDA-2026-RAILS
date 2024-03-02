@@ -1,0 +1,196 @@
+<% content_for :template, "large-screen" %>
+
+<div class="ui breadcrumb">
+    <div class="section">Reports</div>
+    <span class="divider">/</span>
+    <%= link_to "Contractor Breakdown by State", contractor_breakdown_by_state_path, class: "section", data: { turbolinks: false } %>
+    <span class="divider">/</span>
+    <div class="section"><%= @states.count > 1 ? "All States" : @states.first.name %></div>
+    <span class="divider">/</span>
+    <div class="active section"><%= @project.kind_of?(Array) ? "NRI and SL" : @project %></div>
+    <span class="divider">/</span>
+    <div class="section"><%= params[:contractor_id] == "ALL" ? "All Contractors" : Company.find(params[:contractor_id]).name %></div>
+    <span class="divider">/</span>
+    <div class="active section"><%= "#{Time.parse(params[:date_flown_from]).strftime("%m/%d/%Y")} - #{Time.parse(params[:date_flown_end]).strftime("%m/%d/%Y")}" %></div>
+</div>
+
+<% if !true %>
+<div class="ui tiny right floated buttons">
+
+    <%= link_to contractor_breakdown_by_state_export_path(state_id: params[:state_id], contractor_id: params[:contractor_id], date_flown_from: params[:date_flown_from], date_flown_end: params[:date_flown_end]), class: "ui button", target: "_blank" do %>
+        <i class="download icon"></i>
+        CSV Export
+    <% end %>
+
+    <div class="settings-dropdown ui tiny floating dropdown icon button">
+        <i class="dropdown icon"></i>
+        <div class="menu">
+
+            <%= link_to contractor_breakdown_by_state_external_path(state_id: params[:state_id], contractor_id: params[:contractor_id], date_flown_from: params[:date_flown_from], date_flown_end: params[:date_flown_end], output: "table"), class: "item", target: "_blank" do %>
+                <i class="table icon"></i>
+                Open table in new Window
+            <% end %>
+
+            <%= link_to contractor_breakdown_by_state_external_path(state_id: params[:state_id], contractor_id: params[:contractor_id], date_flown_from: params[:date_flown_from], date_flown_end: params[:date_flown_end], output: "csv"), class: "item", target: "_blank" do %>
+                <i class="file outline icon"></i>
+                Open CSV in new Window
+            <% end %>
+
+        </div>
+    </div>
+</div>
+<% end %>
+
+<div class="clear"></div>
+<div class="ui divider"></div>
+
+<% if @states.count > 0 %>
+
+<div class="table-overflow" style="margin-bottom: 2em;"> 
+    <table class="ui center aligned celled striped sortable table">
+        <thead>
+            <tr>
+                <th>State</th>
+                <th>State Total Tiles</th>
+                <th>Contractor</th>
+                <th>Tiles Flown within Date Range</th>
+                <th>Tiles ASI Accepted</th>
+                <th>Acres ASI Accepted</th>
+                <th>Tiles ASI Rejected</th>
+                <th>Tiles USDA Accepted</th>
+                <th>Tiles USDA Rejected</th>
+                <th>Sensor</th>
+            </tr>
+        </thead>
+        <tbody>
+
+            <% 
+                # Prefetch the companies to prevent frequent duplicate querying
+                companies = Company.all.order(:name)
+
+                grand_total_states = []
+                grand_total_companies = []
+                grand_total_contract_sites = 0
+                grand_total_sites = 0
+                grand_total_value = 0
+                grand_total_asi_accepted = 0
+                grand_total_asi_acres = 0
+                grand_total_asi_rejected = 0
+                grand_total_usda_accepted = 0
+                grand_total_usda_rejected = 0
+                grand_total_cameras = []
+            %>
+
+            <% @states.each do |state| %>
+
+                <%
+                    # pluck the company ids and find them in the companies array
+                    if params[:contractor_id] == "ALL"
+                        # company_ids = state.tiles.pluck(:flown_by_id).uniq
+                        # selected_companies = companies.select {|company| company_ids.include?(company["id"]) }
+                        selected_companies = Company.where(id: state.tiles.pluck(:flown_by_id).uniq).order(:name)
+                    else
+                        selected_companies = [Company.find(params[:contractor_id])]
+                    end
+
+                    state_total = state.tiles.where(project: @project).count
+                    grand_total_contract_sites += state_total
+                %>
+
+                <% selected_companies.each do |company| %>
+
+                    <% 
+                        cameras = Camera.where(id: state.tiles.where(flown_by: selected_companies, project: @project).pluck(:camera_id).uniq).order(:name)
+                    %>
+
+                    <% cameras.each do |camera| %>
+
+                        <%
+                            tiles = state.tiles.includes(:easement).where(flown_by: company, camera: camera, flight_date: @date_flown_from..@date_flown_end, project: @project)
+
+                            asi_rejected_tiles = state.rejected_tiles.where(flown_by: company, camera: camera, flight_date: @date_flown_from..@date_flown_end, project: @project)
+
+                            # Skip if there are no records
+                            next if tiles.count == 0
+                        
+                            acres = 0
+
+                            # Cacluate the acres
+                            tiles.asi_accepted.each do |tile|
+                                acres += tile.easement.acres
+                            end
+
+                        %>
+
+                        <tr>
+                            <td><%= state.name %></td>
+                            <td><%= state_total %></td>
+                            <td><%= company.name %></td>
+                            <td><%= tiles.count + asi_rejected_tiles.count %></td>
+                            <td class="positive"><%= tiles.asi_accepted.count %></td>
+                            <td class="positive"><%= acres.round(3).to_f %></td>
+                            <td class="negative"><%= asi_rejected_tiles.count %></td>
+                            <td class="positive"><%= tiles.usda_accepted.count %></td>
+                            <td class="negative"><%= tiles.usda_rejected.count %></td>
+                            <td><%= "#{camera.name} | #{camera.serial_number}" %></td>
+                        </tr>
+
+                        <%
+                            # Build an array of states to get total count
+                            if !grand_total_states.include? state.id
+                                grand_total_states << state.id
+                            end
+
+                            # Build array of companies to get total count
+                            if !grand_total_companies.include? company.id
+                                grand_total_companies << company.id
+                            end
+
+                            grand_total_sites += tiles.count
+                            # grand_total_value += (tiles.count * rate)
+
+                            grand_total_asi_accepted += tiles.asi_accepted.count
+                            grand_total_asi_acres += acres
+                            grand_total_asi_rejected += asi_rejected_tiles.count
+                            grand_total_usda_accepted += tiles.usda_accepted.count
+                            grand_total_usda_rejected += tiles.usda_rejected.count
+
+                            if !grand_total_cameras.include? camera.id
+                                grand_total_cameras << camera.id
+                            end
+                        %>
+
+                    <% end %>
+
+                <% end %>
+
+            <% end %>
+        </tbody>
+        <tfoot>
+            <tr>
+                <th><b><%= pluralize(grand_total_states.count, "State") %></b></th>
+                <th><b><%= pluralize(number_with_delimiter(grand_total_contract_sites), "Tiles") %></b></th>
+                <th><b><%= pluralize(number_with_delimiter(grand_total_companies.count), "Contractor") %></b></th>
+                <th><b><%= number_with_delimiter grand_total_sites %> Tiles</b></th>
+                <th><b><%= number_with_delimiter grand_total_asi_accepted %> Tiles</b></th>
+                <th><b><%= number_with_delimiter grand_total_asi_acres.round(3).to_f %> Acres</b></th>
+                <th><b><%= number_with_delimiter grand_total_asi_rejected %> Tiles</b></th>
+                <th><b><%= number_with_delimiter grand_total_usda_accepted %> Tiles</b></th>
+                <th><b><%= number_with_delimiter grand_total_usda_rejected %> Tiles</b></th>
+                <th><b><%= pluralize(grand_total_cameras.count, "Sensor") %></b></th>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+
+<% else %>
+
+    <div class="ui message">
+        <div class="content">
+            <div class="header">
+                No Tiles Found
+            </div>
+        </div>
+    </div>
+
+<% end %>

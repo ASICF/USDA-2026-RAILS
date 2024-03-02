@@ -1,0 +1,52 @@
+
+<div class="ui breadcrumb">
+    <div class="section">Inputs</div>
+    <span class="divider">/</span>
+    <div class="section">Buffered Easements</div>
+    <span class="divider">/</span>
+    <div class="active section">Import</div>
+</div>
+
+<div class="ui divider"></div>
+
+<div class="ui fluid styled accordion">
+    <div class="title">
+        <i class="dropdown icon"></i>
+        Tool Info
+    </div>
+    <div class="content" style="padding: 1em 2em 2em;">
+
+        <div class="ui no-margin small header">Summary</div>
+        <p>Imports the Buffered Easements that have been buffered <i>prior</i> to being uploaded.</p>
+
+        <div class="ui divider"></div>
+
+        <div class="ui no-margin small header">Inputs</div>
+        <ul class="ui list">
+            <li>A <b>single</b> shapefile that contains a <b>.shp</b>, <b>.shx</b>, <b>.dbf</b>, and <b>.prj</b> files</li>
+        </ul>
+
+    </div>
+</div>
+
+<div class="ui divider"></div>
+
+<%= form_tag upload_easements_path, multipart: true, method: :post, id: "upload_easements", class: "ui form" do %>
+
+    <div class="two fields">
+        <div class="required field">
+            <label>Shapefile <span class="sub label">(.shp, .shx, .dbf, .prj)</span></label>
+            <%= file_field_tag :files, name: 'files[]', multiple: true %>
+        </div>
+        <div class="field">
+            <label>Project:</label>
+            <%= select_tag :project, options_for_select([['SL', 'SL']], "SL"), class: 'ui fluid search selection dropdown' %>
+        </div>
+    </div>
+
+    <div class="ui divider"></div>
+
+    <%= submit_tag "Submit", class: "ui primary right floated button" %>
+    <div class="clear"></div>
+
+<% end %>

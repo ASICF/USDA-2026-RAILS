@@ -1,0 +1,51 @@
+<div class="ui breadcrumb">
+    <div class="section">Reports</div>
+    <span class="divider">/</span>
+    <div class="section">Status Reports</div>
+    <span class="divider">/</span>
+    <div class="active section">Sub Billing</div>
+</div>
+
+<div class="ui divider"></div>
+
+<script>
+    console.log(<%= raw @result.to_json %>);
+</script>
+
+<div class="ui small message">
+    <div class="header">
+        Important!
+    </div>
+    <p>Does not include payments, just the sub billing amounts</p>
+</div>
+
+<table class="ui sortable center aligned celled structured table" style="margin-bottom: 2em;">
+    <thead>
+        <tr>
+            <th>State</th>
+            <th>Sensor</th>
+            <th>Company</th>
+            <th>Amount per Acre</th>
+            <th>Shipped Easements</th>
+            <th>Shipped Acres</th>
+            <th>PSN</th>
+            <th>Sub Billing Amount</th>
+        </tr>
+    </thead>
+    <tbody>
+
+        <% @result.each do |record| %>
+            <tr>
+                <td><%= record[:state] %></td>
+                <td><%= record[:sensor] %></td>
+                <td><%= record[:company] %></td>
+                <td><%= number_to_currency(record[:billing_per_acre]) %></td>
+                <td class="<%= record[:shipped_easements] == 0 ? 'negative' : 'positive' %>" ><%= record[:shipped_easements] %></td>
+                <td class="<%= record[:shipped_acres] == 0 ? 'negative' : 'positive' %>" ><%= record[:shipped_acres] %></td>
+                <td class="<%= record[:psn].nil? ? 'negative' : 'positive' %>" ><%= record[:psn] %></td>
+                <td class="<%= record[:sub_billing_amount] == 0 ? 'negative' : 'positive' %>" ><%= number_to_currency(record[:sub_billing_amount]) %></td>
+            </tr>
+        <% end %>
+
+    </tbody>
+</table>

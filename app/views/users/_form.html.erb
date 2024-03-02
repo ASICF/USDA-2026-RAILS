@@ -1,0 +1,46 @@
+<div class="ui breadcrumb">
+  <div class="section">Manage</div>
+  <span class="divider">/</span>
+  <%= link_to "Cameras", cameras_path, class: "section" %>
+  <span class="divider">/</span>
+  <% if @user.new_record? %>
+    <div class="active section">New</div>
+  <% else %>
+    <div class="section"><%= @user.full_name %></div>
+    <span class="divider">/</span>
+    <div class="active section">Edit</div>
+  <% end %>
+</div>
+
+<div class="ui divider"></div>
+
+<%= form_for @user, html: {id: 'camera_form', class: 'ui form'} do |f| %>
+
+  <div class="two fields">
+    <div class="required field">
+      <%= f.label :first_name, "First Name" %>
+      <%= f.text_field :first_name %>
+    </div>
+    <div class="required field">
+      <%= f.label :last_name, "Last Name" %>
+      <%= f.text_field :last_name %>
+    </div>
+  </div>
+
+  <div class="two fields">
+    <div class="required field">
+      <label>Role</label>
+      <%= f.select :role, User::ROLES, {selected: @user.role.nil? ? nil : @user.role}, {class: 'ui fluid search selection dropdown'} %>
+    </div>
+    <div class="required field">
+      <%= f.label :approved, "Approved?" %>
+      <%= f.select :approved, [['Yes', true], ['No', false]], {}, {class: 'ui fluid search selection dropdown'} %>
+    </div>
+  </div>
+
+  <div class="ui divider"></div>
+
+  <%= f.submit "Submit", class: "ui primary right floated button" %>
+  <div class="clear"></div>
+
+<% end %>

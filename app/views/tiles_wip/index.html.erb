@@ -1,0 +1,396 @@
+<% content_for :template, "full-screen" %>
+
+<div style="padding: 2em;">
+
+    <div class="ui breadcrumb">
+        <div class="section">Reports</div>
+        <span class="divider">/</span>
+        <div class="section">Status Reports</div>
+        <span class="divider">/</span>
+        <div class="active section">Tiles WIP</div>
+    </div>
+
+    <div class="ui divider"></div>
+
+    <div class="ui fluid styled accordion">
+        <div class="<%= params[:date_from] || params[:date_to] ? "active" : "" %> title">
+            <i class="dropdown icon"></i>
+            Query Tiles by Flown Date
+        </div>
+        <div class="<%= params[:date_from] || params[:date_to] ? "active" : "" %> content">
+        <%= form_tag tiles_wip_path, method: :get, id: "tiles_form", class: "ui form" do %>
+
+            <div class="four fields">
+                <div class="required field">
+                    <label>State</label>
+                    <div class="ui fluid search selection dropdown">
+                        <input type="hidden" name="state_id" value="<%= params[:state_id] %>">
+                        <i class="dropdown icon"></i>
+                        <div class="default text"></div>
+                        <div class="menu">
+                            <div class="item" data-value="all">State Summary</div>
+                            <div class="ui divider"></div>
+                            <% State.active.each do |state| %>
+                                <div class="item" data-value=<%= state.id %>><%= state.name %></div>
+                            <% end %>
+                        </div>
+                    </div>
+                </div>
+                <div class="required field">
+                    <label>Month:</label>
+                    <div class="month-dropdown ui fluid search selection dropdown" data-year="<%= Rails.application.secrets.project_year %>">
+                        <input type="hidden" name="month">
+                        <i class="dropdown icon"></i>
+                        <div class="default text"></div>
+                        <div class="menu">
+                            <div class="item" data-value="ALL">All</div>
+                            <div class="ui divider"></div>
+                            <% @months.each do |month| %>
+                                <div class="item" data-value="<%= month %>"><%= "#{Date::MONTHNAMES[month]} #{Rails.application.secrets.project_year}" %></div>
+                            <% end %>
+                        </div>
+                    </div>
+                </div>
+                <div class="required field">
+                    <label>From Date</label>
+                    <div class="ui calendar form-calendar">
+                        <div class="ui input left icon">
+                            <i class="calendar icon"></i>
+                            <%= text_field_tag :date_from, params[:date_from] %>
+                        </div>
+                    </div>
+                </div>
+                <div class="required field">
+                    <label>To Date</label>
+                    <div class="ui calendar form-calendar">
+                        <div class="ui input left icon">
+                            <i class="calendar icon"></i>
+                            <%= text_field_tag :date_to, params[:date_to] %>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ui divider"></div>
+
+            <%= submit_tag "Submit", class: "ui primary right floated button" %>
+            <%= link_to "Reset", tiles_wip_path(), class: "ui right floated button" %>
+
+            <div class="clear"></div>
+        <% end %>
+        </div>
+    </div>
+
+    <div class="table-overflow" style="margin-bottom: 2em;">
+
+    <%# check if the state is set or not %>
+    <% if @states %>
+        <table class="ui sortable center aligned celled structured table" >
+            <thead>
+                <tr>
+                    <th rowspan="2" colspan="1">State</th>
+                    <th colspan="8" class="no-sort">Tiles</th>
+                    <th colspan="7" class="no-sort">Dates</th>
+                </tr>
+                <tr>
+                    <th>Total</th>
+                    <th>Flown</th>
+                    <th>To Fly</th>
+                    <th class="single line">% Flown</th>
+                    <th>AT Started</th>
+                    <th>AT Done</th>
+                    <th>Ortho Processed</th>
+                    <th>Shipped</th>
+                    <th>ASI Rejected</th>
+                    <th>Max Flown</th>
+                    <th>Max AT Start</th>
+                    <th>Max AT Done</th>
+                    <th>Max Ortho Processed</th>
+                    <th>Max Shipped</th>
+                </tr>
+            </thead>
+            <tbody>
+            <% @states.each do |state| %>
+
+                <% 
+
+                    tiles = state.tiles.not_usda_rejected.where(flight_date: (params[:date_from])..(params[:date_to]))
+
+                    max_flown_date = tiles.where.not(flight_date: nil).order(flight_date: :desc).pluck(:flight_date).first
+                    max_at_start_date = tiles.where.not(at_start_date: nil).order(at_start_date: :desc).pluck(:at_start_date).first
+                    max_at_done_date = tiles.where.not(at_done_date: nil).order(at_done_date: :desc).pluck(:at_done_date).first
+                    max_ortho_proc_date = tiles.where.not(ortho_proc_date: nil).order(ortho_proc_date: :desc).pluck(:ortho_proc_date).first
+                    max_shipped_date = tiles.where.not(ship_date: nil).order(ship_date: :desc).pluck(:ship_date).first
+
+                    if max_flown_date.nil?
+                        due_date = ship_date = nil
+                    else
+                        due_date = max_flown_date + 30.days
+                        # Ship Date is the day before
+                        ship_date = max_flown_date + 29.days
+                        # If the ship date is a Friday, Saturday, or Sunday then ship it out on Thursday the week of
+                        if ship_date.friday? || ship_date.saturday? || ship_date.sunday?
+                            ship_date = ship_date.at_beginning_of_week + 3.days
+                        end
+                    end
+
+                    at_start_count = state.tiles.not_usda_rejected.at_started.where(at_start_date: (params[:date_from])..(params[:date_to])).count
+                    at_done_count = state.tiles.not_usda_rejected.at_done.where(at_done_date:  (params[:date_from])..(params[:date_to])).count
+                    ortho_proc_count = state.tiles.not_usda_rejected.ortho_processing.where(ortho_proc_date:  (params[:date_from])..(params[:date_to])).count
+                    ship_count = state.tiles.not_usda_rejected.shipped.where(ship_date:  (params[:date_from])..(params[:date_to])).count
+                    asi_rejected_count = state.rejected_tiles.where(rejected_date:  (params[:date_from])..(params[:date_to])).count
+                    # usda_rejected_tiles = state.tiles.usda_rejected.where(flight_date: (params[:date_from])..(params[:date_to])).count
+
+                    # calcluate the colors
+                    # Flown Color
+                    if tiles.flown.count == state.tiles.count
+                        flown_color = "positive"
+                    elsif tiles.flown.count > 0
+                        flown_color = "orange"
+                    else
+                        flown_color = "negative"
+                    end
+
+                    # To Fly Color
+                    if state.tiles.not_flown.count == 0
+                        not_flown_color = "positive"
+                    elsif state.tiles.not_flown.count == state.tiles.count
+                        not_flown_color = "negative"
+                    else
+                        not_flown_color = "orange"
+                    end
+
+                    # AT Start
+                    if at_start_count == state.tiles.count
+                        at_start_color = "positive"
+                    elsif at_start_count > 0
+                        at_start_color = "orange"
+                    else
+                        at_start_color = "negative"
+                    end
+
+                    # AT Done
+                    if at_done_count == state.tiles.count
+                        at_done_color = "positive"
+                    elsif at_done_count > 0
+                        at_done_color = "orange"
+                    else
+                        at_done_color = "negative"
+                    end
+
+                    # Orhto Processed
+                    if ortho_proc_count == state.tiles.count
+                        ortho_proc_color = "positive"
+                    elsif ortho_proc_count > 0
+                        ortho_proc_color = "orange"
+                    else
+                        ortho_proc_color = "negative"
+                    end
+
+                    # Ship
+                    if ship_count == state.tiles.count
+                        ship_color = "positive"
+                    elsif ship_count > 0
+                        ship_color = "orange"
+                    else
+                        ship_color = "negative"
+                    end
+                %>
+
+                <tr>
+                    <td><%= state.name %></td>
+                    <td class="<%= state.tiles.count > 0 ? 'positive' : 'negative' %>" ><%= state.tiles.count %></td>
+                    <td class="<%= flown_color %>" ><%= tiles.flown.count %></td>
+                    <td class="<%= not_flown_color %>" ><%= state.tiles.not_flown.count %></td>
+                    <td><%= (tiles.flown.count.fdiv(state.tiles.count) * 100).to_f.round(3) %>%</td>
+                    <td class="<%= at_start_color %>" ><%= at_start_count %></td>
+                    <td class="<%= at_done_color %>" ><%= at_done_count %></td>
+                    <td class="<%= ortho_proc_color %>" ><%= ortho_proc_count %></td>
+                    <td class="<%= ship_color %>" ><%= ship_count %></td>
+                    <td class="<%= asi_rejected_count > 0 ? 'negative' : 'positive' %>" ><%= asi_rejected_count %></td>
+                    <td><%= max_flown_date.nil? ? '' : max_flown_date.strftime("%m/%d/%Y") %></td>
+                    <td><%= max_at_start_date.nil? ? '' : max_at_start_date.strftime("%m/%d/%Y") %></td>
+                    <td><%= max_at_done_date.nil? ? '' : max_at_done_date.strftime("%m/%d/%Y") %></td>
+                    <td><%= max_ortho_proc_date.nil? ? '' : max_ortho_proc_date.strftime("%m/%d/%Y") %></td>
+                    <td><%= max_shipped_date.nil? ? '' : max_shipped_date.strftime("%m/%d/%Y") %></td>
+                </tr>
+            <% end %>
+            </tbody>
+        </table>
+
+    <% else %>
+
+        <table class="ui sortable center aligned celled structured table" >
+            <thead>
+                <tr>
+                    <th rowspan="2" colspan="1"><%= @state.name %></th>
+                    <th colspan="8" class="no-sort">Tiles</th>
+                    <th colspan="7" class="no-sort">Dates</th>
+                </tr>
+                <tr>
+                    <th>Total</th>
+                    <th>Flown</th>
+                    <th>To Fly</th>
+                    <th class="single line">% Flown</th>
+                    <th>AT Started</th>
+                    <th>AT Done</th>
+                    <th>Ortho Processed</th>
+                    <th>Shipped</th>
+                    <th>Max Flown</th>
+                    <th>Max AT Start</th>
+                    <th>Max AT Done</th>
+                    <th>Max Ortho Processed</th>
+                    <th>Max Shipped</th>
+                    <th>Ship By</th>
+                    <th>Due</th>
+                </tr>
+            </thead>
+            <tbody>
+
+            <% @state.counties.each do |county| %>
+
+                <% 
+
+                    # Skip the county if there is no easements
+                    next if county.tiles.count == 0
+
+                    # Get the tiles for the county based on the date range
+                    tiles = county.tiles.not_usda_rejected.where(flight_date:  (params[:date_from])..(params[:date_to]))
+
+                    max_flown_date = tiles.where.not(flight_date: nil).order(flight_date: :desc).pluck(:flight_date).first
+                    max_at_start_date = tiles.where.not(at_start_date: nil).order(at_start_date: :desc).pluck(:at_start_date).first
+                    max_at_done_date = tiles.where.not(at_done_date: nil).order(at_done_date: :desc).pluck(:at_done_date).first
+                    max_ortho_proc_date = tiles.where.not(ortho_proc_date: nil).order(ortho_proc_date: :desc).pluck(:ortho_proc_date).first
+                    max_shipped_date = tiles.where.not(ship_date: nil).order(ship_date: :desc).pluck(:ship_date).first
+
+                    if max_flown_date.nil?
+                        due_date = ship_date = nil
+                    else
+                        due_date = max_flown_date + 30.days
+                        # Ship Date is the day before
+                        ship_date = max_flown_date + 29.days
+                        # If the ship date is a Friday, Saturday, or Sunday then ship it out on Thursday the week of
+                        if ship_date.friday? || ship_date.saturday? || ship_date.sunday?
+                            ship_date = ship_date.at_beginning_of_week + 3.days
+                        end
+                    end
+
+                    # Get today's date
+                    today = Time.now
+
+                    at_start_count = county.tiles.not_usda_rejected.at_started.where(at_start_date:  (params[:date_from])..(params[:date_to])).count
+                    at_done_count = county.tiles.not_usda_rejected.at_done.where(at_done_date:  (params[:date_from])..(params[:date_to])).count
+                    ortho_proc_count = county.tiles.not_usda_rejected.ortho_processing.where(ortho_proc_date:  (params[:date_from])..(params[:date_to])).count
+                    ship_count = county.tiles.not_usda_rejected.shipped.where(ship_date:  (params[:date_from])..(params[:date_to])).count
+
+
+                    # calcluate the colors
+                    # Flown Color
+                    if tiles.flown.count == county.tiles.count
+                        flown_color = "positive"
+                    elsif tiles.flown.count > 0
+                        flown_color = "orange"
+                    else
+                        flown_color = "negative"
+                    end
+
+                    # To Fly Color
+                    if county.tiles.not_flown.count == 0
+                        not_flown_color = "positive"
+                    elsif county.tiles.not_flown.count == county.tiles.count
+                        not_flown_color = "negative"
+                    else
+                        not_flown_color = "orange"
+                    end
+
+                    # AT Start
+                    if at_start_count == county.tiles.count
+                        at_start_color = "positive"
+                    elsif at_start_count > 0
+                        at_start_color = "orange"
+                    else
+                        at_start_color = "negative"
+                    end
+
+                    # AT Done
+                    if at_done_count == county.tiles.count
+                        at_done_color = "positive"
+                    elsif at_done_count > 0
+                        at_done_color = "orange"
+                    else
+                        at_done_color = "negative"
+                    end
+
+                    # Orhto Processed
+                    if ortho_proc_count == county.tiles.count
+                        ortho_proc_color = "positive"
+                    elsif ortho_proc_count > 0
+                        ortho_proc_color = "orange"
+                    else
+                        ortho_proc_color = "negative"
+                    end
+
+                    # Ship
+                    if ship_count == county.tiles.count
+                        ship_color = "positive"
+                    elsif ship_count > 0
+                        ship_color = "orange"
+                    else
+                        ship_color = "negative"
+                    end
+
+                %>
+
+                <tr>
+                    <td><%= county.name %></td>
+                    <td class="<%= @state.tiles.count > 0 ? 'positive' : 'negative' %>" ><%= county.tiles.count %></td>
+                    <td class="<%= flown_color %>" ><%= tiles.flown.count %></td>
+                    <td class="<%= not_flown_color %>" ><%= county.tiles.not_flown.count %></td>
+                    <td><%= (tiles.flown.count.fdiv(county.tiles.count) * 100).to_f.round(3) %>%</td>
+                    <td class="<%= at_start_color %>" ><%= at_start_count %></td>
+                    <td class="<%= at_done_color %>" ><%= at_done_count %></td>
+                    <td class="<%= ortho_proc_color %>" ><%= ortho_proc_count %></td>
+                    <td class="<%= ship_color %>" ><%= ship_count %></td>
+                    <td><%= max_flown_date.nil? ? '' : max_flown_date.strftime("%m/%d/%Y") %></td>
+                    <td><%= max_at_start_date.nil? ? '' : max_at_start_date.strftime("%m/%d/%Y") %></td>
+                    <td><%= max_at_done_date.nil? ? '' : max_at_done_date.strftime("%m/%d/%Y") %></td>
+                    <td><%= max_ortho_proc_date.nil? ? '' : max_ortho_proc_date.strftime("%m/%d/%Y") %></td>
+                    <td><%= max_shipped_date.nil? ? '' : max_shipped_date.strftime("%m/%d/%Y") %></td>
+
+                    <% if ship_date.nil? %>
+                        <td>
+                    <% elsif ship_date.thursday? %>
+                        <td class="light-blue">
+                    <% else %>
+                        <td>
+                    <% end %>
+                        <%= ship_date.nil? ? '' : ship_date.strftime("%m/%d/%Y") %>
+                    </td>
+
+                    <% if due_date.nil? %>
+                        <td>
+                    <% elsif due_date.thursday? %>
+                        <td class="light-blue">
+                    <% elsif due_date === today %>
+                        <td class="red">
+                    <% elsif due_date.between?(today, today + 10.days) %>
+                        <td class="light-red">
+                    <% elsif due_date.between?(today, today + 15.days) %>
+                        <td class="orange">
+                    <% elsif due_date.between?(today, today + 20.days) %>
+                        <td class="yellow">
+                    <% else %>
+                        <td class="red">
+                    <% end %>
+                        <%= due_date.nil? ? '' : due_date.strftime("%m/%d/%Y") %>
+                    </td>
+
+                </tr>
+            <% end %>
+            </tbody>
+        </table>
+    
+    <% end %>
+
+    </div>
+</div>

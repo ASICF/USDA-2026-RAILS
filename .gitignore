@@ -1,0 +1,57 @@
+*.rbc
+*.sassc
+.sass-cache
+capybara-*.html
+.rspec
+.rvmrc
+/.bundle
+/vendor/bundle
+/log/*
+/tmp/*
+/db/*.sqlite3
+/public/system/*
+/coverage/
+/spec/tmp/*
+**.orig
+rerun.txt
+pickle-email-*.html
+.project
+/public/assets/*
+/public/esri
+/assets/*
+.ruby-gemset
+.ruby-version
+/node_modules
+
+# Ignore config
+config/*.yml
+
+# Ignore bower components
+/vendor/assets/bower_components
+
+# Ignore Sphinx
+/config/*.sphinx.conf
+/db/sphinx
+
+# Uploads
+/public/uploads
+# Ignore application configuration
+/config/application.yml
+
+# Ignore Spring files.
+/spring/*.pid
+
+# Ignore the boot.rb file
+/config/boot.rb
+
+# Ignore VSCode
+.vscode
+
+# Ignore db backup directory
+/db/backups/*
+/public/packs
+/public/packs-test
+/node_modules
+/yarn-error.log
+yarn-debug.log*
+.yarn-integrity

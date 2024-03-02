@@ -1,0 +1,2 @@
+module EsriLogsHelper
+end

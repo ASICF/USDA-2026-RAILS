@@ -1,0 +1,6 @@
+<% content_for :template,  %>
+<%= react_component("Reports/ReportHistory",  {
+  # Pass token and reports as props
+    token: form_authenticity_token,
+    reports: @reports,
+}) %>

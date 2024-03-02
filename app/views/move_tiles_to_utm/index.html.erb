@@ -1,0 +1,27 @@
+<div class="ui breadcrumb">
+    <div class="section">Exports</div>
+    <span class="divider">/</span>
+    <div class="section">Final Delivery</div>
+    <span class="divider">/</span>
+    <div class="active section">Move Tiles to UTM Folder</div>
+</div>
+
+<div class="ui divider"></div>
+
+<div class="ui small message">
+    <p>Iterates the files in the folder, queries the databases and moves the file to a folder based on the UTM</p>
+</div>
+
+<%= form_tag execute_move_tiles_to_utm_path, method: :post, id: "execute_move_tiles_to_utm", class: "ui form" do %>
+
+    <div class="required field">
+        <label>Input Directory:</label>
+        <%= text_field_tag :input_directory, params[:input_directory], autocomplete: :off %>
+    </div>
+
+    <div class="ui divider"></div>
+
+    <%= submit_tag "Submit", class: "ui primary right floated button" %>
+    <div class="clear"></div>
+
+<% end %>

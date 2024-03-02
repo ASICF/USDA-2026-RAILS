@@ -1,0 +1,73 @@
+<table>
+    <thead>
+        <tr>
+            <th>Report</th>
+            <th>Scope</th>
+            <th>Date Flown From</th>
+            <th>Date Flown To</th>
+            <th>Date Created</th>
+            <th>Report URL</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Flying Status Report</td>
+            <td><%= "#{@config.state_name} | #{@config.project_no}" %></td>
+            <td><%= @date_flown_from.strftime("%m/%d/%Y") %></td>
+            <td><%= @date_flown_end.strftime("%m/%d/%Y") %></td>
+            <td><%= Time.now.strftime("%m/%d/%Y") %></td>
+            <td><%= flying_scanning_reports_url %></td>
+        </tr>
+    </tbody>
+</table>
+
+<br/>
+<br/>
+
+<table>
+    <thead>
+        <tr>
+            <th>Company Name</th>
+            <th>Camera Name</th>
+            <th>Total Flown</th>
+            <th>Accepted</th>
+            <th>Rejected</th>
+            <th>% Accepted</th>
+            <th>% Rejected</th>
+        </tr>
+    </thead>
+    <tbody>
+
+    <% @companies.each_with_index do |company, index| %>
+
+        <% # Get Unique Cameras within the scope of the PostFlightRecords %>
+        <% total_flown = total_accepted = total_rejected = 0 %>
+
+        <% company.post_flight_records.where(config: @config).pluck(:camera_id).uniq.map { |c| Camera.find(c)}.sort_by {|c| c.name}.each do |camera| %>
+
+            <% 
+                scoped_post_flight_records = company.post_flight_records.where(config: @config, camera: camera)
+            %>
+
+            <tr>
+                <td><%= company.name %></td>
+                <td><%= camera.name %></td>
+                <td><%= scoped_post_flight_records.count %></td>
+                <td><%= scoped_post_flight_records.flown.count %></td>
+                <td><%= scoped_post_flight_records.not_flown.count %></td>
+                <td><%= (scoped_post_flight_records.flown.count.to_f / scoped_post_flight_records.count * 100).round(2) %></td>
+                <td><%= (scoped_post_flight_records.not_flown.count.to_f / scoped_post_flight_records.count * 100).round(2) %></td>
+            </tr>
+
+            <% 
+                total_flown += scoped_post_flight_records.count
+                total_accepted += scoped_post_flight_records.flown.count
+                total_rejected += scoped_post_flight_records.not_flown.count
+            %>
+
+        <% end %>
+
+    <% end %>
+
+    </tbody>
+</table>

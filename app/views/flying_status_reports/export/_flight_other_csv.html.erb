@@ -1,0 +1,28 @@
+
+"Company Name", 
+"Camera Name", 
+"Total Flown", 
+"Accepted", 
+"Rejected", 
+"% Accepted", 
+"% Rejected", <br/>
+
+<% @companies.each_with_index do |company, index| %>
+
+    <% company.post_flight_records.where(config: @config).pluck(:camera_id).uniq.map { |c| Camera.find(c)}.sort_by {|c| c.name}.each do |camera| %>
+
+        <% 
+            scoped_post_flight_records = company.post_flight_records.where(config: @config, camera: camera)
+        %>
+
+            "<%= company.name %>", 
+            "<%= camera.name %>", 
+            "<%= scoped_post_flight_records.count %>", 
+            "<%= scoped_post_flight_records.flown.count %>", 
+            "<%= scoped_post_flight_records.not_flown.count %>", 
+            "<%= (scoped_post_flight_records.flown.count.to_f / scoped_post_flight_records.count * 100).round(2) %>", 
+            "<%= (scoped_post_flight_records.not_flown.count.to_f / scoped_post_flight_records.count * 100).round(2) %>", <br/>
+
+    <% end %>
+
+<% end %>

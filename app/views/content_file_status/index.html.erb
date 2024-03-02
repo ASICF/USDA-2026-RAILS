@@ -1,0 +1,39 @@
+<div class="ui breadcrumb">
+    <div class="section">Reports</div>
+    <span class="divider">/</span>
+    <div class="active section">Content File Status</div>
+</div>
+
+<div class="ui divider"></div>
+
+<div class="ui fluid styled accordion">
+    <div class="title">
+        <i class="dropdown icon"></i>
+        Tool Info
+    </div>
+    <div class="content" style="padding: 1em 2em 2em;">
+        <div class="ui no-margin small header">Summary</div>
+        <p>Upload an ACDSee Content <b>txt</b> file and the tiles will be displayed with the current statuses. Doesn't look at any file folder paths, just queries against the database</p>
+
+        <div class="ui no-margin small header">Inputs</div>
+        <ul class="ui list">
+            <li>An ACDSee Content <b>txt</b> file</li>
+        </ul>
+    </div>
+</div>
+
+<div class="ui divider"></div>
+
+<%= form_tag generate_content_file_status_path, multipart: true, method: :post, id: "generate_content_file_status", class: "ui form" do %>
+
+    <div class="required field">
+        <label>ACDSee Content File</label>
+        <%= file_field_tag :file, accept: 'text/plain' %>
+    </div>
+
+    <div class="ui divider"></div>
+
+    <%= submit_tag "Submit", class: "ui primary right floated button" %>
+    <div class="clear"></div>
+
+<% end %>

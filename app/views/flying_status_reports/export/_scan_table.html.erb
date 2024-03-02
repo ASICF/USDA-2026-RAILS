@@ -1,0 +1,55 @@
+<table>
+    <thead>
+        <tr>
+            <th>Report</th>
+            <th>Date Scan From</th>
+            <th>Date Scan To</th>
+            <th>Date Created</th>
+            <th>Report URL</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Scanning Status Report</td>
+            <td><%= @date_flown_from.strftime("%m/%d/%Y") %></td>
+            <td><%= @date_flown_end.strftime("%m/%d/%Y") %></td>
+            <td><%= Time.now.strftime("%m/%d/%Y") %></td>
+            <td><%= flying_scanning_reports_url %></td>
+        </tr>
+    </tbody>
+</table>
+
+<br/>
+<br/>
+
+<table>
+    <thead>
+        <tr>
+            <th>Company Name</th>
+            <th>Scanner</th>
+            <th>Total</th>
+        </tr>
+    </thead>
+    <tbody>
+        <% Scanner.all.each do |scanner| %>
+
+            <%
+                total = 0
+                # Get the total number of Post Flight Records that were scanned during this period
+                scanner.rolls.where(rolls: {scanned_date: @date_flown_from..@date_flown_end}).each do |roll|
+                    if @config
+                        total += roll.post_flight_records.where(config: @config).flown.scanned.count
+                    else
+                        total += roll.post_flight_records.flown.scanned.count
+                    end
+                end
+            %>
+
+            <tr>
+                <td><%= scanner.company.name %></td>
+                <td><%= scanner.name %></td>
+                <td><%= total %></td>
+            </tr>
+        <% end %>
+    </tbody>
+</table>

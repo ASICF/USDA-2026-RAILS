@@ -1,0 +1,2 @@
+module FlyingStatusReportsHelper
+end

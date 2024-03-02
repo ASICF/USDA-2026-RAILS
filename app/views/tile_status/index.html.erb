@@ -1,0 +1,5 @@
+<% content_for :template %>
+<%= react_component("Reports/TileStatus/TileStatus", {
+    current_user: @current_user,
+    authenticity_token: @token
+}) %>

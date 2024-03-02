@@ -1,0 +1,102 @@
+<div class="ui breadcrumb">
+    <div class="section">Reports</div>
+    <div class="divider">/</div>
+    <div class="active section">Content File Status</div>
+</div>
+
+<div class="ui divider"></div>
+
+<script>
+    console.log(<%= raw @result.to_json %>);
+</script>
+
+<table class="ui sortable center aligned celled striped table" style="margin-bottom: 2em;">
+    <thead>
+        <tr>
+            <th>Filename</th>
+            <th>Flown</th>
+            <th>AT Started</th>
+            <th>AT Done</th>
+            <th>Ortho Processed</th>
+            <th>Tile Dumped</th>
+            <th>Shipped</th>
+        </tr>
+    </thead>
+    <tbody>
+
+        <% @result.each do |record| %>
+            <tr>
+                <td class="collapsing <%= record[:match_db] ? '' : 'negative' %>"><div style="font-size: .9em;"><%= record[:filename] %></div></td>
+
+                <% if record[:match_db] %>
+
+                    <td class="collapsing">
+                        <% if record[:flown] %>
+                            <div data-tooltip="<%= record[:flight_date].strftime("%m/%d/%Y") %>">
+                                <i class="green large checkmark icon" ></i>
+                            </div>
+                        <% else %>
+                            <i class="red large remove icon"></i>
+                        <% end %>
+                    </td>
+
+                    <td class="collapsing">
+                        <% if record[:at_started] %>
+                            <div data-tooltip="<%= record[:at_start_date].strftime("%m/%d/%Y") %>">
+                                <i class="green large checkmark icon" ></i>
+                            </div>
+                        <% else %>
+                            <i class="red large remove icon"></i>
+                        <% end %>
+                    </td>
+
+                    <td class="collapsing">
+                        <% if record[:at_done] %>
+                            <div data-tooltip="<%= record[:at_done_date].strftime("%m/%d/%Y") %>">
+                                <i class="green large checkmark icon" ></i>
+                            </div>
+                        <% else %>
+                            <i class="red large remove icon"></i>
+                        <% end %>
+                    </td>
+
+                    <td class="collapsing">
+                        <% if record[:ortho_processing] %>
+                            <div data-tooltip="<%= record[:ortho_proc_date].strftime("%m/%d/%Y") %>">
+                                <i class="green large checkmark icon" ></i>
+                            </div>
+                        <% else %>
+                            <i class="red large remove icon"></i>
+                        <% end %>
+                    </td>
+                    
+                    <td class="collapsing">
+                        <% if record[:dump_date] %>
+                            <div data-tooltip="<%= record[:dump_date].strftime("%m/%d/%Y") %>">
+                                <i class="green large checkmark icon" ></i>
+                            </div>
+                        <% else %>
+                            <i class="red large remove icon"></i>
+                        <% end %>
+                    </td>
+
+                    <td class="collapsing">
+                        <% if record[:shipped] %>
+                            <div data-tooltip="<%= record[:ship_date].strftime("%m/%d/%Y") %>">
+                                <i class="green large checkmark icon" ></i>
+                            </div>
+                        <% else %>
+                            <i class="red large remove icon"></i>
+                        <% end %>
+                    </td>
+
+                <% else %>
+
+                    <td colspan="7" class="negative">File does not exist in database!</td>
+
+                <% end %>
+            </tr>
+        <% end %>
+
+    </tbody>
+</table>

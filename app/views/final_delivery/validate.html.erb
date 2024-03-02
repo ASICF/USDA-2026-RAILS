@@ -1,0 +1,122 @@
+<div class="ui breadcrumb">
+    <div class="section">Exports</div>
+    <span class="divider">/</span>
+    <div class="active section">Final Delivery</div>
+</div>
+
+<div class="ui divider"></div>
+
+<div class="ui small message">
+    <div class="header">
+        Important!
+    </div>
+    <ul class="list">
+        <li>Make sure to run ArcMap model on records in <b><%= @input_directory %></b> before proceeding!</li>
+        <li>Do not leave files open in applications, it will create a lock and break the script half way through</li>
+    </ul>
+</div>
+
+<div class="ui divider"></div>
+
+<%= form_tag execute_final_delivery_path, method: :post, id: "execute_final_delivery", class: "ui form" do %>
+
+    <div class="ui fluid styled accordion">
+        <div class="title">
+            <i class="dropdown icon"></i>
+            Execute Process
+        </div>
+        <div class="content">
+
+            <%= hidden_field_tag :input_directory, @input_directory %>
+            <%= hidden_field_tag :content_file, @content_file %>
+            <%= hidden_field_tag :batch_process_id, @batch_process_id %>
+
+            <div class="two fields">
+                <div class="required field">
+                    <label>Shipping Date</label>
+                    <div class="ui calendar form-calendar">
+                        <div class="ui input left icon">
+                            <i class="calendar icon"></i>
+                            <%= text_field_tag :ship_date, params[:ship_date], autocomplete: :off %>
+                        </div>
+                    </div>
+                </div>
+                <div class="required field">
+                    <label>Packing Slip Name (Must be a unique Name)</label>
+                    <%# select_tag :packing_slip_name, options_for_select(PackingSlip.order(:name).pluck(:name)), include_blank: true, class: 'ui fluid search selection protected dropdown' %>
+                    <%= text_field_tag :packing_slip_name, params[:packing_slip_name], autocomplete: :off %>
+                </div>
+            </div>
+
+            <div class="ui divider"></div>
+
+            <%= submit_tag "Submit", data: {confirm: "Are you sure?"}, class: "ui primary right floated button" %>
+            <div class="clear"></div>
+
+        </div>
+
+    </div>
+
+    <div class="ui divider"></div>
+
+    <table class="ui sortable center aligned celled striped table" style="margin-bottom: 2em;">
+        <thead>
+            <tr>
+                <th class="no-sort">
+                    <div id="toggle_all_checkbox" class="ui fitted checkbox">
+                        <input type="checkbox" >
+                    </div>
+                </th>
+                <th>County</th>
+                <th>Fipscode</th>
+                <th class="single line">Total Easement</th>
+                <th class="single line">Total Tiles</th>
+                <th class="single line">Tiles in Folder</th>
+                <th class="single line">Shipped Tiles</th>
+            </tr>
+        </thead>
+        <tbody>
+        <% @result.each do |key, record| %>
+            <% county = County.find(key) %>
+            <tr>
+                <td class="collapsing">
+                    <div class="county_checkbox ui fitted checkbox">
+                        <%= check_box_tag "counties[]", county.id %>
+                    </div>
+                </td>
+                <td><%= county.name %></td>
+                <td><%= county.full_fips %></td>
+                <td><%= county.easements.count %></td>
+                <td><%= county.tiles.count %></td>
+                <td class="<%= record[:folder_count] == county.tiles.count ? "positive" : "negative" %>" ><%= record[:folder_count] %></td>
+                <td class="<%= county.tiles.shipped.count == county.tiles.count ? "positive" : "negative" %>" ><%= county.tiles.shipped.count %></td>
+            </tr>
+        <% end %>
+        </tbody>
+    </table>
+
+<script>
+    console.log(<%= raw @result.to_json %>);
+</script>
+
+<% end %>
+
+<div id="confirm-dialog" class="ui small basic modal">
+    <div class="header">
+        Execute Process
+    </div>
+    <div class="ui divider no-margin"></div>
+    <div class="image content">
+        <div class="image">
+            <i class="file outline icon"></i>
+        </div>
+        <div class="description">
+            <p>Are you sure you want to execute the Final Delivery on the selected file?</p>
+        </div>
+    </div>
+    <div class="ui divider no-margin"></div>
+    <div class="actions">
+        <button data-dismiss="modal" class="ui red basic cancel inverted button">Cancel</button>
+        <button data-dismiss="modal" class="confirm ui green ok inverted button">Confirm</button>
+    </div>
+</div>

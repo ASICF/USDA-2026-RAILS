@@ -1,0 +1,21 @@
+<%= render 'form', company: @company %>
+
+<div id="confirm-dialog" class="ui small basic modal">
+    <div class="header">
+        Delete Company
+    </div>
+    <div class="ui divider no-margin"></div>
+    <div class="image content">
+        <div class="image">
+            <i class="building outline icon"></i>
+        </div>
+        <div class="description">
+            <p>Are you sure you want to delete <%= "#{@company.name}"%>?</p>
+        </div>
+    </div>
+    <div class="ui divider no-margin"></div>
+    <div class="actions">
+        <button data-dismiss="modal" class="ui red basic cancel inverted button">Cancel</button>
+        <button data-dismiss="modal" class="confirm ui green ok inverted button">Confirm</button>
+    </div>
+</div>

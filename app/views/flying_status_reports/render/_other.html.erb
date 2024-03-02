@@ -1,0 +1,144 @@
+<% if @counties.count > 0 %>
+
+    <div class="table-overflow" style="margin-bottom: 2em !important;">
+        <table class="ui center no-margin aligned celled unstackable table">
+            <thead>
+                <tr>
+                    <th colspan="8">Flight Summary</th>
+                </tr>
+                <tr style="text-align: center;">
+                    <th>County Name</th>
+                    <th>Company Name</th>
+                    <th>Camera Name</th>
+                    <th>Total Flown</th>
+                    <th>Total Acres Flown</th>
+                    <th>ASI Accepted</th>
+                    <th>ASI Rejected</th>
+                    <th>USDA Accepted</th>
+                    <th>USDA Rejected</th>
+                    <th class="single line">% ASI Accepted</th>
+                    <th class="single line">% ASI Rejected</th>
+                    <th class="single line">% USDA Accepted</th>
+                    <th class="single line">% USDA Rejected</th>
+                </tr>
+            </thead>
+            <tbody>
+
+            <% 
+                grand_total_sites_flown = 0
+                grand_total_acres_flown = 0
+                grand_total_asi_accepted = 0
+                grand_total_usda_accepted = 0
+                grand_total_asi_rejected = 0
+                grand_total_usda_rejected = 0
+            %>
+
+            <% @counties.each_with_index do |county| %>
+
+                <% 
+                    total_sites_flown = 0
+                    total_acres_flown = 0
+                    total_asi_accepted = 0
+                    total_usda_accepted = 0
+                    total_asi_rejected = 0 
+                    total_usda_rejected = 0 
+                %>
+                
+                <% Tile.flown.where(flight_date: @date_flown_from..@date_flown_end, county: county, project: @project).pluck(:flown_by_id).uniq.map { |c| Company.find(c)}.sort_by {|c| c.name}.each do |company| %>
+
+
+                    <% company.tiles.where(county: county, project: @project).pluck(:camera_id).uniq.map { |c| Camera.find(c)}.sort_by {|c| c.name}.each do |camera| %>
+
+                        <% 
+                            scoped_tiles = company.tiles.where(county: county, camera: camera, flight_date: @date_flown_from..@date_flown_end, project: @project)
+                            asi_rejected_tiles = company.rejected_tiles.where(county: county, camera: camera, flight_date: @date_flown_from..@date_flown_end, project: @project)
+                            acres_flown = 0
+                            scoped_tiles.each do |tile|
+                                acres_flown += tile.easement.acres.to_f
+                            end
+
+                            flown = scoped_tiles.count + asi_rejected_tiles.count
+                        %>
+
+                        <tr style="text-align: center;">
+                            <td><%= county.name %></td>
+                            <td><%= company.name %></td>
+                            <td><%= camera.name %></td>
+                            <td><%= flown %></td>
+                            <td><%= number_with_delimiter(acres_flown.round(2), delimiter: ',') %></td>
+                            <td><%= scoped_tiles.count %></td>
+                            <td class="<%= "negative" if asi_rejected_tiles.count > 0 %>" ><%= asi_rejected_tiles.count %></td>
+                            <td><%= scoped_tiles.usda_accepted.count %></td>
+                            <td class="<%= "negative" if scoped_tiles.usda_rejected.count > 0 %>"><%= scoped_tiles.usda_rejected.count %></td>
+                            <td class="positive"><%= (scoped_tiles.count.to_f / flown.to_f * 100).round(2) %></td>
+                            <td class="<%= "negative" if asi_rejected_tiles.count > 0 %>" ><%= (asi_rejected_tiles.count.to_f / flown.to_f * 100).round(2) %></td>
+                            <td class="positive"><%= (scoped_tiles.usda_accepted.count.to_f / flown * 100).round(2) %></td>
+                            <td class="<%= "negative" if scoped_tiles.usda_rejected.count > 0 %>"><%= (scoped_tiles.usda_rejected.count.to_f / flown * 100).round(2) %></td>
+                        </tr>
+
+                        <% 
+                            total_sites_flown += flown
+                            total_acres_flown += acres_flown
+                            total_asi_accepted += scoped_tiles.count
+                            total_asi_rejected += asi_rejected_tiles.count
+                            total_asi_rejected += asi_rejected_tiles.count
+                            total_usda_rejected += scoped_tiles.usda_rejected.count
+                        %>
+
+                    <% end %>
+
+                <% end %>
+
+                    <tr class="summary_row" style="text-align: center;">
+                        <td colspan="3"  style="text-align: right;"><b>County Total</b></td>
+                        <td><b><%= total_sites_flown %></b></td>
+                        <td><b><%= number_with_delimiter(total_acres_flown.round(2), delimiter: ',') %></b></td>
+                        <td><b><%= total_asi_accepted %></b></td>
+                        <td><b><%= total_asi_rejected %></b></td>
+                        <td><b><%= total_usda_accepted %></b></td>
+                        <td><b><%= total_usda_rejected %></b></td>
+                        <td><b><%= (total_asi_accepted.to_f / total_sites_flown * 100).round(2) %></b></td>
+                        <td><b><%= (total_asi_rejected.to_f / total_sites_flown * 100).round(2) %></b></td>
+                        <td><b><%= (total_usda_accepted.to_f / total_sites_flown * 100).round(2) %></b></td>
+                        <td><b><%= (total_usda_rejected.to_f / total_sites_flown * 100).round(2) %></b></td>
+                    </tr>
+
+                    <% 
+                        grand_total_sites_flown += total_sites_flown
+                        grand_total_acres_flown += total_acres_flown
+                        grand_total_asi_accepted += total_asi_accepted
+                        grand_total_usda_accepted += total_usda_accepted
+                        grand_total_asi_rejected += total_asi_rejected
+                        grand_total_usda_rejected += total_usda_rejected
+                    %>
+            <% end %>
+
+            <tr class="total_row" style="text-align: center;">
+                <td colspan="3"><b>Grand Total</b></td>
+                <td><b><%= grand_total_sites_flown %></b></td>
+                <td><b><%= number_with_delimiter(grand_total_acres_flown.round(2), delimiter: ',') %></b></td>
+                <td><b><%= grand_total_asi_accepted %></b></td>
+                <td><b><%= grand_total_asi_rejected %></b></td>
+                <td><b><%= grand_total_usda_accepted %></b></td>
+                <td><b><%= grand_total_usda_rejected %></b></td>
+                <td><b><%= (grand_total_asi_accepted.to_f / grand_total_sites_flown * 100).round(2) %></b></td>
+                <td><b><%= (grand_total_asi_rejected.to_f / grand_total_sites_flown * 100).round(2) %></b></td>
+                <td><b><%= (grand_total_usda_accepted.to_f / grand_total_sites_flown * 100).round(2) %></b></td>
+                <td><b><%= (grand_total_usda_rejected.to_f / grand_total_sites_flown * 100).round(2) %></b></td>
+            </tr>
+
+            </tbody>
+        </table>
+    </div>
+
+<% else %>
+
+    <div class="ui message">
+        <div class="content">
+            <div class="header">
+                No Flights within this date range
+            </div>
+        </div>
+    </div>
+
+<% end %>

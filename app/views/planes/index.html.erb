@@ -1,0 +1,50 @@
+
+<div class="ui breadcrumb">
+    <div class="section">Manage</div>
+    <span class="divider">/</span>
+    <div class="section">Planes</div>
+    <span class="divider">/</span>
+    <div class="active section">All</div>
+</div>
+
+<%= link_to new_plane_path, class: "ui right floated labeled icon tiny primary button" do %>
+    <i class="plus icon"></i>
+    New plane
+<% end %>
+
+<div class="clear"></div>
+<div class="ui divider"></div>
+
+<table class="ui sortable celled padded table" style="margin-bottom: 2em;">
+    <thead>
+        <tr>
+            <th>Tail Number</th>
+            <th>Make / Model</th>
+            <th>Company</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+<% @planes.each do |plane| %>
+    <tr>
+        <td><%= plane.name %></td>
+        <td><%= plane.model %></td>
+        <td><%= plane.company.name %></td>
+        <td class="collapsing">
+            <%= link_to edit_plane_path(plane), class: "ui tiny icon secondary button" do %>
+                <i class="setting icon"></i>
+            <% end %>
+        </td>
+    </tr>
+<% end %>
+    </tbody>
+    <% if @planes.total_pages > 1 %>
+        <tfoot>
+            <tr>
+                <th colspan="4" style="text-align: center;">
+                    <%= paginate(@planes, window: 1, outer_window: 1) %>
+                </th>
+            </tr>
+        </tfoot>
+    <% end %>
+</table>

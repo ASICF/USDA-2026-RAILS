@@ -1,0 +1,88 @@
+<table>
+    <thead>
+        <tr>
+            <th>Report</th>
+            <th>Scope</th>
+            <th>Date Flown From</th>
+            <th>Date Flown To</th>
+            <th>Date Created</th>
+            <th>Report URL</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Flying Status Report</td>
+            <td>All Sites by Contractor and State</td>
+            <td><%= @date_flown_from.strftime("%m/%d/%Y") %></td>
+            <td><%= @date_flown_end.strftime("%m/%d/%Y") %></td>
+            <td><%= Time.now.strftime("%m/%d/%Y") %></td>
+            <td><%= flying_scanning_reports_url %></td>
+        </tr>
+    </tbody>
+</table>
+
+<br/>
+<br/>
+
+<table >
+    <thead>
+        <tr>
+            <th>Company Name</th>
+            <th>State</th>
+            <th>Total Sites</th>
+            <th>Total Flown</th>
+            <th>ASI Accepted</th>
+            <th>USDA Accepted</th>
+            <th>Rejected</th>
+            <th>% ASI Accepted</th>
+            <th>% USDA Accepted</th>
+            <th>% Rejected</th>
+            <th>% Total Completed</th>
+        </tr>
+    </thead>
+    <tbody>
+
+        <% @companies.each_with_index do |company, index| %>
+
+            <% 
+                total_sites = 0
+                total_flown = 0
+                total_asi_accepted = 0
+                total_usda_accepted = 0
+                total_rejected = 0 
+            %>
+
+            <% company.post_flight_records.pluck(:config_id).uniq.map { |c| Config.includes(:post_flight_records).find(c)}.sort_by {|c| c.state.name}.each do |config| %>
+
+                <% 
+                    scoped_post_flight_records = company.post_flight_records.where(config: config, flight_date: @date_flown_from..@date_flown_end)
+                %>
+
+                <tr>
+                    <td><%= company.name %></td>
+                    <td><%= config.state.name %></td>
+                    <td><%= config.pre_flight_records.count %></td>
+                    <td><%= scoped_post_flight_records.count %></td>
+                    <td><%= scoped_post_flight_records.flown.count %></td>
+                    <td><%= scoped_post_flight_records.flown.neg_approved.count %></td>
+                    <td><%= scoped_post_flight_records.not_flown.count %></td>
+                    <td><%= (scoped_post_flight_records.flown.count.to_f / scoped_post_flight_records.count * 100).round(2) %></td>
+                    <td><%= (scoped_post_flight_records.flown.neg_approved.count.to_f / scoped_post_flight_records.count * 100).round(2) %></td>
+                    <td><%= (scoped_post_flight_records.not_flown.count.to_f / scoped_post_flight_records.count * 100).round(2) %></td>
+                    <td><%= (scoped_post_flight_records.flown.count.to_f / config.pre_flight_records.count * 100).round(2) %></td>
+                </tr>
+
+                <% 
+                    total_sites = config.pre_flight_records.count
+                    total_flown += scoped_post_flight_records.flown.count
+                    total_asi_accepted += scoped_post_flight_records.flown.count
+                    total_usda_accepted += scoped_post_flight_records.flown.neg_approved.count
+                    total_rejected += scoped_post_flight_records.not_flown.count
+                %>
+
+            <% end %>
+
+        <% end %>
+
+    </tbody>
+</table>

@@ -1,0 +1,2 @@
+module PhotoIndexHelper
+end

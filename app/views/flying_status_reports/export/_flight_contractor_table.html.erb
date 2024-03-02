@@ -1,0 +1,68 @@
+<table>
+    <thead>
+        <tr>
+            <th>Report</th>
+            <th>Scope</th>
+            <th>Date Flown From</th>
+            <th>Date Flown To</th>
+            <th>Date Created</th>
+            <th>Report URL</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Flying Status Report</td>
+            <td>All Sites by Contractor</td>
+            <td><%= @date_flown_from.strftime("%m/%d/%Y") %></td>
+            <td><%= @date_flown_end.strftime("%m/%d/%Y") %></td>
+            <td><%= Time.now.strftime("%m/%d/%Y") %></td>
+            <td><%= flying_scanning_reports_url %></td>
+        </tr>
+    </tbody>
+</table>
+
+<br/>
+<br/>
+
+<table>
+    <thead>
+        <tr>
+            <th>Company Name</th>
+            <th>Camera Name</th>
+            <th>Serial Number</th>
+            <th>Focal Length</th>
+            <th>Total Flown</th>
+            <th>Accepted</th>
+            <th>Rejected</th>
+            <th>% Accepted</th>
+            <th>% Rejected</th>
+        </tr>
+    </thead>
+    <tbody>
+
+    <% @companies.each_with_index do |company, index| %>
+
+        <% company.post_flight_records.pluck(:camera_id).uniq.map { |c| Camera.find(c)}.sort_by {|c| c.name}.each do |camera| %>
+
+            <% 
+                scoped_post_flight_records = company.post_flight_records.where(camera: camera, flight_date: @date_flown_from..@date_flown_end)
+            %>
+
+            <tr>
+                <td><%= company.name %></td>
+                <td ><%= camera.name %></td>
+                <td ><%= camera.serial_number %></td>
+                <td ><%= camera.focal_length %></td>
+                <td><%= scoped_post_flight_records.count %></td>
+                <td><%= scoped_post_flight_records.flown.count %></td>
+                <td><%= scoped_post_flight_records.not_flown.count %></td>
+                <td><%= (scoped_post_flight_records.flown.count.to_f / scoped_post_flight_records.count * 100).round(2) %></td>
+                <td><%= (scoped_post_flight_records.not_flown.count.to_f / scoped_post_flight_records.count * 100).round(2) %></td>
+            </tr>
+
+        <% end %>
+
+    <% end %>
+
+    </tbody>
+</table>

@@ -1,0 +1,31 @@
+
+"Company Name", 
+"Camera Name", 
+"Serial Number", 
+"Total Flown", 
+"Accepted", 
+"Rejected", 
+"% Accepted", 
+"% Rejected", <br/>
+
+<% @companies.each_with_index do |company, index| %>
+
+    <% company.tiles.where(flight_date: @date_flown_from..@date_flown_end).pluck(:camera_id).uniq.map { |c| Camera.find(c)}.sort_by {|c| c.name}.each do |camera| %>
+
+        <% 
+            scoped_tiles = company.tiles.where(camera: camera, flight_date: @date_flown_from..@date_flown_end)
+        %>
+
+        "<%= company.name %>", 
+        "<%= camera.name %>", 
+        "<%= camera.serial_number %>", 
+        "<%= scoped_tiles.flown.count %>", 
+        "<%= scoped_tiles.asi_accepted.count %>", 
+        "<%= scoped_tiles.asi_rejected.count %>", 
+        "<%= (scoped_tiles.asi_accepted.count.to_f / scoped_tiles.flown.count * 100).round(2) %>", 
+        "<%= (scoped_tiles.asi_rejected.count.to_f / scoped_tiles.flown.count * 100).round(2) %>", <br/>
+
+
+    <% end %>
+
+<% end %>

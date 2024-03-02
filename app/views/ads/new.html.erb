@@ -1,0 +1,86 @@
+<% if true == false %>
+    <div class="ui breadcrumb">
+        <div class="section">Inputs</div>
+        <span class="divider">/</span>
+        <div class="section">ADS</div>
+        <span class="divider">/</span>
+        <div class="active section">Import</div>
+    </div>
+
+    <div class="ui divider"></div>
+
+    <div class="ui fluid styled accordion">
+        <div class="title">
+            <i class="dropdown icon"></i>
+            Tool Info
+        </div>
+        <div class="content">
+
+            <div class="ui no-margin small header">Summary</div>
+            <p>Imports the Aiborne Digital Sensors</p>
+
+            <div class="ui divider"></div>
+
+            <div class="ui grid">
+                <div class="eight wide column">
+                    <div class="ui no-margin small header">Inputs</div>
+                    <ul class="ui list">
+                        <li>A <b>single</b> shapefile that contains a <b>.shp</b>, <b>.shx</b>, <b>.dbf</b>, and <b>.prj</b> files</li>
+                        <li>Shapefile <b>must</b> contain the attributes named <b>LINEID</b> and <b>BANDID</b></li>
+                        <li>A <b>Flight Date</b> is now required and must match the same </li>
+                    </ul>
+                </div>
+                <div class="eight wide column">
+                    <div class="ui no-margin small header">Process</div>
+                    <ul class="ui list">
+                        <li>All ADS are dissolved into a single feature</li>
+                        <li>The Buffered Easements that have not AT Start/AT Done that are completely contained by the Dissolved ADS are selected and given the current time for the selected status in the form below</li>
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="ui divider"></div>
+
+    <%= form_tag upload_ads_path, multipart: true, method: :post, id: "upload_ads", class: "ui form" do %>
+        <div class="two fields">
+            <div class="required field">
+                <label>Status to Update</label>
+                <div class="ui fluid search selection dropdown">
+                    <input type="hidden" name="at">
+                    <i class="dropdown icon"></i>
+                    <div class="default text">Choose an option</div>
+                    <div class="menu">
+                        <div class="item" data-value="start">AT Start</div>
+                        <div class="item" data-value="done">AT Done</div>
+                    </div>
+                </div>
+            </div>
+            <div class="required field">
+                <label>Date Flown</label>
+                <div class="ui calendar form-calendar">
+                    <div class="ui input left icon">
+                        <i class="calendar icon"></i>
+                        <%= text_field_tag :flight_date, params[:flight_date], autocomplete: :off %>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="required field">
+            <label>Shapefile <span class="sub label">(.shp, .shx, .dbf, .prj)</span></label>
+            <%= file_field_tag :files, name: 'files[]', multiple: true %>
+        </div>
+
+        <div class="ui divider"></div>
+
+        <%= submit_tag "Submit", class: "ui primary right floated button" %>
+        <div class="clear"></div>
+
+    <% end %>
+
+<%= react_component("Forms/ADSImport", {companies: @companies, cameras: @cameras, states: @states, token: form_authenticity_token}) %>
+
+<% end %>

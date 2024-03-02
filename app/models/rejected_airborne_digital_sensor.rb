@@ -1,0 +1,2 @@
+class RejectedAirborneDigitalSensor < ApplicationRecord
+end

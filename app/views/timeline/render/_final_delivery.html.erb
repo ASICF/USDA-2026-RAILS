@@ -1,0 +1,74 @@
+<% content_for :template, "large-screen" %>
+<% @bp = @history.batch_process %>
+
+<div class="ui segment">
+
+    <table class="ui center aligned fluid very basic table">
+        <thead>
+            <tr>
+                <th class="three wide">Status</th>
+                <th class="ten wide">Message</th>
+                <th class="three wide">Submitted By</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><%= @bp.has_errors? ? '<i class="red large remove icon"></i>'.html_safe : '<i class="green large checkmark icon"></i>'.html_safe %></td>
+                <td class="collapsing"><%= @history.message %></td>
+                <td>
+                    <div class="ui label">
+                        <i class="user icon"></i> <%= @bp.creator.full_name %>
+                    </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <table class="ui center aligned fluid very basic table">
+        <thead>
+            <tr>
+                <th class="four wide">Validated</th>
+                <th class="four wide">Started</th>
+                <th class="four wide">Finished</th>
+                <th class="four wide">Number of Files</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><%= @bp.validate_datetime.localtime.strftime("%m/%d/%Y %I:%M %p") %></td>
+                <td><%= @bp.start_datetime.localtime.strftime("%m/%d/%Y %I:%M %p") %></td>
+                <td><%= @bp.end_datetime.localtime.strftime("%m/%d/%Y %I:%M %p") %></td>
+                <td><%= @bp.number_of_tiffs %></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<div class="ui divider"></div>
+
+<table class="ui sortable center aligned celled striped table" style="margin-bottom: 2em;">
+    <thead>
+        <tr>
+            <th>Filename</th>
+            <th>Database Match</th>
+            <th>Folder Match</th>
+            <th>Status</th>
+            <th>Message</th>
+            <th>Created</th>
+        </tr>
+    </thead>
+    <tbody>
+
+        <% @bp.batch_process_logs.each do |log| %>
+            <tr>
+                <td class="collapsing"><span style="font-size: .9em;"><%= log.filename %></span></td>
+                <td class="collapsing"><%= !log.database_match ? '<i class="red large remove icon"></i>'.html_safe : '<i class="green large checkmark icon"></i>'.html_safe %></td>
+                <td class="collapsing"><%= !log.folder_match ? '<i class="red large remove icon"></i>'.html_safe : '<i class="green large checkmark icon"></i>'.html_safe %></td>
+                <td class="collapsing"><%= log.error ? '<i class="red large remove icon"></i>'.html_safe : '<i class="green large checkmark icon"></i>'.html_safe %></td>
+                <td class="<%= log.error ? 'negative' : 'positive' %>"><%= log.message %></td>
+                <td><%= log.created_at.localtime.strftime("%m/%d/%Y %I:%M %p") %></td>
+            </tr>
+        <% end %>
+
+    </tbody>
+</table>

@@ -1,0 +1,9 @@
+
+.ui.table tr.positive, .ui.table td.positive {
+    background-color: #addc9e !important;
+  }
+  
+  .ui.table tr.negative, .ui.table td.negative {
+    background-color: #ec9f9f !important;
+    background: #ec9f9f !important;
+  }

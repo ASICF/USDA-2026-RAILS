@@ -1,0 +1,56 @@
+<% content_for :template, "large-screen" %>
+
+<div class="ui breadcrumb">
+    <div class="section">Reports</div>
+    <span class="divider">/</span>
+    <%= link_to "Flying Status", flying_status_reports_path, class: "section", data: { turbolinks: false } %>
+    <span class="divider">/</span>
+    <div class="active section"><%= @type %></div>
+    <span class="divider">/</span>
+    <div class="active section"><%= @project.kind_of?(Array) ? "NRI and SL" : @project %></div>
+    <span class="divider">/</span>
+    <div class="active section"><%= "#{Time.parse(params[:date_flown_from]).strftime("%m/%d/%Y")} - #{Time.parse(params[:date_flown_end]).strftime("%m/%d/%Y")}" %></div>
+</div>
+
+<% if true == false %>
+    <div class="settings-dropdown ui tiny right labeled icon top right pointing dropdown right floated  button">
+    <i class="filter icon"></i>
+        <span class="text">Export</span>
+        <div class="menu">
+
+            <%= link_to flying_status_export_path(date_flown_from: params[:date_flown_from], date_flown_end: params[:date_flown_end], scope_id: params[:scope_id], output_type: "table", report_type: "flight"), class: "item", target: "_blank" do %>
+                <i class="file alternate outline icon"></i>
+                Flying Report Table
+            <% end %>
+            <%= link_to flying_status_export_path(date_flown_from: params[:date_flown_from], date_flown_end: params[:date_flown_end], scope_id: params[:scope_id], output_type: "csv", report_type: "flight"), class: "item", target: "_blank" do %>
+                <i class="table icon"></i>
+                Flying Report CSV
+            <% end %>
+
+            <div class="ui divider"></div>
+
+            <%= link_to flying_status_export_path(date_flown_from: params[:date_flown_from], date_flown_end: params[:date_flown_end], scope_id: params[:scope_id], output_type: "table", report_type: "scanning"), class: "item", target: "_blank" do %>
+                <i class="table icon"></i>
+                Scanning Report Table
+            <% end %> 
+
+            <%= link_to flying_status_export_path(date_flown_from: params[:date_flown_from], date_flown_end: params[:date_flown_end], scope_id: params[:scope_id], output_type: "csv", report_type: "scanning"), class: "item", target: "_blank" do %>
+                <i class="file alternate outline icon"></i>
+                Scanning Report CSV
+            <% end %>
+
+        </div>
+    </div>
+<% end %>
+
+<div class="ui divider"></div>
+
+<% if ["CONTRACTOR", "STATE", "CONTRACTOR_STATE"].include? params[:scope_id] %>
+    <%= render "flying_status_reports/render/#{params[:scope_id].downcase}" %>
+<% else %>
+    <%= render "flying_status_reports/render/other" %>
+<% end %>
+
+<br/>
+<br/>
+<br/>

@@ -1,0 +1,24 @@
+
+"Company Name", 
+"Scanner", 
+"Total", <br/>
+
+<% Scanner.all.each do |scanner| %>
+
+    <%
+        total = 0
+        # Get the total number of Post Flight Records that were scanned during this period
+        scanner.rolls.where(rolls: {scanned_date: @date_flown_from..@date_flown_end}).each do |roll|
+            if @config
+                total += roll.post_flight_records.where(config: @config).flown.scanned.count
+            else
+                total += roll.post_flight_records.flown.scanned.count
+            end
+        end
+    %>
+
+    "<%= scanner.company.name %>", 
+    "<%= scanner.name %>", 
+    "<%= total %>", <br/>
+
+<% end %>

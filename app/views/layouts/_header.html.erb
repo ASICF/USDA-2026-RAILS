@@ -1,0 +1,7 @@
+<% content_for :template %>
+<%= react_component("SiteHeader", {
+    current_user: @current_user,
+    token: form_authenticity_token,
+    development: Rails.env.development?,
+    project_year: Rails.application.secrets.project_year,
+}) %>

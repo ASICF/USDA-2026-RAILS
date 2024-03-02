@@ -1,0 +1,81 @@
+<div class="ui breadcrumb">
+    <div class="section">Input</div>
+    <span class="divider">/</span>
+    <div class="active section">USDA Approve</div>
+</div>
+
+<div class="ui divider"></div>
+
+
+<script>
+    console.log(<%= raw @config.to_json %>);
+</script>
+
+<% if @psns.count == 0 %>
+
+    <div class="ui message">
+        <p>No Negative Packing Slips found</p>
+    </div>
+
+<% else %>
+
+    <%= form_tag usda_approve_path, method: :post, id: "usda_approve", class: "ui form" do %>
+        <div class="ui fluid styled accordion">
+            <div class="active title">
+                <i class="dropdown icon"></i>
+                Approve Packing Slips
+            </div>
+            <div class="active content">
+                <div class="field">
+                    <label>Approved Date:</label>
+                    <div class="ui calendar form-calendar">
+                        <div class="ui input left icon">
+                            <i class="calendar icon"></i>
+                            <%= text_field_tag :approved_date, params[:approved_date], autocomplete: :off %>
+                        </div>
+                    </div>
+                </div>
+                <div class="ui divider"></div>
+                <%= submit_tag "Submit", class: "ui primary right floated button" %>
+                <div class="clear"></div>
+            </div>
+        </div>
+
+        <div class="ui divider"></div>
+
+        <table class="ui sortable celled definition table">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th style="width: 25%;">Packing Slip</th>
+                    <th style="width: 25%;">Active Records</th>
+                    <th style="width: 25%;">Approved Records</th>
+                    <th style="width: 25%;">Rejected Records</th>
+                </tr>
+            </thead>
+            <tbody>
+            <% @psns.each do |psn| %>
+                <tr>
+                    <td class="collapsing">
+                        <% if psn.active %>
+                            <div class="ui fitted checkbox">
+                                <%= check_box_tag "packing_slips[]", psn.id %>
+                            </div>
+                        <% end %>
+                    </td>
+                    <td data-sort-value="<%= psn.id %>" ><%= psn.name %></td>
+                    <td><%= psn.tiles.not_usda_accepted.count %></td>
+                    <td class="<%= psn.tiles.usda_accepted.count > 0 ? 'positive' : 'negative' %>">
+                        <%= psn.tiles.usda_accepted.count %>
+                    </td>
+                    <td class="<%= psn.tiles.usda_rejected.count > 0 ? 'negative' : 'positive' %>">
+                        <%= psn.tiles.usda_rejected.count %>
+                    </td>
+                </tr>
+            <% end %>
+            </tbody>
+        </table>
+
+    <% end %>
+
+<% end %>

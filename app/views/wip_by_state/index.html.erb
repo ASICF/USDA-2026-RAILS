@@ -1,0 +1,2 @@
+<% content_for :template, "full-screen" %>
+<%= react_component("Reports/WipByState", {states: @states, months: @months, projects: @projects, token: form_authenticity_token}) %>

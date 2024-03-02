@@ -1,0 +1,87 @@
+
+<% if true == false %>
+<div class="ui breadcrumb">
+    <div class="section">Reports</div>
+    <span class="divider">/</span>
+    <div class="active section">Flying Status Report</div>
+</div>
+
+<div class="ui divider"></div>
+
+<%= form_tag flying_status_report_path, method: :post, id: "flying_status_report", class: "ui form" do %>
+
+    <div class="fields">
+
+        <div class="required eight wide field">
+            <label>Select Scope:</label>
+            <div class="ui fluid search selection dropdown">
+                <input type="hidden" name="scope_id">
+                <i class="dropdown icon"></i>
+                <div class="default text"></div>
+                <div class="menu">
+                    <div class="item" data-value="CONTRACTOR">All Sites by Contractor</div>
+                    <div class="item" data-value="STATE">All Sites by State</div>
+                    <div class="item" data-value="CONTRACTOR_STATE">All Sites by Contractor and State</div>
+                    <div class="ui divider"></div>
+                    <% @states.each do |state| %>
+                        <div class="item" data-value="<%= state.id %>"><%= state.name %></div>
+                    <% end %>
+                </div>
+            </div>
+        </div>
+        <div class="four wide field">
+            <%= render 'shared/project', all: true %>
+        </div>
+        <div class="four wide field">
+            <label>Month:</label>
+            <div class="month-dropdown ui fluid search selection dropdown" data-year="<%= Rails.application.secrets.project_year %>">
+                <input type="hidden" name="month">
+                <i class="dropdown icon"></i>
+                <div class="default text"></div>
+                <div class="menu">
+                    <div class="item" data-value="ALL">All</div>
+                    <div class="ui divider"></div>
+                    <% @months.each do |month| %>
+                        <div class="item" data-value="<%= month %>"><%= "#{Date::MONTHNAMES[month]} #{Rails.application.secrets.project_year}" %></div>
+                    <% end %>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="two fields">
+        <div class="required field">
+            <label>Date Flown From:</label>
+            <div class="ui calendar form-calendar">
+                <div class="ui input left icon">
+                    <i class="calendar icon"></i>
+                    <%= text_field_tag :date_flown_from, params[:date_flown_from], autocomplete: :off %>
+                </div>
+            </div>
+        </div>
+        <div class="required field">
+            <label>Date Flown To:</label>
+            <div class="ui calendar form-calendar">
+                <div class="ui input left icon">
+                    <i class="calendar icon"></i>
+                    <%= text_field_tag :date_flown_end, params[:date_flown_end], autocomplete: :off %>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ui divider"></div>
+
+    <%= submit_tag "Submit", class: "ui primary right floated button" %>
+    <div class="clear"></div>
+
+<% end %>
+<% end %>
+
+<%= react_component("Reports/FlyingStatusReport", {
+    projects: @projects,
+    months: @months,
+    states: @states,
+    token: form_authenticity_token
+}) %>

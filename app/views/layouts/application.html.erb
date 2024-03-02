@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>USDA <%= Rails.application.secrets.project_year %></title>
+  	<meta charset="utf-8" />
+  	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+  	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <%= csrf_meta_tags %>
+
+    <% if yield(:ignore_css).empty? %>
+      <%= stylesheet_link_tag 'application', media: 'all' %>
+      <%= stylesheet_link_tag "https://alpha.asi-gis.com/esri/esri/css/esri.css" %>
+      <link rel="stylesheet" href="https://js.arcgis.com/4.13/esri/themes/light/main.css"
+      <%= stylesheet_link_tag 'application', media: 'all', 'data-turbolinks-track': 'reload' %>
+      <%= stylesheet_pack_tag 'application' %>
+    <% end %>
+
+    <%= javascript_include_tag 'application' %>
+    <script src="https://js.arcgis.com/4.13/"></script>
+
+    <%= javascript_pack_tag 'application', 'data-turbolinks-track': 'reload' %>
+
+  </head>
+
+  <body class="<%= yield(:template).empty? ? '' : yield(:template)%>">
+
+      <% if yield(:ignore_css).empty? %>
+
+        <% if params[:controller] == "pages" && params[:action] == "home" && defined? @current_user %>
+
+          <%= render 'layouts/homepage' %>
+
+        <% else %>
+
+          <%= render 'layouts/header' %>
+          <div class="site-container ui container">
+
+              <% if !yield(:template).include? 'full-screen' %>
+
+                <% if project_archived? %>
+                  <div class="ui error message">
+                      <div class="header">
+                          Project has been archived
+                      </div>
+                      <% if @current_user %>
+                        <p>You are signed in as a <%= @current_user.role %>, you can view reports and records but cannot execute processes or forms.</p>
+                      <% else %>
+                        <p>App is restricted to Read Only mode</p>
+                      <% end %>
+                  </div>
+                <% end %>
+
+                <% flash.each do |key, value| %>
+                  <%= content_tag :div, class: "ui message #{key} animate" do %>
+                    <i class="close icon"></i>
+                    <%= content_tag :div, key.titlecase+"!", class: "header" %>
+                    <% if value.kind_of?(Array) %>
+                      <div class="ui bulleted list">
+                      <% value.each do |item| %>
+                        <div class="item"><%= item %></div>
+                      <% end %>
+                      </div>
+                    <% else %>
+                      <%= content_tag :p, value %>
+                    <% end %>
+                  <% end %>
+                <% end %>
+              <% end %>
+
+              <%= yield %>
+
+          </div>
+
+        <% end %>
+
+      <% else %>
+
+        <%= yield %>
+
+      <% end %>
+  </body>
+</html>

@@ -1,0 +1,5 @@
+<%= react_component("Forms/EsriLogImport", {
+    projects: @projects, 
+    required_folder: Rails.application.secrets.esri_log_required,
+    token: form_authenticity_token
+}) %>

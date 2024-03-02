@@ -1,0 +1,83 @@
+<div class="ui breadcrumb">
+    <div class="section">Input</div>
+    <span class="divider">/</span>
+    <%= link_to "USDA Approve Negatives", usda_approve_path, class: "section" %>
+    <div class="divider">/</div>
+    <div class="active section"><%= "#{@state.name} | #{@state.project_no}" %></div>
+</div>
+
+<div class="ui divider"></div>
+
+<script>
+    console.log(<%= raw @state.to_json %>);
+</script>
+
+<% if @state.negative_packing_slips.count == 0 %>
+
+    <div class="ui message">
+        <p>No Negative Packing Slips for <%= @state.name %></p>
+    </div>
+
+<% else %>
+
+    <%= form_tag usda_approve_path(state_id: @state.id), method: :post, id: "usda_approve_negative", class: "ui form" do %>
+        <%= hidden_field_tag :state_id, @state.id %>
+        <div class="ui fluid styled accordion">
+            <div class="active title">
+                <i class="dropdown icon"></i>
+                Approve Packing Slips for <%= @state.name %>
+            </div>
+            <div class="active content">
+                <div class="field">
+                    <label>Approved Date:</label>
+                    <div class="ui calendar form-calendar">
+                        <div class="ui input left icon">
+                            <i class="calendar icon"></i>
+                            <%= text_field_tag :approved_date, params[:approved_date], autocomplete: :off %>
+                        </div>
+                    </div>
+                </div>
+                <div class="ui divider"></div>
+                <%= submit_tag "Submit", class: "ui primary right floated button" %>
+                <div class="clear"></div>
+            </div>
+        </div>
+
+        <div class="ui divider"></div>
+
+        <table class="ui sortable celled definition table">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th style="width: 25%;">Packing Slip</th>
+                    <th style="width: 25%;">Active Records</th>
+                    <th style="width: 25%;">Approved Records</th>
+                    <th style="width: 25%;">Rejected Records</th>
+                </tr>
+            </thead>
+            <tbody>
+            <% @state.negative_packing_slips.order(:id).each do |negative_packing_slip| %>
+                <tr>
+                    <td class="collapsing">
+                        <% if negative_packing_slip.post_flight_records.neg_active.count > 0 %>
+                            <div class="ui fitted checkbox">
+                                <%= check_box_tag "negative_packing_slips[]", negative_packing_slip.id %>
+                            </div>
+                        <% end %>
+                    </td>
+                    <td data-sort-value="<%= negative_packing_slip.id %>" ><%= negative_packing_slip.number %></td>
+                    <td><%= negative_packing_slip.post_flight_records.neg_active.count %></td>
+                    <td class="<%= negative_packing_slip.post_flight_records.neg_approved.count > 0 ? 'positive' : 'negative' %>">
+                        <%= negative_packing_slip.post_flight_records.neg_approved.count %>
+                    </td>
+                    <td class="<%= negative_packing_slip.post_flight_records.neg_rejected.count > 0 ? 'negative' : 'positive' %>">
+                        <%= negative_packing_slip.post_flight_records.neg_rejected.count %>
+                    </td>
+                </tr>
+            <% end %>
+            </tbody>
+        </table>
+
+    <% end %>
+
+<% end %>

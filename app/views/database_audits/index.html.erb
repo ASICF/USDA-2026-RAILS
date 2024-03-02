@@ -1,0 +1,150 @@
+<div class="ui breadcrumb">
+    <div class="section">Reports</div>
+    <span class="divider">/</span>
+    <div class="active section">Database Audit</div>
+</div>
+
+<div class="ui divider"></div>
+
+<% pass = true %>
+
+<h4 class="ui header">Tiles</h4>
+<div class="ui fluid vertical menu">
+  <% count = Tile.where(review_desc: "Error! AT Start date is set with no Flight Date").count %>
+  <% if count > 0 %>
+    <% pass = false %>
+    <div class="item" style="background-color: #B54444; color: white">
+        AT Start date is set with no Flight Date
+        <div class="ui label">
+            <%= count %>
+        </div>
+    </div>
+  <% end %>
+  <% count = Tile.where(review_desc: "ADS found but does not match AT Start and At Done Dates").count %>
+  <% if count > 0 %>
+    <% pass = false %>
+    <div class="item" style="background-color: #B54444; color: white">
+        ADS found but does not match AT Start and At Done Dates (No Frame Centers Found)
+        <div class="ui label">
+            <%= count %>
+        </div>
+    </div>
+  <% end %>
+  <% count = Tile.where(review_desc: "Error! Marked as AT Done but No Frame Centers or ADS Found").count %>
+  <% if count > 0 %>
+    <% pass = false %>
+    <div class="item" style="background-color: #B54444; color: white">
+        Error! Marked as AT Done but No Frame Centers or ADS Found
+        <div class="ui label">
+            <%= count %>
+        </div>
+    </div>
+  <% end %>
+  <% count = Tile.where(review_desc: "Potential Error: Flown Easement is partially covered by Footprint dissolve layer").count %>
+  <% if count > 0 %>
+    <% pass = false %>
+    <div class="item" style="background-color: #B54444; color: white">
+        Potential Error: Flown Easement is partially covered by Footprint dissolve layer
+        <div class="ui label">
+            <%= count %>
+        </div>
+    </div>
+  <% end %>
+  <% count = Tile.where(review_desc: "Error! Tile does not match overlapping Frame Center").count %>
+  <% if count > 0 %>
+    <% pass = false %>
+    <div class="item" style="background-color: #B54444; color: white">
+        Error! Tile does not match overlapping Frame Center
+        <div class="ui label">
+            <%= count %>
+        </div>
+    </div>
+  <% end %>
+  <% count = Tile.where(review_desc: 'Tiles that are marked as Flown but overlapping Frame Centers are Rejected').count %>
+  <% if count > 0 %>
+    <% pass = false %>
+    <div class="item" style="background-color: #B54444; color: white">
+        Tile marked as Flown but overlapping Frame Centers are Rejected
+        <div class="ui label">
+            <%= count %>
+        </div>
+    </div>
+  <% end %>
+  <% count = Tile.where(review_desc: "Error! Tile has At Start/At Done without a rejected Frame Center and no ADS").count %>
+  <% if count > 0 %>
+    <% pass = false %>
+    <div class="item" style="background-color: #e3a950; color: white">
+        Tile has At Start/At Done without a rejected Frame Center and no ADS
+        <div class="ui label">
+            <%= count %>
+        </div>
+    </div>
+  <% end %>
+  <% count = Tile.where(review_desc: "Potential Error: Overlapping Footprints Flight Date does not match Tile Flight Date!").count %>
+  <% if count > 0 %>
+    <% pass = false %>
+    <div class="item" style="background-color: #e3a950; color: white">
+        Potential Error: Overlapping Footprints Flight Date does not match Tile Flight Date!
+        <div class="ui label">
+            <%= count %>
+        </div>
+    </div>
+    <% end %>
+  <% count = Tile.where(review_desc: "Error! Tile Flight date does not match Tile Filename!").count %>
+  <% if count > 0 %>
+    <% pass = false %>
+    <div class="item" style="background-color: #B54444; color: white">
+        Tile Flight date does not match Tile Filename!
+        <div class="ui label">
+            <%= count %>
+        </div>
+    </div>
+    <% end %>
+    <% if pass %>
+        <div class="item">
+            No Errors Found
+        </div>
+    <% end %>
+</div>
+
+
+<% pass = true %>
+
+<h4 class="ui header">Frame Centers</h4>
+<div class="ui fluid vertical menu">
+  <% count = FrameCenter.where(review_desc: "Error! Frame Center Flight Date and Created At Date does not match Tile").count %>
+  <% if count > 0 %>
+    <% pass = false %>
+    <div class="item" style="background-color: #B54444; color: white">
+        Frame Center Flight Date and Created At Date does not match Tile
+        <div class="ui label">
+            <%= count %>
+        </div>
+    </div>
+  <% end %>
+  <% count = FrameCenter.where(review_desc: "Error! Frame Center Flight Date does not match Tile").count %>
+  <% if count > 0 %>
+    <% pass = false %>
+    <div class="item" style="background-color: #e3a950; color: white">
+        Frame Center Flight Date does not match Tile
+        <div class="ui label">
+            <%= count %>
+        </div>
+    </div>
+  <% end %>
+  <% count = FrameCenter.where(review_desc: "Error! Frame Center Created AT Date does not match Tile AT Date").count %>
+  <% if count > 0 %>
+    <% pass = false %>
+    <div class="item" style="background-color: #e3a950; color: white">
+        Frame Center Created AT Date does not match Tile AT Date
+        <div class="ui label">
+            <%= count %>
+        </div>
+    </div>
+  <% end %>
+    <% if pass %>
+        <div class="item">
+            No Errors Found
+        </div>
+    <% end %>
+</div>

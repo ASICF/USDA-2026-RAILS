@@ -1,0 +1,13 @@
+<div class="ui breadcrumb">
+    <div class="section">Manage</div>
+    <span class="divider">/</span>
+    <%= link_to "Planes", planes_path, class: "section" %>
+    <span class="divider">/</span>
+    <div class="active section">
+        <%= @plane.name %>
+    </div>
+</div>
+
+<div class="ui divider"></div> 
+
+Planes#Show

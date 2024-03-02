@@ -1,0 +1,84 @@
+<% content_for :template, "large-screen" %>
+<% @upload = @history.uploads.first %>
+
+<div class="ui segment">
+    <table class="ui center aligned fluid very basic table">
+        <thead>
+            <tr>
+                <th class="ten wide">Message</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="collapsing"><%= @history.message %></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <table class="ui four column fluid very basic table">
+        <thead>
+            <tr class="center aligned">
+                <th>Created</th>
+                <th>Submitted By</th>
+                <th>Download Photo Index File (Original File)</th>
+                <th>Download Photo ID File (Output File)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="center aligned">
+                <td><%= @upload.created_at.localtime.strftime("%m/%d/%Y %I:%M %p") %></td>
+                <td>
+                    <div class="ui label">
+                        <i class="user icon"></i> <%= @upload.uploader.full_name %>
+                    </div>
+                </td>
+                <td>
+                    <%= link_to download_upload_original_path(@upload), target: "_blank", class: "ui tiny icon secondary button" do %>
+                        <i class="download icon"></i>
+                        Download
+                    <% end %>
+                </td>
+                <td>
+                    <%= link_to download_photo_id_path(@upload), target: "_blank", class: "ui tiny icon secondary button" do %>
+                        <i class="download icon"></i>
+                        Download
+                    <% end %>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<div class="ui divider"></div>
+
+<table class="ui sortable center aligned celled striped table" style="margin-bottom: 2em;">
+    <thead>
+        <tr>
+            <th>Strip Frame</th>
+            <th>Flight Date</th>
+            <th>Sun Angle</th>
+            <th>GPS Time</th>
+            <th>Latitude</th>
+            <th>Longitude</th>
+            <th>County</th>
+            <th>State</th>
+            <th>Created At</th>
+        </tr>
+    </thead>
+    <tbody>
+        <% @upload.photo_indices.order(:flight_date_time).each do |log| %>
+            <tr>
+                <td><%= log.strip_frame %></td>
+                <td><%= log.flight_date_time.strftime("%m/%d/%Y %I:%M %p") %></td>
+                <td class="<%= log.sun_angle >= 30 ? "green" : "red" %>"><%= log.sun_angle %></td>
+                <td><%= log.gpstime %></td>
+                <td><%= log.latitude %></td>
+                <td><%= log.longitude %></td>
+                <td><%= log.county_name %></td>
+                <td><%= log.state_name %></td>
+                <td><%= log.created_at.localtime.strftime("%m/%d/%Y %I:%M %p") %></td>
+            </tr>
+        <% end %>
+    </tbody>
+</table>
+<br/>

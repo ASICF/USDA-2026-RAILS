@@ -328,6 +328,9 @@ ActiveRecord::Schema.define(version: 2023_10_11_144023) do
     t.string "state_name"
     t.string "state_abv"
     t.string "utm_zone"
+    t.boolean "nri", default: false, null: false
+    t.boolean "sl", default: false, null: false
+    t.boolean "naip", default: false, null: false
     t.boolean "associated", default: false, null: false
     t.decimal "centroid_latitude", precision: 11, scale: 8
     t.decimal "centroid_longitude", precision: 11, scale: 8

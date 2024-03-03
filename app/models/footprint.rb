@@ -37,8 +37,10 @@ class Footprint < ApplicationRecord
     # Scopes
     scope :associated, -> { where(associated: true) }
     scope :exclude_geom, -> { select( Footprint.attribute_names - ['geom'] ) }
-    scope :sl, -> { where(project: "SL") }
-    scope :naip, -> { where(project: "NAIP") }
+    scope :sl, -> { where(sl: true) }
+    scope :nri, -> { where(nri: true) }
+    scope :naip, -> { where(naip: true) }
+    scope :nri_sl, -> { where(sl: true, nri: true) }
     scope :not_uploaded, -> { where(provisional_upload_date: nil) }
     scope :uploaded, -> { where.not(provisional_upload_date: nil) }
     scope :has_flight_date_time, -> { where.not(flight_date_time: nil) }
@@ -338,15 +340,15 @@ class Footprint < ApplicationRecord
 
                         # p modified_strip_frame
 
+
                         if project === "NAIP"
                             # Check if the strip frame has already been used with the same flight date
                             if Footprint.naip.where(strip_frame: modified_strip_frame, flight_date: params[:flight_date], camera_id: camera.id, flown_by_id: company.id, project_state_name: state.name).count > 0
-                                p "asdfasdfasdfasdf"
                                 raise Exception, "Strip Frame (Original: #{original_strip_frame}, Modified: #{modified_strip_frame}) already exists with the same Flight Date (#{params[:flight_date]}), Camera (#{camera.serial_number}), and Flown By Company (#{company.name}) for NAIP Project within #{state.name}"
                             end
                         else
                             # Check if the strip frame has already been used with the same flight date
-                            if Footprint.sl.where(strip_frame: modified_strip_frame, flight_date: params[:flight_date], camera_id: camera.id, flown_by_id: company.id).count > 0
+                            if Footprint.nri_sl.where(strip_frame: modified_strip_frame, flight_date: params[:flight_date], camera_id: camera.id, flown_by_id: company.id).count > 0
                                 raise Exception, "Strip Frame (Original: #{original_strip_frame}, Modified: #{modified_strip_frame}) already exists with the same Flight Date (#{params[:flight_date]}), Camera (#{camera.serial_number}), and Flown By Company (#{company.name})"
                             end
                         end
@@ -362,6 +364,9 @@ class Footprint < ApplicationRecord
                             plane: plane,
                             camera: camera,
                             upload: upload,
+                            nri: false,
+                            sl: false,
+                            naip: project == "NAIP" ? true : false,
                             flown_by_alias: company.alias,
                             flown_by_name: company.name,
                             flown_by_id: company.id,
@@ -397,7 +402,7 @@ class Footprint < ApplicationRecord
                         # sql = "select c.id as county_id, c.name as county_name, s.id as state_id, s.abv as state_abv, s.name as state_name from counties c INNER JOIN states s ON c.state_id = s.id
                         #     where st_intersects(ST_GeomFromText('#{footprint.geom.to_s}'), c.geom) and s.abv in ('#{abvs.join("', '")}') 
                         #     order by (st_area(st_intersection(ST_GeomFromText('#{footprint.geom.to_s}'), c.geom))/st_area(ST_GeomFromText('#{footprint.geom.to_s}'))) DESC"
-                        
+
                         sql = "select c.id as county_id, c.name as county_name, s.id as state_id, s.abv as state_abv, s.name as state_name from counties c INNER JOIN states s ON c.state_id = s.id
                             where st_intersects(ST_GeomFromText('#{footprint.geom.to_s}'), c.geom) 
                             order by (st_area(st_intersection(ST_GeomFromText('#{footprint.geom.to_s}'), c.geom))/st_area(ST_GeomFromText('#{footprint.geom.to_s}'))) DESC"
@@ -461,7 +466,7 @@ class Footprint < ApplicationRecord
 
                 # Compare the Project Type and perform Spatial Query
                 # if ["All", "Sl"].include? project
-                if project == "SL"
+                if project == "NRI/SL"
 
                     # Dissolve all the footprints in the db
                     # => Now it should only dissolve those that have the correct flight date
@@ -711,6 +716,10 @@ class Footprint < ApplicationRecord
         # associated_footprints = []
         invalid_contract_rates = []
 
+        # track which projects are affected
+        nri = false
+        sl = false
+
         if !flight_date.nil?
 
             # Returns all easements that do not have a Flight date that fall within the dissolved footprints
@@ -769,7 +778,27 @@ class Footprint < ApplicationRecord
 
                         # Find the footprint
                         footprint = Footprint.find(record["footprint_id"])
-                        footprint.update(associated: true)
+
+                        # create a new hash to update the Footprint
+                        obj = {
+                            naip: false,
+                            associated: true
+                        }
+
+                        # if the tile is NRI then set the footprint nri boolean to true
+                        if tile.project == "NRI"
+                            nri = true
+                            obj.nri = true
+                        end
+
+                        # if the tile is SL then set the footprint sl boolean to true
+                        if tile.project == "SL"
+                            sl = true
+                            obj.sl = true
+                        end
+
+                        # update the footprint
+                        footprint.update(obj)
 
                         # Add the Footprint to the tiles and the vectormetadatum
                         tile.footprints << footprint
@@ -848,8 +877,14 @@ class Footprint < ApplicationRecord
             })
         end
 
-        # Check completed counties
-        Tile.delay.check_fully_flown_counties project
+        # Check completed counties for nri and sl if affected
+        if nri
+            Tile.delay.check_fully_flown_counties "NRI"
+        end
+
+        if sl
+            Tile.delay.check_fully_flown_counties "SL"
+        end
     end
 
     # def self.update_doqqs upload, history

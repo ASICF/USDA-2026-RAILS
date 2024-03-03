@@ -1,4 +1,4 @@
-# ActiveRecord::Base.connection.execute("TRUNCATE users RESTART IDENTITY")
+ActiveRecord::Base.connection.execute("TRUNCATE users RESTART IDENTITY")
 # ActiveRecord::Base.connection.execute("TRUNCATE companies RESTART IDENTITY")
 # ActiveRecord::Base.connection.execute("TRUNCATE planes RESTART IDENTITY")
 # ActiveRecord::Base.connection.execute("TRUNCATE cameras RESTART IDENTITY")
@@ -17,19 +17,19 @@
 # ActiveRecord::Base.connection.execute("TRUNCATE contract_awards RESTART IDENTITY")
 # ActiveRecord::Base.connection.execute("TRUNCATE contract_rates RESTART IDENTITY")
 
-# if Rails.env.development?
-#     # Create user
-#     admin = User.create(
-#         email: Rails.application.secrets.admin[:email], 
-#         first_name: Rails.application.secrets.admin[:first_name], 
-#         last_name: Rails.application.secrets.admin[:last_name], 
-#         title: Rails.application.secrets.admin[:title], 
-#         approved: true,
-#         role: "Admin",
-#         password: Rails.application.secrets.admin[:password],
-#         password_confirmation: Rails.application.secrets.admin[:password]
-#     )
-# end
+if Rails.env.development?
+    # Create user
+    admin = User.create(
+        email: Rails.application.secrets.admin[:email], 
+        first_name: Rails.application.secrets.admin[:first_name], 
+        last_name: Rails.application.secrets.admin[:last_name], 
+        title: Rails.application.secrets.admin[:title], 
+        approved: true,
+        role: "Admin",
+        password: Rails.application.secrets.admin[:password],
+        password_confirmation: Rails.application.secrets.admin[:password]
+    )
+end
 
 # # Create some companies
 # # ASI
@@ -713,61 +713,61 @@
 # end
 
 
-# ArrowHawk - AHK
-company = Company.find(7)
-ContractRate.find_by(company: company, state: State.find_by(abv: "NJ"), phase: "100").update(sub_cost: 0.85)
-ContractRate.find_by(company: company, state: State.find_by(abv: "NY"), phase: "100").update(sub_cost: 0.85)
-ContractRate.find_by(company: company, state: State.find_by(abv: "PA"), phase: "100").update(sub_cost: 0.85)
-ContractRate.find_by(company: company, state: State.find_by(abv: "VT"), phase: "100").update(sub_cost: 0.70)
-ContractRate.find_by(company: company, state: State.find_by(abv: "NH"), phase: "100").update(sub_cost: 0.70)
-ContractRate.find_by(company: company, state: State.find_by(abv: "CT"), phase: "100").update(sub_cost: 0.81)
-ContractRate.find_by(company: company, state: State.find_by(abv: "ME"), phase: "100").update(sub_cost: 0.94)
-ContractRate.find_by(company: company, state: State.find_by(abv: "MA"), phase: "100").update(sub_cost: 0.81)
+# # ArrowHawk - AHK
+# company = Company.find(7)
+# ContractRate.find_by(company: company, state: State.find_by(abv: "NJ"), phase: "100").update(sub_cost: 0.85)
+# ContractRate.find_by(company: company, state: State.find_by(abv: "NY"), phase: "100").update(sub_cost: 0.85)
+# ContractRate.find_by(company: company, state: State.find_by(abv: "PA"), phase: "100").update(sub_cost: 0.85)
+# ContractRate.find_by(company: company, state: State.find_by(abv: "VT"), phase: "100").update(sub_cost: 0.70)
+# ContractRate.find_by(company: company, state: State.find_by(abv: "NH"), phase: "100").update(sub_cost: 0.70)
+# ContractRate.find_by(company: company, state: State.find_by(abv: "CT"), phase: "100").update(sub_cost: 0.81)
+# ContractRate.find_by(company: company, state: State.find_by(abv: "ME"), phase: "100").update(sub_cost: 0.94)
+# ContractRate.find_by(company: company, state: State.find_by(abv: "MA"), phase: "100").update(sub_cost: 0.81)
 
-# AeroData - AER
-company = Company.find(2)
-ContractRate.find_by(company: company, state: State.find_by(abv: "MI")).update(sub_cost: 0.85)
+# # AeroData - AER
+# company = Company.find(2)
+# ContractRate.find_by(company: company, state: State.find_by(abv: "MI")).update(sub_cost: 0.85)
 
-# GRW
-company = Company.find(4)
-ContractRate.find_by(company: company, state: State.find_by(abv: "DE"), phase: "100").update(sub_cost: 0.85)
-ContractRate.find_by(company: company, state: State.find_by(abv: "MD"), phase: "100").update(sub_cost: 0.85)
-ContractRate.find_by(company: company, state: State.find_by(abv: "NC"), phase: "100").update(sub_cost: 0.85)
-ContractRate.find_by(company: company, state: State.find_by(abv: "VA"), phase: "100").update(sub_cost: 0.85)
-ContractRate.find_by(company: company, state: State.find_by(abv: "WV"), phase: "100").update(sub_cost: 0.85)
+# # GRW
+# company = Company.find(4)
+# ContractRate.find_by(company: company, state: State.find_by(abv: "DE"), phase: "100").update(sub_cost: 0.85)
+# ContractRate.find_by(company: company, state: State.find_by(abv: "MD"), phase: "100").update(sub_cost: 0.85)
+# ContractRate.find_by(company: company, state: State.find_by(abv: "NC"), phase: "100").update(sub_cost: 0.85)
+# ContractRate.find_by(company: company, state: State.find_by(abv: "VA"), phase: "100").update(sub_cost: 0.85)
+# ContractRate.find_by(company: company, state: State.find_by(abv: "WV"), phase: "100").update(sub_cost: 0.85)
 
-# Midwest Aerial
-company = Company.find(3)
-ContractRate.find_by(company: company, state: State.find_by(abv: "OH"), phase: "100").update(sub_cost: 0.70)
+# # Midwest Aerial
+# company = Company.find(3)
+# ContractRate.find_by(company: company, state: State.find_by(abv: "OH"), phase: "100").update(sub_cost: 0.70)
 
-# Williams Aerial
-company = Company.find(6)
-ContractRate.find_by(company: company, state: State.find_by(abv: "NC"), phase: "100").update(sub_cost: 0.70)
-ContractRate.find_by(company: company, state: State.find_by(abv: "VA"), phase: "100").update(sub_cost: 0.70)
-ContractRate.find_by(company: company, state: State.find_by(abv: "WV"), phase: "100").update(sub_cost: 0.70)
+# # Williams Aerial
+# company = Company.find(6)
+# ContractRate.find_by(company: company, state: State.find_by(abv: "NC"), phase: "100").update(sub_cost: 0.70)
+# ContractRate.find_by(company: company, state: State.find_by(abv: "VA"), phase: "100").update(sub_cost: 0.70)
+# ContractRate.find_by(company: company, state: State.find_by(abv: "WV"), phase: "100").update(sub_cost: 0.70)
 
 
-# iterate all non asi tiles and redo the contract rate
-Tile.where(flown_by_id: Company.where.not(id: 1).pluck(:id)).each do |tile|
-    tile.set_contract_rate
-end
+# # iterate all non asi tiles and redo the contract rate
+# Tile.where(flown_by_id: Company.where.not(id: 1).pluck(:id)).each do |tile|
+#     tile.set_contract_rate
+# end
 
-RejectedTile.all.each do |rt|
+# RejectedTile.all.each do |rt|
 
-    flight_amount = rt.flight_rate.cost.to_d * rt.easements_acres
-    production_amount = rt.production_rate.cost.to_d * rt.easements_acres
+#     flight_amount = rt.flight_rate.cost.to_d * rt.easements_acres
+#     production_amount = rt.production_rate.cost.to_d * rt.easements_acres
 
-    sub_flight_amount = rt.flight_rate.sub_cost.to_d * rt.easements_acres
-    sub_production_amount = rt.production_rate.sub_cost.to_d * rt.easements_acres
+#     sub_flight_amount = rt.flight_rate.sub_cost.to_d * rt.easements_acres
+#     sub_production_amount = rt.production_rate.sub_cost.to_d * rt.easements_acres
 
-    rt.update(
-        flight_amount: flight_amount,
-        production_amount: production_amount,
-        total_amount: flight_amount + production_amount,
-        sub_flight_cost: sub_flight_amount,
-        sub_production_cost: sub_production_amount,
-        sub_total_cost: sub_flight_amount + sub_production_amount,
-    )
-end
+#     rt.update(
+#         flight_amount: flight_amount,
+#         production_amount: production_amount,
+#         total_amount: flight_amount + production_amount,
+#         sub_flight_cost: sub_flight_amount,
+#         sub_production_cost: sub_production_amount,
+#         sub_total_cost: sub_flight_amount + sub_production_amount,
+#     )
+# end
 
 p "Done"

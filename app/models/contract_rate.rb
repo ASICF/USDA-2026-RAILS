@@ -7,6 +7,9 @@ class ContractRate < ApplicationRecord
     has_many :rejected_tiles
 
     # Scopes
+    scope :sl,  -> { where(project: "SL") }
+    scope :nri, -> { where(project: "NRI") }
+    scope :naip, -> { where(project: "NAIP") }
     scope :flight,      -> { where(phase: "100") }
     scope :production,  -> { where(phase: "300") }
 

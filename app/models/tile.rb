@@ -393,7 +393,7 @@ class Tile < ApplicationRecord
         # Creates Tile with Easement Association
 
         # Get all easements that do not have a tile
-        easements = Easement.left_outer_joins(:tiles).where( tiles: { id: nil } ).order(:id)
+        easements = Easement.left_outer_joins(:tiles).where( project: project, tiles: { id: nil } ).order(:id)
 
         count = 0
         ids = []

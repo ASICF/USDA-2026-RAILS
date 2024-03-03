@@ -27,13 +27,22 @@ class GraphApiController < ApplicationController
         # Query all history records since 30 days ago
         sql = "SELECT created_at::date as date, COUNT(*) FROM histories as count GROUP BY created_at::date ORDER BY created_at::date ASC"
         result = ActiveRecord::Base.connection.execute(sql)
+
         # iterate and format the calendar data
         calendar_values = {}
         result.each do |record|
             calendar_values[record["date"]] = record["count"]
         end
+
+        last = History.select(:created_at).order(:created_at).last
+        end_time = nil
+
+        if last.present?
+        end_time = last.created_at.strftime("%F")
+        end
+
         render json: {
-            until: History.select(:created_at).order(:created_at).last.created_at.strftime("%F"),
+            until: end_time,
             values: calendar_values
         }
     end

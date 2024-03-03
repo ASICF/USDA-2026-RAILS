@@ -16,15 +16,21 @@ class PagesController < ApplicationController
         time_offset: distance_of_time_in_words(Time.new, record.created_at)
       }
     end
-    # build the date range for the Production Status Chart
-    start_date = Tile.flown.order(:flight_date).first.flight_date
-    if Tile.shipped.count > 0
-      end_date = Tile.shipped.order(:ship_date).last.ship_date
+
+    if Tile.count > 0
+      # build the date range for the Production Status Chart
+      start_date = Tile.flown.order(:flight_date).first.flight_date
+      if Tile.shipped.count > 0
+        end_date = Tile.shipped.order(:ship_date).last.ship_date
+      else
+        end_date = Tile.flown.order(:flight_date).last.flight_date
+      end
+      @month_range = get_months_between_dates(start_date, end_date)
+      @states = State.select(:id, :name).active_sl.order(:name)
     else
-      end_date = Tile.flown.order(:flight_date).last.flight_date
+      @month_range = []
+      @states = []
     end
-    @month_range = get_months_between_dates(start_date, end_date)
-    @states = State.select(:id, :name).active_sl.order(:name)
   end
 
 

@@ -27,10 +27,6 @@ function Heatmap() {
     });
   }, []);
 
-  // if (!records) {
-  //   return <div>Loading...</div>;
-  // }
-
   // panel color configuration
   const panelColors = [
     "#e2e0e0",

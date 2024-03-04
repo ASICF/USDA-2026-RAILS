@@ -62,7 +62,8 @@ class Footprint < ApplicationRecord
             begin
 
                 # Verify the project is valid
-                if (!Rails.application.secrets.active_projects.include? params[:project])
+                # if (!Rails.application.secrets.active_projects.include? params[:project])
+                if (!["NRI/SL"].include? params[:project])
                     raise Exception, "Invalid Project (#{params[:project]}), must be #{Rails.application.secrets.active_projects.join(", ")}"
                 end
 
@@ -788,13 +789,13 @@ class Footprint < ApplicationRecord
                         # if the tile is NRI then set the footprint nri boolean to true
                         if tile.project == "NRI"
                             nri = true
-                            obj.nri = true
+                            obj[:nri] = true
                         end
 
                         # if the tile is SL then set the footprint sl boolean to true
                         if tile.project == "SL"
                             sl = true
-                            obj.sl = true
+                            obj[:sl] = true
                         end
 
                         # update the footprint

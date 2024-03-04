@@ -447,6 +447,10 @@ class Tile < ApplicationRecord
 
         end
 
+        # Calculate Tile Flight times
+        # => run as delayed job
+        Task.delay.update_flight_times
+
     end
 
     def self.set_dump_date params

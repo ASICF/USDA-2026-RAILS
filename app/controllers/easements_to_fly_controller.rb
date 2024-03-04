@@ -4,7 +4,8 @@ class EasementsToFlyController < ApplicationController
     def index
         @states = State.includes(:easements).active
 
-        @remaining_sl = Easement.remaining_to_fly if Rails.application.secrets.active_projects.include? "SL"
+        @remaining_sl = Easement.remaining_to_fly("SL") if Rails.application.secrets.active_projects.include? "SL"
+        @remaining_nri = Easement.remaining_to_fly("NRI") if Rails.application.secrets.active_projects.include? "NRI"
         @remaining_naip = Doqq.remaining_to_fly if Rails.application.secrets.active_projects.include? "NAIP"
 
         # Create History Record
@@ -30,7 +31,7 @@ class EasementsToFlyController < ApplicationController
         else
             params[:user] = @current_user
 
-            if params[:project] == "SL"
+            if params[:project] == "SL" || params[:project] == "NRI"
                 response = Easement.generate_shapefile(params)
             else
                 response = Doqq.generate_shapefile(params)

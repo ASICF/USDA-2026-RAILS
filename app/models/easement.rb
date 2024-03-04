@@ -37,13 +37,24 @@ class Easement < ApplicationRecord
         self.flight_date ? true : false
     end
 
-    def self.remaining_to_fly
+    def self.remaining_to_fly project
 
         result = []
 
-        State.active_sl.includes(:easements).each do |state|
+        if project == "SL"
+            states = State.active_sl.includes(:easements)
+        elsif project = "NRI"
+            states = State.active_nri.includes(:easements)
+        end
 
-            easements = state.easements
+        states.each do |state|
+
+            if project == "SL"
+                easements = state.easements.sl
+            elsif project = "NRI"
+                easements = state.easements.nri
+            end
+    
             total = easements.count
             flown = easements.flown.count
             not_flown = easements.not_flown.count
@@ -548,6 +559,8 @@ class Easement < ApplicationRecord
         # set the path variable in case of failure
         path = nil
 
+        project = params[:project]
+
         begin
 
             # Get the folder name by converting the current time to seconds
@@ -572,12 +585,18 @@ class Easement < ApplicationRecord
             State.where(id: params[:states]).each do |state|
 
                 # Set the file name
-                file_name = "#{state.abv}_easements_left_to_fly_#{time_string}"
+                file_name = "#{state.abv}_easements_left_to_fly_#{project}_#{time_string}"
 
                 features = Array.new
 
+                if project == "SL"
+                    easements = state.easements.sl.not_flown.includes(:tiles, :time_zone)
+                elsif project == "NRI"
+                    easements = state.easements.nri.not_flown.includes(:tiles, :time_zone)
+                end
+
                 # Get all the unflown easements within the state
-                state.easements.includes(:tiles, :time_zone).not_flown.each do |record|
+                easements.each do |record|
 
                     obj = {
                         EasementNo: record.poly_id,
@@ -614,7 +633,7 @@ class Easement < ApplicationRecord
             end
 
             # Zip the files
-            Zip::File.open("#{path}/zipped/easements_left_to_fly_#{time_string}.zip", Zip::File::CREATE) do |zipfile|
+            Zip::File.open("#{path}/zipped/#{project}_easements_to_fly_#{time_string}.zip", Zip::File::CREATE) do |zipfile|
                 shapefiles.each do |shapefile|
                     [".shp", ".shx", ".dbf", ".prj"].each do |ext|
                         zipfile.add("#{shapefile}#{ext}", File.join("#{path}/shapefile/", "#{shapefile}#{ext}"))
@@ -627,9 +646,9 @@ class Easement < ApplicationRecord
 
             # Create a new History record
             history = History.new
-            history.message = "Generated Shapefile of Easements remaining to fly"
+            history.message = "Generated Shapefile of #{project} Easements to Fly"
             history.action_type = "Exported Easements to Fly Shapefile"
-            history.url = "#{path}/zipped/easements_left_to_fly_#{time_string}.zip"
+            history.url = "#{path}/zipped/#{project}_easements_to_fly_#{time_string}.zip"
             history.creator = params[:user]
             history.save
 

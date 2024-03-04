@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Card, Grid, Statistic, Transition } from "semantic-ui-react";
-function SlStatistics({
+function Statistics({
+  project,
   states,
   counties,
   tile_count,
@@ -20,7 +21,7 @@ function SlStatistics({
     <Transition visible={visible} animation="fade down" duration={1000}>
       <Card fluid>
         <Card.Content className="sl">
-          <Card.Header>SL Statistics</Card.Header>
+          <Card.Header>{project} Statistics</Card.Header>
         </Card.Content>
         <Card.Content className="sl">
           <Grid>
@@ -77,4 +78,4 @@ function SlStatistics({
   );
 }
 
-export default SlStatistics;
+export default Statistics;

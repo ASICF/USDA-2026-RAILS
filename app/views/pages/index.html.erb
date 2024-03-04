@@ -4,11 +4,10 @@
    state_count: State.active_sl.count,
    currentUser: @current_user,
    monthRange: @month_range,
-   counties: Tile.pluck(:county_id).uniq.count,
-   tile_count: number_with_delimiter(Tile.count),
-   tile_flown: number_with_delimiter(Tile.flown.count),
-   flown: ((Tile.flown.count.to_f / Tile.count.to_f).to_f * 100).round(1),
-   tile_shipped: number_with_delimiter(Tile.shipped.count),
-   shipped: ((Tile.shipped.count.to_f / Tile.count.to_f).to_f * 100).round(1),
+
+   # Statistics
+   sl: @sl,
+   nri: @nri,
+
    recentActivities: @recent_activities
 }) %>

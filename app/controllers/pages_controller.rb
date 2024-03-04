@@ -1,6 +1,7 @@
 class PagesController < ApplicationController
   include GraphApiHelper
   include ActionView::Helpers::DateHelper
+  include ActiveSupport::NumberHelper
   # before_action :authenticate_user!
   # authorize_resource class: false
   skip_before_action :authenticate_user!, only: [:tracker]
@@ -17,7 +18,7 @@ class PagesController < ApplicationController
       }
     end
 
-    if Tile.count > 0
+    if Tile.flown.count > 0
       # build the date range for the Production Status Chart
       start_date = Tile.flown.order(:flight_date).first.flight_date
       if Tile.shipped.count > 0
@@ -31,6 +32,37 @@ class PagesController < ApplicationController
       @month_range = []
       @states = []
     end
+
+    # SL
+    if Rails.application.secrets.active_projects.include? "SL"
+      @sl = {
+        states: State.active_sl.count,
+        counties: Tile.sl.pluck(:county_id).uniq.count,
+        tile_count: number_to_delimited(Tile.sl.count),
+        tile_flown: number_to_delimited(Tile.sl.flown.count),
+        flown: ((Tile.sl.flown.count.to_f / Tile.sl.count.to_f).to_f * 100).round(1),
+        tile_shipped: number_to_delimited(Tile.sl.shipped.count),
+        shipped: ((Tile.sl.shipped.count.to_f / Tile.sl.count.to_f).to_f * 100).round(1),
+      }
+    else
+      @sl = nil
+    end
+
+    # NRI
+    if Rails.application.secrets.active_projects.include? "NRI"
+      @nri = {
+        states: State.active_nri.count,
+        counties: Tile.nri.pluck(:county_id).uniq.count,
+        tile_count: number_to_delimited(Tile.nri.count),
+        tile_flown: number_to_delimited(Tile.nri.flown.count),
+        flown: ((Tile.nri.flown.count.to_f / Tile.nri.count.to_f).to_f * 100).round(1),
+        tile_shipped: number_to_delimited(Tile.nri.shipped.count),
+        shipped: ((Tile.nri.shipped.count.to_f / Tile.nri.count.to_f).to_f * 100).round(1),
+      }
+    else
+      @nri = nil
+    end
+
   end
 
 

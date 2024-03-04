@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Divider, Grid, Message, Transition } from "semantic-ui-react";
 import Greeting from "./Graphs/Greet";
 import StatusChart from "./Graphs/StatusChart";
-import SlStatistics from "./Graphs/SlStatistics";
+import Statistics from "./Graphs/Statistics";
 import Heatmap from "./Graphs/Heatmap";
 import Activity from "./Graphs/RecentActivity";
 import AtAGlance from "./Graphs/Widgets/AtAGlance";
@@ -12,13 +12,8 @@ const Dashboard = ({
   currentUser,
   monthRange,
   states,
-  state_count,
-  counties,
-  tile_count,
-  tile_flown,
-  flown,
-  tile_shipped,
-  shipped,
+  sl,
+  nri,
   recentActivities,
 }) => {
   const [visible, setVisible] = useState(false);
@@ -28,18 +23,14 @@ const Dashboard = ({
     setVisible(true);
   }, []);
 
-  // console.log("DASHBOARD", {
-  //   currentUser,
-  //   monthRange,
-  //   states,
-  //   counties,
-  //   tile_count,
-  //   tile_flown,
-  //   flown,
-  //   tile_shipped,
-  //   shipped,
-  //   recentActivities,
-  // });
+  console.log("DASHBOARD", {
+    currentUser,
+    monthRange,
+    states,
+    sl,
+    nri,
+    recentActivities,
+  });
 
   // currentUser isnt signed in
   if (!currentUser) {
@@ -83,15 +74,30 @@ const Dashboard = ({
           style={{ paddingBottom: "0" }}
         >
           <Grid.Column mobile={16} tablet={16} computer={16}>
-            <SlStatistics
-              states={state_count}
-              counties={counties}
-              tile_count={tile_count}
-              tile_flown={tile_flown}
-              flown={flown}
-              tile_shipped={tile_shipped}
-              shipped={shipped}
-            />
+            {sl && (
+              <Statistics
+                project={"SL"}
+                states={sl.states}
+                counties={sl.counties}
+                tile_count={sl.tile_count}
+                tile_flown={sl.tile_flown}
+                flown={sl.flown}
+                tile_shipped={sl.tile_shipped}
+                shipped={sl.shipped}
+              />
+            )}
+            {nri && (
+              <Statistics
+                project={"NRI"}
+                states={nri.states}
+                counties={nri.counties}
+                tile_count={nri.tile_count}
+                tile_flown={nri.tile_flown}
+                flown={nri.flown}
+                tile_shipped={nri.tile_shipped}
+                shipped={nri.shipped}
+              />
+            )}
             <Divider style={{ marginBottom: "0" }} />
           </Grid.Column>
         </Grid.Row>

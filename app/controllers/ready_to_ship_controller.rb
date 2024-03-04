@@ -40,7 +40,13 @@ class ReadyToShipController < ApplicationController
       # Query out the Tiles by county and proritize them based on the due date
       counties.includes(:tiles).where(id: Tile.where(project: params[:project]).county_flown.not_shipped.pluck(:county_id).uniq).each do |county|
 
-        first = county.tiles.county_flown.not_shipped.first
+        if params[:project] == "SL"
+          tiles = county.tiles.sl
+        elsif params[:project] == "NRI"
+          tiles = county.tiles.nri
+        end
+
+        first = tiles.county_flown.not_shipped.first
 
         # check if overdue
         overdue = current_date >= first.county_due_date
@@ -72,11 +78,11 @@ class ReadyToShipController < ApplicationController
           due_date_formatted: first.county_due_date.strftime("%m/%d/%Y"),
           days_til_due: days_til_due,
           priority: priority,
-          num_tiles: county.tiles.county_flown.not_shipped.count,
-          at_done: county.tiles.at_started.count,
-          ortho_processed: county.tiles.ortho_processed.count,
-          dumped: county.tiles.dumped.count,
-          total_tiles: county.tiles.count
+          num_tiles: tiles.county_flown.not_shipped.count,
+          at_done: tiles.at_started.count,
+          ortho_processed: tiles.ortho_processed.count,
+          dumped: tiles.dumped.count,
+          total_tiles: tiles.count
         }
 
       end

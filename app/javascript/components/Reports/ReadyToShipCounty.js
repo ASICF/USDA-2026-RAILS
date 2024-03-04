@@ -13,7 +13,9 @@ function ReadyToShipCounty({ meta, tiles, message }) {
         <Breadcrumbs>
           <Breadcrumb.Section>Reports</Breadcrumb.Section>
           <Breadcrumb.Divider />
-          <Breadcrumb.Section link href="/ready_to_ship">Ready to Ship</Breadcrumb.Section>
+          <Breadcrumb.Section link href="/ready_to_ship">
+            Ready to Ship
+          </Breadcrumb.Section>
           {meta && meta.state_name && (
             <Fragment>
               <Breadcrumb.Divider />
@@ -46,7 +48,9 @@ function ReadyToShipCounty({ meta, tiles, message }) {
       <Breadcrumbs>
         <Breadcrumb.Section>Reports</Breadcrumb.Section>
         <Breadcrumb.Divider />
-          <Breadcrumb.Section link href="/ready_to_ship">Ready to Ship</Breadcrumb.Section>
+        <Breadcrumb.Section link href="/ready_to_ship">
+          Ready to Ship
+        </Breadcrumb.Section>
         <Breadcrumb.Divider />
         <Breadcrumb.Section>{meta.state_name}</Breadcrumb.Section>
         <Breadcrumb.Divider />
@@ -65,6 +69,14 @@ function ReadyToShipCounty({ meta, tiles, message }) {
               }
             >
               Easement #
+            </Table.HeaderCell>
+            <Table.HeaderCell
+              sorted={column === "easement_no" ? direction : null}
+              onClick={() =>
+                dispatch({ type: "CHANGE_SORT", column: "project" })
+              }
+            >
+              Project
             </Table.HeaderCell>
             <Table.HeaderCell
               sorted={column === "flight_date" ? direction : null}
@@ -155,6 +167,7 @@ function ReadyToShipCounty({ meta, tiles, message }) {
             return (
               <Table.Row key={record.id}>
                 <Table.Cell>{record.easement_no}</Table.Cell>
+                <Table.Cell>{record.project}</Table.Cell>
                 <Table.Cell>{record.flight_date_formatted}</Table.Cell>
                 <Table.Cell>{record.at_done_date_formatted}</Table.Cell>
                 <Table.Cell>{record.ortho_proc_formatted}</Table.Cell>

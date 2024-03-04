@@ -24,18 +24,17 @@ import MessageBox from "../Shared/MessageBox";
 import moment from "moment";
 import axios from "axios";
 
-const output = "P:\\Vol_2\\_236567_SL\\03_FrameBase\\_Split_EOs";
-
 export default function FrameCenterImport({
   companies,
   cameras,
   states,
   projects,
+  split_path,
   token,
 }) {
   const [message, setMessage] = useState(null);
   const [accordionState, setAccordionState] = useState(false);
-  const [project, setProject] = useState("SL");
+  const [project, setProject] = useState("NRI/SL");
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   // const fileRef = useRef()
@@ -59,10 +58,6 @@ export default function FrameCenterImport({
     // errors,
   });
 
-  useEffect(() => {
-    setValue("output_path", "P:\\Vol_2\\_236567_SL\\03_FrameBase\\_Split_EOs");
-  }, []);
-
   const handleChange = (e, { name, value }) => {
     if (name === "project") setProject(value);
     setValue(name, value);
@@ -70,12 +65,11 @@ export default function FrameCenterImport({
 
   const resetForm = () => {
     reset({
-      project: "SL",
+      project: "NRI/SL",
       flown_by_id: 1,
       camera_id: 4,
       flight_date: "",
       file: "",
-      output_path: output,
     });
   };
 
@@ -95,8 +89,6 @@ export default function FrameCenterImport({
     );
     if (project === "NAIP")
       form.append("frame_centers[state_id]", data.state_id);
-    // form.append("frame_centers[output_path]", data.output_path);
-    form.append("frame_centers[output_path]", output);
     form.append("frame_centers[file]", data.file[0]);
 
     setMessage({
@@ -442,29 +434,8 @@ export default function FrameCenterImport({
 
           <Form.Field>
             <label>EO Frame Centers (.txt)</label>
-            <p style={{ margin: "1em" }}>{output}</p>
+            <p style={{ margin: "1em" }}>{split_path}</p>
           </Form.Field>
-
-          {/* <Controller
-            name={"output_path"}
-            control={control}
-            rules={{ required: "Required" }}
-            // defaultValue={"P:\\Vol_2\\_236567_SL\\03_FrameBase\\_Split_EOs"}
-            render={({ field: { name, onBlur, onChange, value } }) => (
-              <Form.Input
-                fluid
-                disabled
-                label="Output EO Path (P Drive)"
-                autoComplete="off"
-                name={name}
-                required={true}
-                onBlur={onBlur}
-                onChange={onChange}
-                value={value || ""}
-                error={errors["output_path"] && errors["output_path"].message}
-              />
-            )}
-          /> */}
         </Form.Group>
 
         <Divider />

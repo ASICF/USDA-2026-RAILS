@@ -25,6 +25,9 @@ class CreateFrameCenters < ActiveRecord::Migration[5.1]
       t.string :state_name
       t.string :state_abv
       t.string :utm_zone
+      t.boolean :nri, default: false, null: false
+      t.boolean :sl, default: false, null: false
+      t.boolean :naip, default: false, null: false
       t.decimal :latitude, precision: 11, scale: 8
       t.decimal :longitude, precision: 11, scale: 8
       t.boolean :build_geom, null: false, default: false

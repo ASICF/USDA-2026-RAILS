@@ -27,6 +27,9 @@ class CreateRejectedFrameCenters < ActiveRecord::Migration[5.2]
       t.string :state_name
       t.string :state_abv
       t.string :utm_zone
+      t.boolean :nri, default: false, null: false
+      t.boolean :sl, default: false, null: false
+      t.boolean :naip, default: false, null: false
       t.decimal :latitude, precision: 10, scale: 6
       t.decimal :longitude, precision: 10, scale: 6
       t.boolean :build_geom, null: false, default: false

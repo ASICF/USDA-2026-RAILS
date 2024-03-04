@@ -102,6 +102,7 @@ export default function UnrejectTile(props) {
           <Table.Header>
             <Table.Row>
               <Table.HeaderCell>Poly ID</Table.HeaderCell>
+              <Table.HeaderCell>Project</Table.HeaderCell>
               <Table.HeaderCell>Flight Date</Table.HeaderCell>
               <Table.HeaderCell>Rejected Date</Table.HeaderCell>
               <Table.HeaderCell>Rejection Reason</Table.HeaderCell>
@@ -118,6 +119,9 @@ export default function UnrejectTile(props) {
                 >
                   <Table.Cell>
                     <RenderValue value={record.poly_id} />
+                  </Table.Cell>
+                  <Table.Cell>
+                    <RenderValue value={record.project} />
                   </Table.Cell>
                   <Table.Cell>
                     <RenderValue date={record.flight_date} />

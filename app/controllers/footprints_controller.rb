@@ -6,7 +6,7 @@ class FootprintsController < ApplicationController
         @cameras = Camera.all.order(:name).map { |c| {id: c.id, label: "#{c.company.alias} | #{c.name} | #{c.serial_number}", company_id: c.company_id, naip: c.naip, sl: c.sl} }
         @planes = Plane.all.order(:name).map { |c| {id: c.id, label: "#{c.company.alias} | #{c.name}", company_id: c.company_id, naip: c.naip, sl: c.sl} }
         @states = State.active_naip.order(:name).map { |state| {id: state.id, name: state.name } }
-        @projects = ["NRI/SL", "NAIP"]
+        @projects = ["NRI/SL"]
     end
 
     def upload

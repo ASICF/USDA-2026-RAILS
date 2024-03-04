@@ -388,6 +388,9 @@ ActiveRecord::Schema.define(version: 2023_10_11_144023) do
     t.string "state_name"
     t.string "state_abv"
     t.string "utm_zone"
+    t.boolean "nri", default: false, null: false
+    t.boolean "sl", default: false, null: false
+    t.boolean "naip", default: false, null: false
     t.decimal "latitude", precision: 11, scale: 8
     t.decimal "longitude", precision: 11, scale: 8
     t.boolean "build_geom", default: false, null: false
@@ -534,6 +537,9 @@ ActiveRecord::Schema.define(version: 2023_10_11_144023) do
     t.string "county_name"
     t.string "state_name"
     t.string "utm_zone"
+    t.boolean "nri", default: false, null: false
+    t.boolean "sl", default: false, null: false
+    t.boolean "naip", default: false, null: false
     t.date "flight_date"
     t.datetime "flight_date_time"
     t.decimal "gpstime"
@@ -618,6 +624,9 @@ ActiveRecord::Schema.define(version: 2023_10_11_144023) do
     t.string "state_name"
     t.string "state_abv"
     t.string "utm_zone"
+    t.boolean "nri", default: false, null: false
+    t.boolean "sl", default: false, null: false
+    t.boolean "naip", default: false, null: false
     t.boolean "associated", default: false, null: false
     t.decimal "centroid_latitude", precision: 11, scale: 8
     t.decimal "centroid_longitude", precision: 11, scale: 8
@@ -677,6 +686,9 @@ ActiveRecord::Schema.define(version: 2023_10_11_144023) do
     t.string "state_name"
     t.string "state_abv"
     t.string "utm_zone"
+    t.boolean "nri", default: false, null: false
+    t.boolean "sl", default: false, null: false
+    t.boolean "naip", default: false, null: false
     t.decimal "latitude", precision: 10, scale: 6
     t.decimal "longitude", precision: 10, scale: 6
     t.boolean "build_geom", default: false, null: false

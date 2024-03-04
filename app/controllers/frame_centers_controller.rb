@@ -5,12 +5,13 @@ class FrameCentersController < ApplicationController
         @companies = Company.all.select(:id, :name, :alias).order(:name)
         @cameras = Camera.all.order(:name).map { |c| {id: c.id, label: "#{c.company.alias} | #{c.name} | #{c.serial_number}", company_id: c.company_id} }
         @states = State.active_naip.order(:name).map { |state| {id: state.id, name: state.name } }
-        @projects = Rails.application.secrets.active_projects
+        @projects = ["NRI/SL"]
+        @split_path = Rails.application.secrets.eo_splitter_p_path
     end
 
     def upload
-        p params
-        p frame_center_params
+        # p params
+        # p frame_center_params
 
         if frame_center_params[:project].blank? || frame_center_params[:file].blank? || frame_center_params[:flight_date].blank? || frame_center_params[:flown_by_id].blank? || frame_center_params[:camera_id].blank?
             # redirect_to new_frame_centers_path, error: "No Shapefile Found"

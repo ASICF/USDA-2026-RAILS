@@ -9,6 +9,7 @@ class UnrejectTileController < ApplicationController
     Tile.not_dumped.has_rejections.order(:poly_id).each do |tile|
       @rejected_tiles << {
         poly_id: tile.poly_id,
+        project: tile.project,
         num_of_rejected_tiles: tile.rejected_tiles.count
       }
     end

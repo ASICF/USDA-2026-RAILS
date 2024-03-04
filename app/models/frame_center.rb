@@ -23,8 +23,10 @@ class FrameCenter < ApplicationRecord
     scope :build_geom,  -> { where(build_geom: true) }
 
     # Scopes
-    scope :sl, -> { where(project: "SL") }
-    scope :naip, -> { where(project: "NAIP") }
+    scope :sl, -> { where(sl: true) }
+    scope :nri, -> { where(nri: true) }
+    scope :naip, -> { where(naip: true) }
+    scope :nri_sl, -> { where(sl: true, nri: true) }
     scope :rejected,        -> { where(sun_angle_error: true) }
     scope :approved,        -> { where(sun_angle_error: false) }
     scope :has_rejections,  -> {includes(:rejected_tiles).where.not(rejected_tiles: { id: nil })}
@@ -49,8 +51,10 @@ class FrameCenter < ApplicationRecord
         ActiveRecord::Base.transaction do
             begin
 
-                # Check the project
-                raise Exception, "No Project Argument found" if params[:project].blank? || (!Rails.application.secrets.active_projects.include? params[:project])
+                # Check if the project is set
+                if (!["NRI/SL"].include? params[:project])
+                    raise Exception, "Invalid Project (#{params[:project]}), must be #{Rails.application.secrets.active_projects.join(", ")}"
+                end
 
                 # Validate the filename
                 arr = params[:file].original_filename.split("_")
@@ -84,9 +88,8 @@ class FrameCenter < ApplicationRecord
                 end
 
                 # Check the output path and make sure it works there
-                output_path = Task.build params[:output_path]
-                if !Dir.exist?(output_path)
-                    raise Exception, "Output EO Path (#{output_path}) does not exist"
+                if !Dir.exist?(Rails.application.secrets.eo_splitter_path)
+                    raise Exception, "Output EO Path (#{Rails.application.secrets.eo_splitter_path}) does not exist"
                 end
 
                 # Copy the file to the server
@@ -138,7 +141,7 @@ class FrameCenter < ApplicationRecord
     end
 
     def self.import params, path, output_path, file, user
-    
+
         # create an Error array to hold any messages
         output = {
             pass: false,
@@ -148,7 +151,6 @@ class FrameCenter < ApplicationRecord
             sun_angle_failed: 0,
             easement_count: 0
         }
-
 
         job = Job.create(
             started_at: Time.now,
@@ -268,6 +270,9 @@ class FrameCenter < ApplicationRecord
                                 phi: arr[7],
                                 kappa: arr[8],
                                 upload: upload,
+                                nri: false,
+                                sl: false,
+                                naip: project == "NAIP" ? true : false,
                                 camera_name: camera.name,
                                 flown_by: company,
                                 flown_by_alias: company.alias,
@@ -348,6 +353,11 @@ class FrameCenter < ApplicationRecord
                             # There should only be 1 footprint that matches the requirement, if not then raise alarm
                             if footprint && footprint.frame_center.nil?
 
+                                # update the project state
+                                fc.sl = footprint.sl
+                                fc.nri = footprint.nri
+                                fc.naip = footprint.naip
+
                                 # if the footprint has a county then associate it to the frame center
                                 if footprint.county_id.present? || footprint.state_id.present?
                                     fc.county_name = footprint.county_name
@@ -371,7 +381,7 @@ class FrameCenter < ApplicationRecord
                                 history.footprints << footprint
 
                                 # update the associated tiles (if they don't have AT start/done yet)
-                                if project == "SL" && footprint.tiles.count > 0
+                                if project == "NRI/SL" && footprint.tiles.count > 0
                                     tiles = footprint.tiles.flown.asi_accepted.not_at_started.where(flight_date: params[:flight_date])
                                     tiles.each do |tile|
                                         # only update the tile if the associated footprints all have an EO
@@ -453,20 +463,49 @@ class FrameCenter < ApplicationRecord
                         # sun_angle_msg = ", #{upload.frame_centers.rejected.count} Frame Centers did not meet the Minimum Sun Angle and were rejected"
 
                         # Auto reject Frame Centers
-                        if project == "SL"
-                            rejection_output = FrameCenter.auto_reject_tiles Date.parse(params[:flight_date]), upload, camera, company, user
+                        if project == "NRI/SL"
 
-                            if !rejection_output[:pass]
-                                raise Exception, rejection_output[:error] ? rejection_output[:error] : "Error occurred while attmepting to auto-reject the Frame Centers. Import aborted."
+                            # Check associated fotoprints of invalid frame centers and determine if it's for NRI and/or SL
+                            footprint_ids = upload.frame_centers.rejected.pluck(:footprint_id)
+
+                            p "<><><><><><>"
+                            p "NRI Reject: #{Footprint.select(:id).where(id: footprint_ids, nri: true).size}"
+                            p "SL Reject: #{Footprint.select(:id).where(id: footprint_ids, sl: true).size}"
+                            p "<><><><><><>"
+
+                            # Check rejected footprints 
+                            if Footprint.select(:id).where(id: footprint_ids, nri: true).size > 0
+
+                                rejection_output = FrameCenter.auto_reject_tiles Date.parse(params[:flight_date]), upload, camera, company, user, "NRI"
+
+                                if !rejection_output[:pass]
+                                    raise Exception, rejection_output[:error] ? rejection_output[:error] : "Error occurred while attmepting to auto-reject the Frame Centers. Import aborted."
+                                end
+
+                                # Log and send email
+                                Mailbox.ship({
+                                    users: MailGroup.find_by(name: "Rejection").users | [user],
+                                    subject: "#{project} Tiles have been rejected",
+                                    message: "#{rejection_output[:message]}<br/><br/>The following NRI Tiles have been rejected:<br/><ul>#{rejection_output[:rejected_tiles].map {|rt| "<li><b>#{rt.poly_id}</b> - <i>(Flight Date: #{rt.flight_date.strftime("%m/%d/%Y")}, Flown By: #{rt.flown_by_alias})</i></li>"}.join("")}</ul>".html_safe
+                                })
+
+                            elsif Footprint.select(:id).where(id: footprint_ids, sl: true).size > 0
+
+                                rejection_output = FrameCenter.auto_reject_tiles Date.parse(params[:flight_date]), upload, camera, company, user, "SL"
+
+                                if !rejection_output[:pass]
+                                    raise Exception, rejection_output[:error] ? rejection_output[:error] : "Error occurred while attmepting to auto-reject the Frame Centers. Import aborted."
+                                end
+
+                                # Log and send email
+                                Mailbox.ship({
+                                    users: MailGroup.find_by(name: "Rejection").users | [user],
+                                    subject: "#{project} Tiles have been rejected",
+                                    message: "#{rejection_output[:message]}<br/><br/>The following SL Tiles have been rejected:<br/><ul>#{rejection_output[:rejected_tiles].map {|rt| "<li><b>#{rt.poly_id}</b> - <i>(Flight Date: #{rt.flight_date.strftime("%m/%d/%Y")}, Flown By: #{rt.flown_by_alias})</i></li>"}.join("")}</ul>".html_safe
+                                })
+
                             end
-
-                            # Log and send email
-                            Mailbox.ship({
-                                users: MailGroup.find_by(name: "Rejection").users | [user],
-                                subject: "#{project} Tiles have been rejected",
-                                message: "#{rejection_output[:message]}<br/><br/>The following #{project} Tiles have been rejected:<br/><ul>#{rejection_output[:rejected_tiles].map {|rt| "<li><b>#{rt.poly_id}</b> - <i>(Flight Date: #{rt.flight_date.strftime("%m/%d/%Y")}, Flown By: #{rt.flown_by_alias})</i></li>"}.join("")}</ul>".html_safe
-                            })
-                            
+                                
                         end
 
                         if project == "NAIP"
@@ -524,7 +563,7 @@ class FrameCenter < ApplicationRecord
                     message = message + sun_angle_rejection_message + rejected_footprints_message + duplicate_message + skipped_message + " for #{project} from \"#{params[:file].original_filename}\"."
 
                     # Create a new History record
-                    history.message = message + " EOs were split to #{params[:output_path]}."
+                    history.message = message + " EOs were split to #{Rails.application.secrets.eo_splitter_p_path}."
                     history.save
 
                     # add records to polymorphic association
@@ -556,14 +595,14 @@ class FrameCenter < ApplicationRecord
                         active: false,
                         success: true,
                         upload: upload,
-                        message: message + " EOs were split to #{params[:output_path]}."
+                        message: message + " EOs were split to #{Rails.application.secrets.eo_splitter_p_path}."
                     )
 
                     # Log and send email
                     Mailbox.ship({
                         users: MailGroup.find_by(name: "AT Done").users | [user],
                         subject: "#{project} Frame Centers have been imported",
-                        message: message + "<br/><br/> EOs were split to #{params[:output_path]}.",
+                        message: message + "<br/><br/> EOs were split to #{Rails.application.secrets.eo_splitter_p_path}.",
                         route: Rails.application.routes.url_helpers.show_timeline_url(history.id, only_path: false, host: Rails.application.secrets.host)  
                     })
 
@@ -628,11 +667,9 @@ class FrameCenter < ApplicationRecord
 
     end
 
-    def self.eo_splitter upload, output_path
+    def self.eo_splitter upload, output_path=Rails.application.secrets.eo_splitter_path
         # Iterate the EOs and write to folders based on the state and utm zone
         p "eo_splitter #{output_path}"
-
-        output_path = "/vol2/bernard_test/eo_splitter/" if Rails.env.development?
 
         # Iterate the uploaded Frame Centers
         # Get the Footprint and iterate the easements
@@ -781,9 +818,10 @@ class FrameCenter < ApplicationRecord
 
     end
 
-    def self.auto_reject_tiles flight_date, upload, camera, flown_by, user
+    def self.auto_reject_tiles flight_date, upload, camera, flown_by, user, project
         p "----------------"
         p "auto_reject_tiles"
+        p "project: #{project}"
         p "----------------"
 
         output = {
@@ -791,11 +829,26 @@ class FrameCenter < ApplicationRecord
             error: nil
         }
 
+        message = "Auto Rejection during Frame Center upload"
+
         # Start a Transaction Block
         ActiveRecord::Base.transaction(joinable: false, requires_new: true) do
             begin
 
-                frame_centers_to_reject = upload.frame_centers.rejected.where(project: "SL", flight_date: flight_date.all_day, camera: camera, flown_by: flown_by)
+                fc_reject_obj = {
+                    flight_date: flight_date.all_day, 
+                    camera: camera, 
+                    flown_by: flown_by
+                }
+
+                if project == "NRI"
+                    fc_reject_obj[:nri] = true
+                elsif project == "SL"
+                    fc_reject_obj[:sl] = true
+                end
+
+
+                frame_centers_to_reject = upload.frame_centers.rejected.where(fc_reject_obj)
 
                 # Get the Rejected Footprints that have associated frame centers that match flight date, state, camera, and company
                 footprints = frame_centers_to_reject.map {|fc| fc.footprint}
@@ -810,6 +863,7 @@ class FrameCenter < ApplicationRecord
                 p "upload: #{upload.id}"
                 p "frame_centers_to_reject: #{frame_centers_to_reject.pluck(:strip_frame)}"
                 p "total frame_centers: #{upload.frame_centers.count}"
+                p "footprints count: #{footprints.count}"
                 p "---------"
 
                 footprints.each do |footprint|
@@ -822,14 +876,14 @@ class FrameCenter < ApplicationRecord
                     frame_center = footprint.frame_center
 
                     # Reject the Footprint and return the new rejected_footprint
-                    rejected_footprint = RejectedFootprint.reject footprint
+                    rejected_footprint = RejectedFootprint.reject footprint, message
 
                     if !rejected_footprint
                         raise Exception, "Footprint: #{footprint.id} could not be rejected!"
                     end
 
                     # Reject the associated Frame Center
-                    rejected_frame_center = RejectedFrameCenter.reject frame_center, "Auto Rejection during Frame Center upload"
+                    rejected_frame_center = RejectedFrameCenter.reject frame_center, message
 
                     if !rejected_frame_center
                         raise Exception, "Frame Center (StripFrame: #{frame_center.strip_frame}) could not be rejected!"
@@ -841,8 +895,24 @@ class FrameCenter < ApplicationRecord
 
                 end
 
+                reject_footprint_obj = {
+                    flight_date: flight_date, 
+                    camera: camera, 
+                    flown_by: flown_by
+                }
+
+                if project == "NRI"
+                    reject_footprint_obj[:nri] = true
+                elsif project == "SL"
+                    reject_footprint_obj[:sl] = true
+                end
+
+                # p "<><><><><><><><><>"
+                # pp reject_footprint_obj
+                # p "<><><><><><><><><>"
+
                 # Find all footprint uploads in the system that matches the scoped requirements
-                footprint_ids = Footprint.exclude_geom.select(:id).where(project: "SL", flight_date: flight_date, camera: camera, flown_by: flown_by).pluck(:id).uniq
+                footprint_ids = Footprint.exclude_geom.select(:id).where(reject_footprint_obj).pluck(:id).uniq
 
                 p "==========="
                 p "footprint_ids: #{footprint_ids}"
@@ -851,16 +921,14 @@ class FrameCenter < ApplicationRecord
                 DissolvedFootprint.find_or_create_by(name: "frame_centers").update(geom: nil)
 
                 # Dissolve all the footprints 
-                sql = "UPDATE dissolved_footprints SET geom = (SELECT st_union(geom::geometry) AS the_geom 
-                    from footprints where ST_IsValid(geom::geometry)
+                sql = "UPDATE dissolved_footprints SET geom = (SELECT ST_Multi(st_union(ST_Multi(geom::geometry))) AS the_geom from footprints where ST_IsValid(geom::geometry)
                     AND footprints.id IN (#{footprint_ids.uniq.join(", ")}) ) WHERE name='frame_centers'"
-
                 ActiveRecord::Base.connection.execute(sql)
 
                 # select out easements that aren't contained within the dissolved layer
                 easements = Easement.flown.includes(:tiles).joins("INNER JOIN dissolved_footprints ON dissolved_footprints.name='frame_centers' 
                     AND not st_contains(dissolved_footprints.geom::geometry, easements.geom::geometry)").where(
-                        project: "SL", flight_date: flight_date, tiles: {camera: camera, flown_by: flown_by}
+                        project: project, flight_date: flight_date, tiles: {camera: camera, flown_by: flown_by}
                     )
 
                 p "-----------"
@@ -868,7 +936,7 @@ class FrameCenter < ApplicationRecord
                 p "-----------"
 
                 # Reject the Tiles and associated footprints/frame centers
-                output, history = Rejection.reject_tiles easements.pluck(:poly_id), flight_date, history
+                output, history = Rejection.reject_tiles easements.pluck(:poly_id), flight_date, history, false, "Rejected by Frame Center Auto-Reject Tool"
 
                 # set the message for history
                 history.message = "Auto-Rejected #{history.rejected_tiles.count} Tiles, #{history.rejected_footprints.count} Footprints, and #{history.rejected_frame_centers.count} Frame Centers"
@@ -917,7 +985,7 @@ class FrameCenter < ApplicationRecord
                 footprints.each do |footprint|
 
                     # Check the footprint is SL only
-                    if footprint.project == "SL"
+                    if footprint.project == "SL" || footprint.project == "NRI" 
                         raise Exception, "Footprint: #{footprint.id} is marked as SL, not NAIP. Cannot reject"
                     end
 

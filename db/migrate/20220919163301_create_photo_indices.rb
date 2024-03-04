@@ -10,6 +10,9 @@ class CreatePhotoIndices < ActiveRecord::Migration[5.2]
       t.string :county_name
       t.string :state_name
       t.string :utm_zone
+      t.boolean :nri, default: false, null: false
+      t.boolean :sl, default: false, null: false
+      t.boolean :naip, default: false, null: false
       t.date :flight_date, nil: false
       t.datetime :flight_date_time, nil: false
       t.decimal :gpstime

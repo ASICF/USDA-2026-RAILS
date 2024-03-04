@@ -143,7 +143,7 @@ class Rejection
     end
 
 
-    def self.reject_tiles poly_ids, flight_date, history, skip_coverage=false
+    def self.reject_tiles poly_ids, flight_date, history, skip_coverage=false, message="wtf"
 
         output = {
             count: 0
@@ -166,7 +166,7 @@ class Rejection
                     tile.easement.update(flight_date: nil)
 
                     # Reject the tiles
-                    rejected_tile = RejectedTile.reject tile, "Manual", skip_coverage
+                    rejected_tile = RejectedTile.reject tile, message, skip_coverage
 
                     if !rejected_tile
                         # raise "Tile (#{tile.poly_id}) could not be rejected!"
@@ -192,7 +192,7 @@ class Rejection
                             framecenter = footprint.frame_center
 
                             # Reject the Footprint
-                            rejected_footprint = RejectedFootprint.reject footprint, "Manual"
+                            rejected_footprint = RejectedFootprint.reject footprint, message
 
                             if !rejected_footprint
                                 # raise "Footprint could not be rejected!"
@@ -204,7 +204,7 @@ class Rejection
                             if framecenter
 
                                 # Find the rejected frame center
-                                rejected_frame_center = RejectedFrameCenter.reject framecenter, "Manual"
+                                rejected_frame_center = RejectedFrameCenter.reject framecenter, message
 
                                 # 
                                 if !rejected_frame_center

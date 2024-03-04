@@ -112,6 +112,15 @@ const UnrejectTimeline = (props) => {
                 Poly ID
               </Table.HeaderCell>
               <Table.HeaderCell
+                sorted={column === "poly_id" ? direction : null}
+                onClick={() =>
+                  dispatch({ type: "CHANGE_SORT", column: "poly_id" })
+                }
+                textAlign="center"
+              >
+                Project
+              </Table.HeaderCell>
+              <Table.HeaderCell
                 sorted={column === "num_of_rejected_tiles" ? direction : null}
                 onClick={() =>
                   dispatch({
@@ -130,7 +139,7 @@ const UnrejectTimeline = (props) => {
               return (
                 <Table.Row
                   style={{ cursor: "pointer" }}
-                  key={record.id}
+                  key={record.poly_id}
                   onClick={() => {
                     window.location.href = `/unreject_tile/${record.poly_id}`;
                   }}
@@ -138,6 +147,9 @@ const UnrejectTimeline = (props) => {
                 >
                   <Table.Cell>
                     <RenderValue value={record.poly_id} />
+                  </Table.Cell>
+                  <Table.Cell>
+                    <RenderValue value={record.project} />
                   </Table.Cell>
                   <Table.Cell>
                     <RenderValue value={record.num_of_rejected_tiles} />

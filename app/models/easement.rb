@@ -43,7 +43,7 @@ class Easement < ApplicationRecord
 
         if project == "SL"
             states = State.active_sl.includes(:easements)
-        elsif project = "NRI"
+        elsif project == "NRI"
             states = State.active_nri.includes(:easements)
         end
 
@@ -51,7 +51,7 @@ class Easement < ApplicationRecord
 
             if project == "SL"
                 easements = state.easements.sl
-            elsif project = "NRI"
+            elsif project == "NRI"
                 easements = state.easements.nri
             end
     

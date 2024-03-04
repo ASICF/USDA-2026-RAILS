@@ -33,7 +33,7 @@ export default function FootprintImport({
 }) {
   const [message, setMessage] = useState(null);
   const [accordionState, setAccordionState] = useState(false);
-  const [project, setProject] = useState("SL");
+  const [project, setProject] = useState("NRI/SL");
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -58,7 +58,7 @@ export default function FootprintImport({
   });
 
   useEffect(() => {
-    setValue("project", "SL");
+    setValue("project", "NRI/SL");
     setValue("utm", "none");
   }, []);
 
@@ -73,7 +73,7 @@ export default function FootprintImport({
 
   const resetForm = () => {
     reset({
-      project: "SL",
+      project: "NRI/SL",
       flown_by_id: 1,
       flight_date: "",
       state_id: "",
@@ -84,7 +84,7 @@ export default function FootprintImport({
       last_file: false,
       files: null,
     });
-    setProject("SL")
+    setProject("NRI/SL")
   };
 
   const onSubmit = (data) => {

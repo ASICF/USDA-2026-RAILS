@@ -23,123 +23,167 @@ class DailyProgressReport
                         flight_date: flight_date.strftime("%m/%d/%Y"),
                         accepted: [],
                         rejected: []
+                    },
+                    nri: {
+                        header: flight_date.strftime("%d-%^b-%g"),
+                        flight_date: flight_date.strftime("%m/%d/%Y"),
+                        accepted: [],
+                        rejected: []
                     }
                 }
 
-                # Build the file name by recursively checking if the file exists
-                file_name = DailyProgressReport.get_report_version flight_date, nil
-
                 # find the tiles that were recently associated by the easements with multiple coverages 
-                associated_tiles_not_reported = Tile.sl.flown.where(associate_date: flight_date.strftime("%F")).order(:poly_id)
+                nri_associated_tiles_not_reported = Tile.nri.flown.where(associate_date: flight_date.strftime("%F")).order(:poly_id)
+                sl_associated_tiles_not_reported = Tile.sl.flown.where(associate_date: flight_date.strftime("%F")).order(:poly_id)
 
-                # Get the Tiles that match the flight date, even if they have been reported
-                # => Also check the rejected tiles 
-                tiles_not_reported = Tile.sl.flown.where(flight_date: flight_date.strftime("%F")).order(:poly_id)
+                # p "-------"
+                # p "NRI: #{nri_associated_tiles_not_reported.count}"
+                # p "SL: #{sl_associated_tiles_not_reported.count}"
 
-                # # Get the rejected Tiles that have already been reported to the USDA but 
-                # rejected_tiles = RejectedTile.sl.flown.reported.where(rejected_date: flight_date.strftime("%F")).order(:poly_id)
+                # Check if the NRI or SL have tiles to be reported
+                if nri_associated_tiles_not_reported.count > 0 || sl_associated_tiles_not_reported.count > 0
 
-                # # Creates a text file and saves it to the report directory
-                File.open("#{Rails.application.secrets.report_folder}#{file_name}", "w+") do |f|
+                    # Build the file name by recursively checking if the file exists
+                    file_name = DailyProgressReport.get_report_version flight_date, nil
+
+                    # p file_name
+
+                    file_path = "#{Rails.application.secrets.report_folder}#{file_name}"
+
+                    # Create the output file
+                    out_file = File.open(file_path, "w+")
 
                     # Write out the header lines
                     # f.puts("To: #{Rails.application.secrets.daily_progress_report_to.join(", ")}")
                     # f.puts("CC: #{Rails.application.secrets.daily_progress_report_cc.join(", ")}")
                     # f.puts("")
-                    f.puts("Subject Line:")
-                    f.puts("SL #{flight_date.strftime("%d-%^b-%g")}")
-                    f.puts("")
-                    f.puts("Body:")
-                    f.puts("Date Acquired: #{flight_date.strftime("%d-%^b-%g")}")
+                    # out_file.puts("Subject Line:")
+                    # out_file.puts("#{flight_date.strftime("%d-%^b-%g")}")
+                    # out_file.puts("")
+                    # out_file.puts("Body:")
+                    # out_file.puts("")
+                    # out_file.puts("Date Acquired: #{flight_date.strftime("%d-%^b-%g")}")
+                    # out_file.close
 
-                    if (associated_tiles_not_reported.count + tiles_not_reported.count) > 0
-                        f.puts("")
-                        f.puts("Easements Acquired:")
-                        f.puts("")
+                    # Check if there are NRI tiles to report
+                    if nri_associated_tiles_not_reported.count > 0
+
+                        # Get the Tiles that match the flight date, even if they have been reported
+                        # => Also check the rejected tiles 
+                        nri_tiles_not_reported = Tile.nri.flown.where(flight_date: flight_date.strftime("%F")).order(:poly_id)
+
+                        # p "nri_associated_tiles_not_reported #{nri_associated_tiles_not_reported.count}"
+                        # p "nri_tiles_not_reported #{nri_tiles_not_reported.count}"
+
+                        # Add the header
+                        out_file = File.open(file_path, "a")
+                        out_file.puts("========= NRI =========")
+                        out_file.puts("Subject Line:")
+                        out_file.puts("#{flight_date.strftime("%d-%^b-%g")}")
+                        out_file.puts("")
+                        out_file.puts("Body:")
+                        out_file.puts("Date Acquired: #{flight_date.strftime("%d-%^b-%g")}")
+                        out_file.puts("")
+                        out_file.puts("NRI Sites Acquired:")
+                        out_file.puts("")
+                        out_file.close
+
+                        # Build the NRI Report
+                        obj[:nri][:accepted] = DailyProgressReport.build_project_report flight_date, nri_associated_tiles_not_reported, nri_tiles_not_reported, file_path
+
+                        # push the tiles to the history obj
+                        history.tiles << nri_tiles_not_reported
+
+                        out_file = File.open(file_path, "a")
+                        out_file.puts("")
+                        out_file.puts("=======================")
+                        out_file.close
+ 
                     end
 
-                    associated_tiles_not_reported.each do |tile|
-                        # Update the tile's report date if it's not set
-                        tile.update(report_date: Time.now) if tile.report_date.nil?
+                    # Check if there are SL tiles to report
+                    if sl_associated_tiles_not_reported.count > 0
 
-                        # Pass to object aray for rendering
-                        obj[:sl][:accepted] << {date: tile.flight_date.strftime("%d-%^b-%g"), poly_id: tile.poly_id}
-
-                        # Write to file
-                        f.puts(tile.poly_id)
-                    end
-
-                    # update the tiles to today's date
-                    tiles_not_reported.each do |tile|
-                        # Update the tile's report date if it's not set
-                        tile.update(report_date: Time.now) if tile.report_date.nil?
-
-                        # Pass to object aray for rendering
-                        obj[:sl][:accepted] << {date: flight_date.strftime("%d-%^b-%g"), poly_id: tile.poly_id}
-
-                        # Write to file
-                        # f.puts("#{flight_date.strftime("%d-%^b-%g")}\t#{tile.poly_id}\tA")
-                        f.puts(tile.poly_id)
-                    end
-
-                    # if rejected_tiles.count > 0
-                    #     f.puts("")
-                    #     f.puts("Easements Rejected:")
-                    #     f.puts("")
-                    # end
-
-                    # rejected_tiles.each do |rejected_tile|
-                    #     # Update the recjected tile's rejection report date if it's not set
-                    #     rejected_tile.update(rejection_report_date: Time.now) if rejected_tile.rejection_report_date.nil?
+                        # Get the Tiles that match the flight date, even if they have been reported
+                        # => Also check the rejected tiles 
+                        sl_tiles_not_reported = Tile.sl.flown.where(flight_date: flight_date.strftime("%F")).order(:poly_id)
                         
-                    #     # Pass to object aray for rendering
-                    #     obj[:sl][:rejected] << {date: rejected_tile.flight_date.strftime("%d-%^b-%g"), poly_id: rejected_tile.poly_id}
+                        # p "sl_associated_tiles_not_reported #{sl_associated_tiles_not_reported.count}"
+                        # p "sl_tiles_not_reported #{sl_tiles_not_reported.count}"
 
-                    #     # Write to file
-                    #     f.puts(rejected_tile.poly_id)
-                    # end
+                        # Add the header
+                        out_file = File.open(file_path, "a")
+                        out_file.puts("========= SL =========")
+                        out_file.puts("Subject Line:")
+                        out_file.puts("#{flight_date.strftime("%d-%^b-%g")}")
+                        out_file.puts("")
+                        out_file.puts("Body:")
+                        out_file.puts("Date Acquired: #{flight_date.strftime("%d-%^b-%g")}")
+                        out_file.puts("")
+                        out_file.puts("Easements Acquired:")
+                        out_file.puts("")
+                        out_file.close
+
+                        # Build the SL Report
+                        obj[:sl][:accepted] = DailyProgressReport.build_project_report flight_date, sl_associated_tiles_not_reported, sl_tiles_not_reported, file_path
+
+                        # push the tiles to the history obj
+                        history.tiles << nri_tiles_not_reported
+
+                        out_file = File.open(file_path, "a")
+                        out_file.puts("")
+                        out_file.puts("=======================")
+                        out_file.close
+
+                    end
+
+                    out_file.close
+
+                    # Get the folder name by converting the current time to seconds
+                    folder = Time.now.to_i
+
+                    path = "#{Rails.root}/assets/daily_progress_reports/#{folder}"
+
+                    # Create the Daily Progress Report if it doesn't exist
+                    FileUtils.mkdir_p(path) unless File.directory?(path)
+
+                    # Copy the text file to local assets
+                    FileUtils.cp("#{Rails.application.secrets.report_folder}#{file_name}", "#{path}/#{file_name}")
+
+                    # update message
+                    history.url = "#{path}/#{file_name}"
+                    history.message = "Executed Daily Progress Report for #{flight_date.strftime("%m/%d/%Y")}"
+                    history.save
+
+                    pp obj
+
+                    html = "<p>A Daily Progress report was generated by #{user.first_name} #{user.last_name} for #{flight_date.strftime("%m/%d/%Y")} with #{obj[:nri][:accepted].count} NRI Tiles and #{obj[:sl][:accepted].count} SL Tiles being marked as Approved</p>"
+                    # html += "<p>This does not indicate the email was sent to the USDA and it is #{user.first_name} #{user.last_name} responsibility to send.</p>"
+                    html += "<p>This report needs to be sent by the person above who generated the report as it contains critical one-time acceptance and rejection information to the USDA. </p>"
+                    html += "<hr />"
+
+                    html += "<p>Date Acquired: #{flight_date.strftime("%d-%^b-%g")}</p>"
+
+                    if obj[:nri][:accepted].size > 0
+                        html += "<p>NRI Sites Acquired:</p>"
+                        obj[:nri][:accepted].each {|item| html += "<pre style='margin: 0;'>#{item}</pre>"}
+                        html +="<br/>"
+                    end
+
+                    if obj[:sl][:accepted].size > 0
+                        html += "<p>Easements Acquired:</p>"
+                        obj[:sl][:accepted].each {|item| html += "<pre style='margin: 0;'>#{item}</pre>"}
+                        html +="<br/>"
+                    end
+
+                    # Log and send email
+                    Mailbox.ship({
+                        users: MailGroup.find_by(name: "Daily Progress Report").users,
+                        subject: "Daily Progress Report was generated - #{flight_date.strftime("%m/%d/%Y")}",
+                        message: html
+                    })
 
                 end
-
-                # Add associations to history obj
-                history.tiles << tiles_not_reported
-                # history.rejected_tiles << rejected_tiles_not_reported
-                # history.rejected_tiles << rejected_tiles
-
-                # Get the folder name by converting the current time to seconds
-                folder = Time.now.to_i
-
-                path = "#{Rails.root}/assets/daily_progress_reports/#{folder}"
-
-                # Create the Daily Progress Report if it doesn't exist
-                FileUtils.mkdir_p(path) unless File.directory?(path)
-
-                # Copy the text file to local assets
-                FileUtils.cp("#{Rails.application.secrets.report_folder}#{file_name}", "#{path}/#{file_name}")
-
-                # update message
-                history.url = "#{path}/#{file_name}"
-                history.message = "Executed Daily Progress Report for #{flight_date.strftime("%m/%d/%Y")}"
-                history.save
-
-                html = "<p>A Daily Progress report was generated by #{user.first_name} #{user.last_name} for #{flight_date.strftime("%m/%d/%Y")} with #{obj[:sl][:accepted].size} Tiles being marked as Approved</p>"
-                # html += "<p>This does not indicate the email was sent to the USDA and it is #{user.first_name} #{user.last_name} responsibility to send.</p>"
-                html += "<p>This report needs to be sent by the person above who generated the report as it contains critical one-time acceptance and rejection information to the USDA. </p>"
-                html += "<hr />"
-
-                html += "<p>Date Acquired: #{flight_date.strftime("%d-%^b-%g")}</p>"
-
-                html += "<p>Easements Acquired:</p>"
-
-                obj[:sl][:accepted].each {|item| html += "<pre style='margin: 0;'>#{item[:poly_id]}</pre>"}
-                # obj[:sl][:rejected].each {|item| html += "<pre style='margin: 0;'>#{item[:poly_id]}</pre>"}
-
-                # Log and send email
-                Mailbox.ship({
-                    users: MailGroup.find_by(name: "Daily Progress Report").users,
-                    subject: "Daily Progress Report was generated - #{flight_date.strftime("%m/%d/%Y")}",
-                    message: html
-                })
 
                 obj
 
@@ -148,132 +192,40 @@ class DailyProgressReport
 
     end
 
-    # def self.generate flight_date, user
+    def self.build_project_report flight_date, associated_tiles_not_reported, tiles_not_reported, file_path
 
-    #     # get the tiles that match the flight date and do not have a reported date
-    #     # get all rejections that do not have a rejection_reported_date set that are older or equal to the selected date
+        out_file = File.open(file_path, "a")
 
-    #     # Start a Transaction Block
-    #     ActiveRecord::Base.transaction do
-    #         begin
+        records = []
 
-    #             # Create a new History record
-    #             history = History.new
-    #             history.action_type = "Daily Progress Report"
-    #             history.creator = user
-                
-    #             obj = {
-    #                 sl: {
-    #                     header: "SL #{flight_date.strftime("%d-%^b-%g")}",
-    #                     flight_date: flight_date.strftime("%m/%d/%Y"),
-    #                     accepted: [],
-    #                     rejected: []
-    #                 }
-    #             }
+        associated_tiles_not_reported.each do |tile|
+            # Update the tile's report date if it's not set
+            tile.update(report_date: Time.now) if tile.report_date.nil?
 
-    #             # Build the file name by recursively checking if the file exists
-    #             file_name = DailyProgressReport.get_report_version flight_date, nil
+            # Pass to object aray for rendering
+            records |= [tile.poly_id]
 
-    #             # find the tiles that were recently associated by the easements with multiple coverages 
-    #             associated_tiles_not_reported = Tile.sl.flown.where(associate_date: flight_date.strftime("%F")).order(:poly_id)
+            # Write to file
+            out_file.puts(tile.poly_id)
+        end
 
-    #             # Get the Tiles that match the flight date, even if they have been reported
-    #             # => Also check the rejected tiles 
-    #             tiles_not_reported = Tile.sl.flown.where(flight_date: flight_date.strftime("%F")).order(:poly_id)
+        # update the tiles to today's date
+        tiles_not_reported.each do |tile|
+            # Update the tile's report date if it's not set
+            tile.update(report_date: Time.now) if tile.report_date.nil?
 
-    #             # Get the rejected Tiles that have already been reported to the USDA but 
-    #             rejected_tiles = RejectedTile.sl.flown.reported.where(rejected_date: flight_date.strftime("%F")).order(:poly_id)
+            # Pass to object aray for rendering
+            records |= [tile.poly_id]
 
-    #             # # Creates a text file and saves it to the report directory
-    #             File.open("#{Rails.application.secrets.report_folder}#{file_name}", "w+") do |f|
+            # Write to file
+            out_file.puts(tile.poly_id)
+        end
 
-    #                 # Write out the header lines
-    #                 f.puts("To: #{Rails.application.secrets.daily_progress_report_to.join(", ")}")
-    #                 f.puts("CC: #{Rails.application.secrets.daily_progress_report_cc.join(", ")}")
-    #                 f.puts("")
-    #                 f.puts("Subject Line:")
-    #                 f.puts("SL #{flight_date.strftime("%d-%^b-%g")}")
-    #                 f.puts("")
-    #                 f.puts("Body:")
+        out_file.close
 
-    #                 associated_tiles_not_reported.each do |tile|
-    #                     # Update the tile's report date if it's not set
-    #                     tile.update(report_date: Time.now) if tile.report_date.nil?
+        records
 
-    #                     # Pass to object aray for rendering
-    #                     obj[:sl][:accepted] << {date: tile.flight_date.strftime("%d-%^b-%g"), poly_id: tile.poly_id}
-
-    #                     # Write to file
-    #                     f.puts("#{tile.flight_date.strftime("%d-%^b-%g")}\t#{tile.poly_id}\tA")
-    #                 end
-
-    #                 # update the tiles to today's date
-    #                 tiles_not_reported.each do |tile|
-    #                     # Update the tile's report date if it's not set
-    #                     tile.update(report_date: Time.now) if tile.report_date.nil?
-
-    #                     # Pass to object aray for rendering
-    #                     obj[:sl][:accepted] << {date: flight_date.strftime("%d-%^b-%g"), poly_id: tile.poly_id}
-
-    #                     # Write to file
-    #                     f.puts("#{flight_date.strftime("%d-%^b-%g")}\t#{tile.poly_id}\tA")
-    #                 end
-
-    #                 rejected_tiles.each do |rejected_tile|
-    #                     # Update the recjected tile's rejection report date if it's not set
-    #                     rejected_tile.update(rejection_report_date: Time.now) if rejected_tile.rejection_report_date.nil?
-                        
-    #                     # Pass to object aray for rendering
-    #                     obj[:sl][:rejected] << {date: rejected_tile.flight_date.strftime("%d-%^b-%g"), poly_id: rejected_tile.poly_id}
-
-    #                     # Write to file
-    #                     f.puts("#{rejected_tile.flight_date.strftime("%d-%^b-%g")}\t#{rejected_tile.poly_id}\tR")
-    #                 end
-
-    #             end
-
-    #             # Add associations to history obj
-    #             history.tiles << tiles_not_reported
-    #             # history.rejected_tiles << rejected_tiles_not_reported
-    #             history.rejected_tiles << rejected_tiles
-
-    #             # Get the folder name by converting the current time to seconds
-    #             folder = Time.now.to_i
-
-    #             path = "#{Rails.root}/assets/daily_progress_reports/#{folder}"
-
-    #             # Create the Daily Progress Report if it doesn't exist
-    #             FileUtils.mkdir_p(path) unless File.directory?(path)
-
-    #             # Copy the text file to local assets
-    #             FileUtils.cp("#{Rails.application.secrets.report_folder}#{file_name}", "#{path}/#{file_name}")
-
-    #             # update message
-    #             history.url = "#{path}/#{file_name}"
-    #             history.message = "Executed Daily Progress Report for #{flight_date.strftime("%m/%d/%Y")}"
-    #             history.save
-
-    #             html = "<p>A Daily Progress report was generated by #{user.first_name} #{user.last_name} for #{flight_date.strftime("%m/%d/%Y")} with #{obj[:sl][:accepted].size} Tiles being marked as Approved and #{obj[:sl][:rejected].size} Rejected.</p>"
-    #             # html += "<p>This does not indicate the email was sent to the USDA and it is #{user.first_name} #{user.last_name} responsibility to send.</p>"
-    #             html += "<p>This report needs to be sent by the person above who generated the report as it contains critical one-time acceptance and rejection information to the USDA. </p>"
-    #             html += "<hr />"
-
-    #             obj[:sl][:accepted].each {|item| html += "<pre style='margin: 0;'>#{item[:date]}&#09;#{item[:poly_id]}&#09;A</pre>"}
-    #             obj[:sl][:rejected].each {|item| html += "<pre style='margin: 0;'>#{item[:date]}&#09;#{item[:poly_id]}&#09;R</pre>"}
-
-    #             # Log and send email
-    #             Mailbox.ship({
-    #                 users: MailGroup.find_by(name: "Daily Progress Report").users,
-    #                 subject: "Daily Progress Report was generated - #{flight_date.strftime("%m/%d/%Y")}",
-    #                 message: html
-    #             })
-
-    #             obj
-
-    #         end
-    #     end
-
-    # end
+    end
 
     def self.daily_check
 

@@ -221,42 +221,68 @@ function DailyProgressReport(props) {
         </Message>
 
         <Segment.Group>
-          <Segment tertiary>
-            <b>SL Project: {result.sl.flight_date}</b>
-            <Button
-              secondary
-              floated="right"
-              style={emailBtnStyle}
-              onClick={() => handleEmail("SL", result.sl)}
-            >
-              Email
-            </Button>
-          </Segment>
-          <Segment>
-            <Header as="h5">Subject</Header>
-            <p>SL {result.sl.header}</p>
-          </Segment>
-          <Segment>
-            <Header as="h5">Body</Header>
-            <p>Date Acquired: {result.sl.header}</p>
+          {result.nri && (
+            <>
+              <Segment tertiary>
+                <b>NRI</b>
+                {/* <Button
+                  secondary
+                  floated="right"
+                  style={emailBtnStyle}
+                  onClick={() => handleEmail("NRI", result.nri)}
+                >
+                  Email
+                </Button> */}
+              </Segment>
+              <Segment>
+                <Header as="h5">Subject</Header>
+                <p>{result.sl.header}</p>
+              </Segment>
+              <Segment>
+                <Header as="h5">Body</Header>
+                <p>Date Acquired: {result.nri.header}</p>
 
-            <p>Easements Acquired:</p>
-            <List
-              style={{ whiteSpace: "pre" }}
-              items={
-                result.sl.accepted.map((item) => (
-                  <pre style={{ margin: 0 }}>{item.poly_id}</pre>
-                ))
-                // .concat(
-                //   result.sl.rejected.map((item) => (
-                //     <pre
-                //       style={{ margin: 0 }}
-                //     >{`${item.date}\t${item.poly_id}\tR`}</pre>
-                //   ))
-                // )
-              }
-            />
-          </Segment>
+                <p>NRI Sites Acquired:</p>
+                <List
+                  style={{ whiteSpace: "pre" }}
+                  items={result.nri.accepted.map((item) => (
+                    <pre style={{ margin: 0 }}>{item}</pre>
+                  ))}
+                />
+              </Segment>
+            </>
+          )}
+          {result.sl && (
+            <>
+              <Segment tertiary>
+                <b>SL Project</b>
+                {/* <Button
+                  secondary
+                  floated="right"
+                  style={emailBtnStyle}
+                  onClick={() => handleEmail("SL", result.sl)}
+                >
+                  Email
+                </Button> */}
+              </Segment>
+              <Segment>
+                <Header as="h5">Subject</Header>
+                <p>SL {result.sl.header}</p>
+              </Segment>
+              <Segment>
+                <Header as="h5">Body</Header>
+                <p>Date Acquired: {result.sl.header}</p>
+
+                <p>Easements Acquired:</p>
+                <List
+                  style={{ whiteSpace: "pre" }}
+                  items={result.sl.accepted.map((item) => (
+                    <pre style={{ margin: 0 }}>{item}</pre>
+                  ))}
+                />
+              </Segment>
+            </>
+          )}
         </Segment.Group>
       </Fragment>
     );

@@ -486,7 +486,7 @@ class FrameCenter < ApplicationRecord
                                 Mailbox.ship({
                                     users: MailGroup.find_by(name: "Rejection").users | [user],
                                     subject: "#{project} Tiles have been rejected",
-                                    message: "#{rejection_output[:message]}<br/><br/>The following NRI Tiles have been rejected:<br/><ul>#{rejection_output[:rejected_tiles].map {|rt| "<li><b>#{rt.poly_id}</b> - <i>(Flight Date: #{rt.flight_date.strftime("%m/%d/%Y")}, Flown By: #{rt.flown_by_alias})</i></li>"}.join("")}</ul>".html_safe
+                                    message: "#{rejection_output[:message]}<br/><br/>The following NRI Tiles have been rejected during Frame Center Import:<br/><ul>#{rejection_output[:rejected_tiles].map {|rt| "<li><b>#{rt.poly_id}</b> - <i>(Flight Date: #{rt.flight_date.strftime("%m/%d/%Y")}, Flown By: #{rt.flown_by_alias})</i></li>"}.join("")}</ul>".html_safe
                                 })
 
                             elsif Footprint.select(:id).where(id: footprint_ids, sl: true).size > 0
@@ -501,7 +501,7 @@ class FrameCenter < ApplicationRecord
                                 Mailbox.ship({
                                     users: MailGroup.find_by(name: "Rejection").users | [user],
                                     subject: "#{project} Tiles have been rejected",
-                                    message: "#{rejection_output[:message]}<br/><br/>The following SL Tiles have been rejected:<br/><ul>#{rejection_output[:rejected_tiles].map {|rt| "<li><b>#{rt.poly_id}</b> - <i>(Flight Date: #{rt.flight_date.strftime("%m/%d/%Y")}, Flown By: #{rt.flown_by_alias})</i></li>"}.join("")}</ul>".html_safe
+                                    message: "#{rejection_output[:message]}<br/><br/>The following SL Tiles have been rejected during Frame Center Import:<br/><ul>#{rejection_output[:rejected_tiles].map {|rt| "<li><b>#{rt.poly_id}</b> - <i>(Flight Date: #{rt.flight_date.strftime("%m/%d/%Y")}, Flown By: #{rt.flown_by_alias})</i></li>"}.join("")}</ul>".html_safe
                                 })
 
                             end
@@ -829,7 +829,7 @@ class FrameCenter < ApplicationRecord
             error: nil
         }
 
-        message = "Auto Rejection during Frame Center upload"
+        message = "Auto Rejection during Frame Center import"
 
         # Start a Transaction Block
         ActiveRecord::Base.transaction(joinable: false, requires_new: true) do
@@ -936,7 +936,7 @@ class FrameCenter < ApplicationRecord
                 p "-----------"
 
                 # Reject the Tiles and associated footprints/frame centers
-                output, history = Rejection.reject_tiles easements.pluck(:poly_id), flight_date, history, false, "Rejected by Frame Center Auto-Reject Tool"
+                output, history = Rejection.reject_tiles easements.pluck(:poly_id), flight_date, history, false, message
 
                 # set the message for history
                 history.message = "Auto-Rejected #{history.rejected_tiles.count} Tiles, #{history.rejected_footprints.count} Footprints, and #{history.rejected_frame_centers.count} Frame Centers"

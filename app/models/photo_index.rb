@@ -16,8 +16,10 @@ class PhotoIndex < ApplicationRecord
     validates :footprint_id, :rejected_footprint_id, uniqueness: true, allow_nil: true
 
     # Scopes
-    scope :sl,                      -> { where(project: "SL") }
-    scope :naip,                    -> { where(project: "NAIP") }
+    scope :sl,                      -> { where(sl: true) }
+    scope :nri,                     -> { where(nri: true) }
+    scope :naip,                    -> { where(naip: true) }
+    scope :nri_sl,                  -> { where(sl: true, nri: true) }
     scope :rejected,                -> { where(sun_angle_error: true) }
     scope :approved,                -> { where(sun_angle_error: false) }
     scope :has_footprints,          -> { where.not(footprint_id: nil) }
@@ -39,8 +41,10 @@ class PhotoIndex < ApplicationRecord
         ActiveRecord::Base.transaction do
             begin
 
-                # Check the project
-                raise Exception, "No Project Argument found" if params[:project].blank? || (!Rails.application.secrets.active_projects.include? params[:project])
+                # Check if the project is set
+                if (!["NRI/SL"].include? params[:project])
+                    raise Exception, "Invalid Project (#{params[:project]}), must be #{Rails.application.secrets.active_projects.join(", ")}"
+                end
 
                 # Validate the filename
                 arr = params[:file].original_filename.split("_")
@@ -264,14 +268,29 @@ class PhotoIndex < ApplicationRecord
                             record.sun_angle_error = true
                         end
 
+                        # p "Strip Frame: #{record.strip_frame}"
+                        # p "Sun Angle: #{record.sun_angle}"
+
                         # save the record
                         record.save!
 
                         # Query out the matching fooptrint 
                         # => included a spatial query within the 
-                        footprint = Footprint.find_by("footprints.project = '#{project}' AND footprints.camera_id = '#{camera.id}' AND footprints.strip_frame = '#{record.strip_frame}' AND footprints.flight_date = '#{record.flight_date.strftime("%F")}' AND footprints.flown_by_id = '#{company.id}' AND st_contains(footprints.geom::geometry, ST_SetSRID(ST_Point(#{record.longitude}, #{record.latitude}),4326))")
+                        footprint = Footprint.find_by("footprints.project = '#{project}' 
+                            AND footprints.camera_id = '#{camera.id}' 
+                            AND footprints.strip_frame = '#{record.strip_frame}' 
+                            AND footprints.flight_date = '#{record.flight_date.strftime("%F")}' 
+                            AND footprints.flown_by_id = '#{company.id}' 
+                            AND st_contains(footprints.geom::geometry, ST_SetSRID(ST_Point(#{record.longitude}, #{record.latitude}),4326))")
 
                         if footprint
+
+                            p "FOOTPRINT FOUND: #{footprint.id}"
+
+                            # update the project state
+                            record.sl = footprint.sl
+                            record.nri = footprint.nri
+                            record.naip = footprint.naip
 
                             # update attributes
                             record.county_name = footprint.county_name
@@ -326,29 +345,48 @@ class PhotoIndex < ApplicationRecord
                 p "FOOTPRINTS TO BE REJECTED: #{footprints_to_be_rejected.pluck(:id)}"
                 # check the footprints that need to be rejected
                 if footprints_to_be_rejected.size > 0
-                    PhotoIndex.auto_reject_tiles footprints_to_be_rejected, user
 
-                    # Find and update photo indices so they point to rejected footprints
-                    upload.photo_indices.each do |pi|
-                        # p "#{pi.strip_frame} | #{pi.footprint_id}"
+                    p "<><><><><><>"
+                    p "NRI Reject: #{Footprint.nri.select(:id).where(id: footprints_to_be_rejected).size}"
+                    p "SL Reject: #{Footprint.sl.select(:id).where(id: footprints_to_be_rejected).size}"
+                    p "<><><><><><>"
 
-                        # Find the rejected footprint and return the id
-                        rejected_footprint = RejectedFootprint.select(:id).find_by(original_id: pi.footprint_id)
+                    # Check rejected footprints 
+                    if Footprint.nri.select(:id).where(id: footprints_to_be_rejected).size > 0
 
-                        # if the rejected footprint exists then update the photo index file to point to it
-                        if rejected_footprint.present?
-                            pi.update(footprint_id: nil, rejected_footprint_id: rejected_footprint.id)
+                        PhotoIndex.auto_reject_tiles Footprint.nri.where(id: footprints_to_be_rejected), "NRI", user
+
+                        # Find and update photo indices so they point to rejected footprints
+                        upload.photo_indices.each do |pi|
+                            # p "#{pi.strip_frame} | #{pi.footprint_id}"
+
+                            # Find the rejected footprint and return the id
+                            rejected_footprint = RejectedFootprint.select(:id).find_by(original_id: pi.footprint_id)
+
+                            # if the rejected footprint exists then update the photo index file to point to it
+                            if rejected_footprint.present?
+                                pi.update(footprint_id: nil, rejected_footprint_id: rejected_footprint.id)
+                            end
+                        end
+
+                    elsif Footprint.nri.select(:id).where(id: footprints_to_be_rejected).size > 0
+
+                        PhotoIndex.auto_reject_tiles Footprint.sl.where(id: footprints_to_be_rejected), "SL", user
+
+                        # Find and update photo indices so they point to rejected footprints
+                        upload.photo_indices.each do |pi|
+                            # p "#{pi.strip_frame} | #{pi.footprint_id}"
+
+                            # Find the rejected footprint and return the id
+                            rejected_footprint = RejectedFootprint.select(:id).find_by(original_id: pi.footprint_id)
+
+                            # if the rejected footprint exists then update the photo index file to point to it
+                            if rejected_footprint.present?
+                                pi.update(footprint_id: nil, rejected_footprint_id: rejected_footprint.id)
+                            end
                         end
                     end
                 end
-
-                job.update(
-                    finished_at: Time.now,
-                    active: false,
-                    success: true,
-                    upload: upload,
-                    message: "Photo Index Import completed Successfully"
-                )
 
                 message = "Successfully imported #{history.photo_indices.count} Photo Indices from #{params[:file].original_filename}. #{history.photo_indices.approved.count} contained valid sun angles."
 
@@ -359,6 +397,15 @@ class PhotoIndex < ApplicationRecord
                 if history.photo_indices.where(footprint_id: nil, rejected_footprint_id: nil).count > 0
                     message += " #{history.photo_indices.where(footprint_id: nil, rejected_footprint_id: nil).count} Photo Indices did not associate to a Footprint."
                 end
+
+
+                job.update(
+                    finished_at: Time.now,
+                    active: false,
+                    success: true,
+                    upload: upload,
+                    message: message
+                )
 
                 # Update the history
                 history.update(message: message)
@@ -391,6 +438,15 @@ class PhotoIndex < ApplicationRecord
                 # # Delete the Upload and History
                 # upload.destroy if upload.present?
                 # history.destroy if history.present?
+
+                p "-----------"
+                p exception.backtrace.count
+                exception.backtrace.each do |x|
+                    next if !x.include? "photo_index.rb"
+                    x.match(/^(.+?):(\d+)(|:in `(.+)')$/); 
+                p [$1,$2,$4]
+                end
+                p "-----------"
 
                 # Delete the files
                 FileUtils.rm_rf("#{path}/") if path
@@ -629,7 +685,7 @@ class PhotoIndex < ApplicationRecord
     #     p output
     # end
 
-    def self.auto_reject_tiles footprints, user=User.first
+    def self.auto_reject_tiles footprints, project, user=User.first
 
         # find the tiles of the associated footprints
         # reject the tiles
@@ -643,15 +699,17 @@ class PhotoIndex < ApplicationRecord
 
         tiles_to_review = {}
 
+        message = "Auto Rejection during Photo Index import"
+
         p "photo index auto reject tiles"
-        # p "#{footprints}"
+        p "#{footprints}"
         p "----------------"
 
         footprints.each do |footprint|
 
             # Check the footprint is SL only
             if footprint.project == "NAIP"
-                raise Exception, "Footprint: #{footprint.id} is marked as NAIP, not SL. Cannot reject" 
+                raise Exception, "Footprint: #{footprint.id} is marked as NAIP, not NRI or SL. Cannot reject" 
             end
 
             # Create a new array scoped based on the flight date
@@ -659,18 +717,18 @@ class PhotoIndex < ApplicationRecord
 
             # pull the associated tiles out to check if they should be rejected
             tiles_to_review[footprint.flight_date.strftime("%F")] |= Tile.select(:poly_id).where(id: TileFootprint.where(footprint_id: footprint.id).pluck(:tile_id)).pluck(:poly_id)
-        end
+        # end
 
-        # Check to make sure all the footprints were rejected
-        # => if there is any orphaned footprints they will not get collected by the tile rejection process
-        Footprint.where(id: footprints.pluck(:id)).each do |footprint|
+        # # Check to make sure all the footprints were rejected
+        # # => if there is any orphaned footprints they will not get collected by the tile rejection process
+        # Footprint.where(id: footprints.pluck(:id)).each do |footprint|
             p footprint.id
 
             # get the frame center before deleting the footprint
             framecenter = footprint.frame_center
 
             # Reject the Footprint and return the new rejected_footprint
-            rejected_footprint = RejectedFootprint.reject footprint
+            rejected_footprint = RejectedFootprint.reject footprint, message
 
             if !rejected_footprint
                 raise Exception, "Footprint: #{footprint.id} could not be rejected!"
@@ -678,7 +736,7 @@ class PhotoIndex < ApplicationRecord
 
             # Reject the associated Frame Center of the footprint
             if framecenter
-                rejected_frame_center = RejectedFrameCenter.reject framecenter, "Rejection during Photo Index upload"
+                rejected_frame_center = RejectedFrameCenter.reject framecenter, message
 
                 if !rejected_frame_center
                     # raise "Frame Center #{fc.id} could not be rejected!"
@@ -716,12 +774,12 @@ class PhotoIndex < ApplicationRecord
                 end
 
                 # Dissolve the associated footprints
-                DissolvedFootprint.footprints tile.footprints.pluck(:id), "SL" 
+                DissolvedFootprint.footprints tile.footprints.pluck(:id), project 
 
                 # check if compeltely covered
                 easement_to_reject = Easement.flown.includes(:tiles).joins("INNER JOIN dissolved_footprints ON dissolved_footprints.name='footprints' 
                     AND not st_contains(dissolved_footprints.geom::geometry, easements.geom::geometry)").where(
-                        project: "SL", poly_id: poly_id
+                        project: project, poly_id: poly_id
                     ).group_by(&:flight_date)
 
                 # if the easement is found then mark it to be rejected
@@ -732,7 +790,7 @@ class PhotoIndex < ApplicationRecord
             p "REJECTING: #{tiles_to_reject}"
 
             if tiles_to_reject.size > 0
-                output, history = Rejection.reject_tiles tiles_to_reject, key, history
+                output, history = Rejection.reject_tiles tiles_to_reject, key, history, false, message
             end
             
         end

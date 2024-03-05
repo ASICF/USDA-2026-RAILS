@@ -2,7 +2,7 @@ class PhotoIndexController < ApplicationController
   def index
     @companies = Company.all.select(:id, :name, :alias).order(:name)
     @cameras = Camera.all.order(:name).map { |c| {id: c.id, label: "#{c.company.alias} | #{c.name} | #{c.serial_number}", company_id: c.company_id} }
-    @projects = Rails.application.secrets.active_projects
+    @projects = ["NRI/SL"]
   end
 
   def upload

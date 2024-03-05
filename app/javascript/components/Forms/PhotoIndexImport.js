@@ -58,7 +58,7 @@ export default function PhotoIndexImport({
 
   const resetForm = () => {
     reset({
-      project: "SL",
+      project: "NRI/SL",
       flown_by_id: 1,
       camera_id: 4,
       file: "",

@@ -143,7 +143,7 @@ class Rejection
     end
 
 
-    def self.reject_tiles poly_ids, flight_date, history, skip_coverage=false, message="wtf"
+    def self.reject_tiles poly_ids, flight_date, history, skip_coverage=false, message="Manual Rejection"
 
         output = {
             count: 0

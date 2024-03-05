@@ -247,13 +247,13 @@ const SiteHeader = (props) => {
                     >
                       Unreject Tile
                     </Dropdown.Item>
-                    <Dropdown.Item
+                    {/* <Dropdown.Item
                       as="a"
                       href={`/usda_approve`}
                       data-turbolinks="false"
                     >
                       USDA Approved
-                    </Dropdown.Item>
+                    </Dropdown.Item> */}
                   </Dropdown.Menu>
                 </Dropdown>
               </Dropdown.Menu>

@@ -1760,6 +1760,9 @@ class Tile < ApplicationRecord
                 associate_date: Date.today
             )
 
+            # update the contract rates
+            tile.set_contract_rate
+
             # add associations to history
             history.easements | [tile.easement]
             history.tiles | [tile]

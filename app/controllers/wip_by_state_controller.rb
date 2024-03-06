@@ -13,6 +13,7 @@ class WipByStateController < ApplicationController
   end
 
   def query
+    p params
 
     if strong_params[:state_id].blank?
       return render json: {
@@ -38,6 +39,8 @@ class WipByStateController < ApplicationController
       if strong_params[:state_id] === "all"
         if strong_params[:project] == "SL"
           states = State.exclude_geom.active_sl.order(:name)
+        elsif strong_params[:project] == "NRI"
+          states = State.exclude_geom.active_nri.order(:name)
         else
           states = State.exclude_geom.active_naip.order(:name)
         end
@@ -49,15 +52,15 @@ class WipByStateController < ApplicationController
       if states.size > 1
         scope = "state"
         states.each do |state|
-          if strong_params[:project] == "SL"
-            result << state.sl_wip_by_state(strong_params[:date_from], strong_params[:date_to])
+          if strong_params[:project] == "SL" || strong_params[:project] == "NRI"
+            result << state.wip_by_state(strong_params[:project], strong_params[:date_from], strong_params[:date_to])
           else
             result << state.naip_wip_by_state(strong_params[:date_from], strong_params[:date_to])
           end
         end
       else
         scope = "county"
-        result = states.first.sl_wip_by_state_counties(strong_params[:date_from], strong_params[:date_to])
+        result = states.first.wip_by_state_counties(strong_params[:project], strong_params[:date_from], strong_params[:date_to])
       end
 
       render json: {

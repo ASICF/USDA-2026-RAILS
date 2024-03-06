@@ -26,27 +26,29 @@ class State < ApplicationRecord
     Rails.application.secrets.active_sl_states.each {|abv| scope "#{abv.downcase}_sl", -> { find_by(abv: abv) }}
     # Rails.application.secrets.active_nri_states.each {|abv| scope "#{abv.downcase}_nri", -> { where(abv: abv) }}
 
-    def active_counties
-        County.includes(:tiles).where(state: self).where.not( tiles: { county_id: nil } ).order("name ASC")
+    def active_counties project
+        County.includes(:tiles).where(state: self, tiles: { project: project }).where.not( tiles: { county_id: nil } ).order("name ASC")
     end
 
     def completed_counties
         County.includes(:tiles).where(state: self).where.not( tiles: { at_start_date: nil, at_done_date: nil, ortho_proc_date: nil } ).order("name ASC")
     end
 
-    def sl_wip_by_state date_from, date_to
+    def wip_by_state project, date_from, date_to
 
-        state_acres = tiles.sum(&:easements_acres)
+        selected_tiles = tiles.where(project: project)
+
+        state_acres = selected_tiles.sum(&:easements_acres)
 
         # Get totals
-        total = tiles.count
-        acres = tiles.sum(&:easements_acres).to_f
-        flown = tiles.flown.where(flight_date: date_from..date_to)
-        at_done = tiles.flown.at_done.where(at_done_date: date_from..date_to)
-        ortho_proc = tiles.flown.at_done.ortho_processed.where(ortho_proc_date: date_from..date_to)
-        dumped = tiles.flown.at_done.ortho_processed.dumped.where(dump_date: date_from..date_to)
-        shipped = tiles.flown.at_done.ortho_processed.dumped.shipped.where(ship_date: date_from..date_to)
-        invoiced = tiles.flown.at_done.ortho_processed.dumped.shipped.invoiced.where(ship_date: date_from..date_to)
+        total = selected_tiles.count
+        acres = selected_tiles.sum(&:easements_acres).to_f
+        flown = selected_tiles.flown.where(flight_date: date_from..date_to)
+        at_done = selected_tiles.flown.at_done.where(at_done_date: date_from..date_to)
+        ortho_proc = selected_tiles.flown.at_done.ortho_processed.where(ortho_proc_date: date_from..date_to)
+        dumped = selected_tiles.flown.at_done.ortho_processed.dumped.where(dump_date: date_from..date_to)
+        shipped = selected_tiles.flown.at_done.ortho_processed.dumped.shipped.where(ship_date: date_from..date_to)
+        invoiced = selected_tiles.flown.at_done.ortho_processed.dumped.shipped.invoiced.where(ship_date: date_from..date_to)
 
         # Return a hash with the values
         {
@@ -80,22 +82,24 @@ class State < ApplicationRecord
         }
     end
 
-    def sl_wip_by_state_counties date_from, date_to
+    def wip_by_state_counties project, date_from, date_to
 
         result = []
-        active_counties.exclude_geom.each do |county|
+        active_counties(project).exclude_geom.each do |county|
 
-            state_acres = county.tiles.sum(&:easements_acres)
+            selected_tiles = county.tiles.where(project: project)
+
+            state_acres = selected_tiles.sum(&:easements_acres)
 
             # Get totals
-            total = county.tiles.count
-            acres = county.tiles.sum(&:easements_acres).to_f
-            flown = county.tiles.flown.where(flight_date: date_from..date_to)
-            at_done = county.tiles.flown.at_done.where(at_done_date: date_from..date_to)
-            ortho_proc = county.tiles.flown.at_done.ortho_processed.where(ortho_proc_date: date_from..date_to)
-            dumped = county.tiles.flown.at_done.ortho_processed.dumped.where(dump_date: date_from..date_to)
-            shipped = county.tiles.flown.at_done.ortho_processed.dumped.shipped.where(ship_date: date_from..date_to)
-            invoiced = county.tiles.flown.at_done.ortho_processed.dumped.shipped.invoiced.where(ship_date: date_from..date_to)
+            total = selected_tiles.count
+            acres = selected_tiles.sum(&:easements_acres).to_f
+            flown = selected_tiles.flown.where(flight_date: date_from..date_to)
+            at_done = selected_tiles.flown.at_done.where(at_done_date: date_from..date_to)
+            ortho_proc = selected_tiles.flown.at_done.ortho_processed.where(ortho_proc_date: date_from..date_to)
+            dumped = selected_tiles.flown.at_done.ortho_processed.dumped.where(dump_date: date_from..date_to)
+            shipped = selected_tiles.flown.at_done.ortho_processed.dumped.shipped.where(ship_date: date_from..date_to)
+            invoiced = selected_tiles.flown.at_done.ortho_processed.dumped.shipped.invoiced.where(ship_date: date_from..date_to)
 
             # flown_percentage = (((flown.to_d / total.to_d).round(4).to_d).to_d * 100).to_f.round(3)
 

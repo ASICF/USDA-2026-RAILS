@@ -63,8 +63,8 @@ class FlyingStatusReportsController < ApplicationController
 
       response[:scope] = "CONTRACTOR"
 
-      if params[:project] == "SL"
-        response[:result] = FlyingStatusReport.AllSitesByContractorSl date_flown_from, date_flown_end
+      if params[:project] == "NRI" || params[:project] == "SL"
+        response[:result] = FlyingStatusReport.AllSitesByContractor params[:project], date_flown_from, date_flown_end
       else
         response[:result] = FlyingStatusReport.AllSitesByContractorNAIP date_flown_from, date_flown_end
       end
@@ -75,8 +75,8 @@ class FlyingStatusReportsController < ApplicationController
 
       response[:scope] = "STATE"
 
-      if params[:project] == "SL"
-        response[:result] = FlyingStatusReport.AllSitesByStateSL date_flown_from, date_flown_end
+      if params[:project] == "NRI" || params[:project] == "SL"
+        response[:result] = FlyingStatusReport.AllSitesByState params[:project], date_flown_from, date_flown_end
       else
         response[:result] = FlyingStatusReport.AllSitesByStateNAIP date_flown_from, date_flown_end
       end
@@ -87,8 +87,8 @@ class FlyingStatusReportsController < ApplicationController
 
       response[:scope] = "CONTRACTOR_STATE"
 
-      if params[:project] == "SL"
-        response[:result] = FlyingStatusReport.AllSitesByContractorAndStateSL date_flown_from, date_flown_end
+      if params[:project] == "NRI" || params[:project] == "SL"
+        response[:result] = FlyingStatusReport.AllSitesByContractorAndState params[:project], date_flown_from, date_flown_end
       else
         response[:result] = FlyingStatusReport.AllSitesByContractorAndStateNAIP date_flown_from, date_flown_end
       end
@@ -100,14 +100,10 @@ class FlyingStatusReportsController < ApplicationController
 
       response[:scope] = "OTHER"
 
-      if params[:project] == "SL"
-        
-        response[:result] = FlyingStatusReport.otherSl state, date_flown_from, date_flown_end
-
+      if params[:project] == "NRI" || params[:project] == "SL"
+        response[:result] = FlyingStatusReport.other params[:project], state, date_flown_from, date_flown_end
       elsif params[:project] == "NAIP"
-
         response[:result] = FlyingStatusReport.otherNaip state, date_flown_from, date_flown_end
-
       end
 
       return render json: response

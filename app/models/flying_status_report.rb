@@ -1,17 +1,18 @@
 class FlyingStatusReport < ApplicationRecord
 
-    def self.otherSl state, date_flown_from, date_flown_end
+    def self.other project, state, date_flown_from, date_flown_end
 
         result = []
 
-        Tile.where(state_id: state.id, flight_date: date_flown_from..date_flown_end).select(:flown_by_name, :camera_name, :county_name).distinct.to_a.sort_by(&:county_name).each do |group|
+        Tile.where(state_id: state.id, flight_date: date_flown_from..date_flown_end, project: project).select(:flown_by_name, :camera_name, :county_name).distinct.to_a.sort_by(&:county_name).each do |group|
 
             # Get the totals
-            scoped_tiles = state.tiles.includes(:easement).where(flight_date: date_flown_from..date_flown_end, flown_by_name: group[:flown_by_name], camera_name: group[:camera_name], county_name: group[:county_name])
-            rejected_tiles = state.rejected_tiles.where(flight_date: date_flown_from..date_flown_end, flown_by_name: group[:flown_by_name], camera_name: group[:camera_name], county_name: group[:county_name])
+            scoped_tiles = state.tiles.includes(:easement).where(flight_date: date_flown_from..date_flown_end, flown_by_name: group[:flown_by_name], camera_name: group[:camera_name], county_name: group[:county_name], project: project)
+            rejected_tiles = state.rejected_tiles.where(flight_date: date_flown_from..date_flown_end, flown_by_name: group[:flown_by_name], camera_name: group[:camera_name], county_name: group[:county_name], project: project)
             total_flown = scoped_tiles.count + rejected_tiles.count
   
             result << {
+                project: project,
                 flown_by: group[:flown_by_name],
                 county_name: group[:county_name],
                 camera_name: group[:camera_name],
@@ -90,18 +91,19 @@ class FlyingStatusReport < ApplicationRecord
 
     end
 
-    def self.AllSitesByContractorSl date_flown_from, date_flown_end
+    def self.AllSitesByContractor project, date_flown_from, date_flown_end
 
         result = []
 
-        Tile.where(flight_date: date_flown_from..date_flown_end).select(:flown_by_name, :camera_name).distinct.to_a.sort { |a, b| [a[:flown_by_name], a[:camera_name]] <=> [b[:flown_by_name], b[:camera_name]] }.each do |group|
+        Tile.where(flight_date: date_flown_from..date_flown_end, project: project).select(:flown_by_name, :camera_name).distinct.to_a.sort { |a, b| [a[:flown_by_name], a[:camera_name]] <=> [b[:flown_by_name], b[:camera_name]] }.each do |group|
 
             # Get the totals
-            scoped_tiles = Tile.includes(:easement).where(flight_date: date_flown_from..date_flown_end, flown_by_name: group[:flown_by_name], camera_name: group[:camera_name])
-            rejected_tiles = RejectedTile.where(flight_date: date_flown_from..date_flown_end, flown_by_name: group[:flown_by_name], camera_name: group[:camera_name])
+            scoped_tiles = Tile.includes(:easement).where(flight_date: date_flown_from..date_flown_end, flown_by_name: group[:flown_by_name], camera_name: group[:camera_name], project: project)
+            rejected_tiles = RejectedTile.where(flight_date: date_flown_from..date_flown_end, flown_by_name: group[:flown_by_name], camera_name: group[:camera_name], project: project)
             total_flown = scoped_tiles.count + rejected_tiles.count
   
             result << {
+                project: project,
                 flown_by: group[:flown_by_name],
                 camera_name: group[:camera_name],
                 total_flown: total_flown,
@@ -179,16 +181,21 @@ class FlyingStatusReport < ApplicationRecord
 
     end
 
-    # def self.AllSitesByState state, date_flown_from, date_flown_end
-    def self.AllSitesByStateSL date_flown_from, date_flown_end
+    def self.AllSitesByState project, date_flown_from, date_flown_end
 
         result = []
 
-        State.includes(:tiles).exclude_geom.active_sl.each do |state|
+        if project == "NRI"
+             states = State.includes(:tiles).exclude_geom.active_nri
+        elsif project == "SL"
+            states = State.includes(:tiles).exclude_geom.active_sl
+        end
+
+        states.each do |state|
 
             # Get the totals
-            scoped_tiles = state.tiles.includes(:easement).where(flight_date: date_flown_from..date_flown_end)
-            rejected_tiles = state.rejected_tiles.where(flight_date: date_flown_from..date_flown_end)
+            scoped_tiles = state.tiles.includes(:easement).where(flight_date: date_flown_from..date_flown_end, project: project)
+            rejected_tiles = state.rejected_tiles.where(flight_date: date_flown_from..date_flown_end, project: project)
             total_flown = scoped_tiles.count + rejected_tiles.count
   
             asi_accepted_percentage = (scoped_tiles.count.to_f / total_flown.to_f * 100).round(2)
@@ -197,6 +204,7 @@ class FlyingStatusReport < ApplicationRecord
             usda_rejected_percentage = (scoped_tiles.usda_rejected.count.to_f / total_flown * 100).round(2)
 
             result << {
+                project: project,
                 state_name: state.name,
                 total_sites: state.tiles.count,
                 total_flown: total_flown,
@@ -254,21 +262,22 @@ class FlyingStatusReport < ApplicationRecord
 
     end
 
-    def self.AllSitesByContractorAndStateSL date_flown_from, date_flown_end
+    def self.AllSitesByContractorAndState project, date_flown_from, date_flown_end
 
         result = []
 
         # Tile.where(flight_date: date_flown_from..date_flown_end).select(:flown_by_name).order(:flown_by_name).distinct.to_a.each do |group|
-        Tile.where(flight_date: date_flown_from..date_flown_end).select(:flown_by_name, :state_name, :state_id).distinct.to_a.sort { |a, b| [a[:flown_by_name], a[:state_name]] <=> [b[:flown_by_name], b[:state_name]] }.each do |group|
+        Tile.where(flight_date: date_flown_from..date_flown_end, project: project).select(:flown_by_name, :state_name, :state_id).distinct.to_a.sort { |a, b| [a[:flown_by_name], a[:state_name]] <=> [b[:flown_by_name], b[:state_name]] }.each do |group|
 
             state = State.exclude_geom.includes(:tiles).find(group["state_id"])
 
             # Get the totals
-            scoped_tiles = state.tiles.includes(:easement).where(flight_date: date_flown_from..date_flown_end, flown_by_name: group[:flown_by_name])
-            rejected_tiles = state.rejected_tiles.where(flight_date: date_flown_from..date_flown_end, flown_by_name: group[:flown_by_name])
+            scoped_tiles = state.tiles.includes(:easement).where(flight_date: date_flown_from..date_flown_end, flown_by_name: group[:flown_by_name], project: project)
+            rejected_tiles = state.rejected_tiles.where(flight_date: date_flown_from..date_flown_end, flown_by_name: group[:flown_by_name], project: project)
             total_flown = scoped_tiles.count + rejected_tiles.count
 
             result << {
+                project: project,
                 state_name: state.name,
                 flown_by: group[:flown_by_name],
                 total_flown: total_flown,

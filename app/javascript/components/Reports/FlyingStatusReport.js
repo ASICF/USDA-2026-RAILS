@@ -161,15 +161,15 @@ export default function FlyingStatusReport({
       {renderForm()}
       <Divider />
       {renderLoading()}
-      {project == "SL" && scope == "OTHER" && <OtherSL results={results} />}
+      {((project == "SL" || project == "NRI") || project == "NRI") && scope == "OTHER" && <OtherSL results={results} />}
       {project == "NAIP" && (scope == "OTHER" || scope == "contractor") && (
         <OtherNAIP results={results} />
       )}
-      {project == "SL" && scope == "CONTRACTOR" && <ContractorSL results={results} />}
+      {(project == "SL" || project == "NRI") && scope == "CONTRACTOR" && <ContractorSL results={results} />}
       {project == "NAIP" && scope == "CONTRACTOR" && <ContractorNAIP results={results} />}
-      {project == "SL" && scope == "STATE" && <StateSL results={results} />}
+      {(project == "SL" || project == "NRI") && scope == "STATE" && <StateSL results={results} />}
       {project == "NAIP" && scope == "STATE" && <StateNAIP results={results} />}
-      {project == "SL" && scope == "CONTRACTOR_STATE" && <AllSitesByContractorAndStateSL results={results} />}
+      {(project == "SL" || project == "NRI") && scope == "CONTRACTOR_STATE" && <AllSitesByContractorAndStateSL results={results} />}
       {project == "NAIP" && scope == "CONTRACTOR_STATE" && <AllSitesByContractorAndStateNAIP results={results} />}
       <br />
       <br />

@@ -10,6 +10,7 @@ class EoTrackerController < ApplicationController
         upload_id: upload.id,
         history_id: upload.history.id,
         state_name: upload.footprints.pluck(:state_name).uniq.join(", "),
+        project: first_footprint.project,
         upload_created_at: upload.created_at,
         flown_by: first_footprint.flown_by_alias,
         camera: first_footprint.camera_name,
@@ -43,7 +44,7 @@ class EoTrackerController < ApplicationController
     upload.footprints.includes(:tiles).where(associated: true, flight_date_time: nil).each do |fp|
       # fp.tiles.flown.not_at_started.where("tiles.flight_date < ?", Time.now - 10.days).each do |tile|
       fp.tiles.flown.each do |tile|
-        poly_ids |= [tile.poly_id]
+        poly_ids |= [{poly_id: tile.poly_id, project: tile.project}]
       end
       strip_frames |= [fp.strip_frame]
     end

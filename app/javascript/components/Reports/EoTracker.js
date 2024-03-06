@@ -93,6 +93,15 @@ export default function EoTracker({ uploads, token }) {
               </Table.HeaderCell>
               <Table.HeaderCell
                 rowSpan="2"
+                sorted={column === "project" ? direction : null}
+                onClick={() =>
+                  dispatch({ type: "CHANGE_SORT", column: "project" })
+                }
+              >
+                Project
+              </Table.HeaderCell>
+              <Table.HeaderCell
+                rowSpan="2"
                 sorted={column === "flight_date" ? direction : null}
                 onClick={() =>
                   dispatch({ type: "CHANGE_SORT", column: "flight_date" })
@@ -192,6 +201,7 @@ export default function EoTracker({ uploads, token }) {
                 >
                   <Table.Cell>{record.flown_by}</Table.Cell>
                   <Table.Cell>{record.state_name}</Table.Cell>
+                  <Table.Cell>{record.project}</Table.Cell>
                   <Table.Cell>
                     {moment(record.flight_date, "YYYY MM-DD").format(
                       "MM/DD/YYYY"
@@ -268,8 +278,8 @@ export default function EoTracker({ uploads, token }) {
   Plane: ${upload.plane}%0D%0A%0D%0A
   The following sites are still awaiting the matching EO file.%0D%0A`;
 
-      records.forEach((poly_id) => {
-        html += `- ${poly_id}%0D%0A`;
+      records.forEach((item) => {
+        html += `- ${item.poly_id} (${item.project})%0D%0A`;
       });
 
       window.open(
@@ -407,7 +417,7 @@ export default function EoTracker({ uploads, token }) {
                 </p>
                 <ul>
                   {records.map((item, index) => {
-                    return <li key={index}>{item}</li>;
+                    return <li key={index}>{item.poly_id} ({item.project})</li>;
                   })}
                 </ul>
               </Fragment>

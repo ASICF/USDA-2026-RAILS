@@ -22,6 +22,7 @@ class Easement < ApplicationRecord
     # => Status based Scopes
     scope :sl,                  -> { where(project: "SL") }
     scope :nri,                 -> { where(project: "NRI") }
+    scope :nri_sl,              -> { where(project: ["NRI", "SL"]) }
     scope :flown,               -> { where.not(flight_date: nil) }
     scope :not_flown,           -> { where(flight_date: nil) }
     scope :ortho_processed,     -> { includes(:tiles).where.not(tiles: {ortho_proc_date: nil}) }

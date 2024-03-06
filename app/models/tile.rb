@@ -1581,7 +1581,7 @@ class Tile < ApplicationRecord
                 fp.plane_name as fp_plane_name,
                 fp.upload_id as fp_upload_id
                 from easements e, footprints fp where st_intersects(e.geom, fp.geom) AND fp.id != ALL('{#{exclude_footprints.join(",")}}'::int[]) 
-                    AND e.id = #{self.easement.id} AND fp.project='#{self.project}' 
+                    AND e.id = #{self.easement.id} AND fp.project='NRI/SL' 
                     ORDER BY fp.flight_date ASC, fp.strip_frame ASC"
 
         # sql to exclude the footprints that have been flagged by the rejected tile
@@ -1592,9 +1592,9 @@ class Tile < ApplicationRecord
         footprints = {}
 
         results.each do |result|
-            # p "------"
-            # p result["fp_flight_date"]
-            # p "------"
+            p "------"
+            p result["fp_flight_date"]
+            p "------"
 
             # check if the 
             next if result["fp_flight_date"] == ignore_flight_date
@@ -1630,7 +1630,7 @@ class Tile < ApplicationRecord
         # pp footprints
 
         footprints.each do |key, obj|
-            DissolvedFootprint.footprints obj[:ids], self.project
+            DissolvedFootprint.footprints obj[:ids], "NRI/SL"
 
             sql = "SELECT ST_Contains(df.geom::geometry, e.geom::geometry) FROM dissolved_footprints df, easements e WHERE df.name = 'footprints'  AND e.id = #{self.easement.id}"
             results = ActiveRecord::Base.connection.execute(sql)
@@ -1708,7 +1708,7 @@ class Tile < ApplicationRecord
             # Reject the current tile and footprints
 
             # find the footprints
-            new_footprints = Footprint.where(project: tile.project).where("st_intersects(footprints.geom, ST_GeomFromText('#{tile.easement.geom.to_s}')) and footprints.upload_id = '#{upload.id}'")
+            new_footprints = Footprint.where(project: "NRI/SL").where("st_intersects(footprints.geom, ST_GeomFromText('#{tile.easement.geom.to_s}')) and footprints.upload_id = '#{upload.id}'")
 
             # p "-----"
             # p new_footprints.count
@@ -1761,8 +1761,8 @@ class Tile < ApplicationRecord
             )
 
             # add associations to history
-            history.easements << tile.easement
-            history.tiles << tile
+            history.easements | [tile.easement]
+            history.tiles | [tile]
             history.footprints << new_footprints
 
             # update the history message

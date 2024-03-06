@@ -88,9 +88,9 @@ class EasementsWithMultipleCoveragesController < ApplicationController
   private
 
   def build
-    records = Tile.flown.covered.not_ortho_processed.select(:id, :poly_id, :state_name, :county_name, :flight_date, :flown_by_alias).order(:flight_date)
+    records = Tile.flown.covered.not_ortho_processed.select(:id, :project, :poly_id, :state_name, :county_name, :flight_date, :flown_by_alias).order(:flight_date)
     rejected = []
-    Tile.not_flown.covered.select(:id, :poly_id, :state_name, :county_name).order(:flight_date).each do |tile|
+    Tile.not_flown.covered.select(:id, :project, :poly_id, :state_name, :county_name).order(:flight_date).each do |tile|
       rejected << {
         id: tile.id,
         poly_id: tile.poly_id,

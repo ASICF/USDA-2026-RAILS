@@ -997,7 +997,7 @@ class Footprint < ApplicationRecord
         DissolvedFootprint.dissolve_by_scope flight_date, first.flown_by_id, first.camera_id, project
 
         # Find all easements that are completely covered and marked as flown but not on the same flight date
-        Easement.flown.where(project: project).where.not(flight_date: flight_date).joins("INNER JOIN dissolved_footprints ON dissolved_footprints.name='scoped' AND st_contains(dissolved_footprints.geom::geometry, easements.geom::geometry)").each do |easement|
+        Easement.flown.nri_sl.where.not(flight_date: flight_date).joins("INNER JOIN dissolved_footprints ON dissolved_footprints.name='scoped' AND st_contains(dissolved_footprints.geom::geometry, easements.geom::geometry)").each do |easement|
 
             # update the covered boolean on the Tile 
             easement.tiles.first.update(covered: true)
@@ -1027,7 +1027,6 @@ class Footprint < ApplicationRecord
             #     next if record.nil?
             #     PostmasterMailer.notify(record, "There are #{history.tiles.count} Easements were marked as covered by multiple Flight Dates. Please click link below to reivew and set the correct Footprint association. There will be a daily email sent until all coverages are fixed.<hr/>#{tile_list}<ul></ul>".html_safe, "USDA #{Rails.application.secrets.project_year}: Duplicate Overlapping Footprints - #{Time.now.strftime("%m/%d/%Y")}", Rails.application.routes.url_helpers.easements_with_multiple_coverages_url(only_path: false, host: Rails.application.secrets.host)).deliver
             # end
-            
 
         else
             # destroy the history object because there was no overlapping

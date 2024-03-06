@@ -185,7 +185,7 @@ export default function EasementsWithMultipleCoverages({
       {selected && footprints.length > 0 && (
         <Modal open={selected ? true : false} size="large">
           <Modal.Header>
-            Select Footprint Upload to associate to Poly ID {selected.poly_id}
+            Select Footprint Upload to associate to Poly ID {selected.poly_id} ({selected.project})
           </Modal.Header>
           <Modal.Content>
             {loading && (
@@ -286,6 +286,16 @@ export default function EasementsWithMultipleCoverages({
               </Table.HeaderCell>
               <Table.HeaderCell
                 sorted={
+                  rejected_column === "project" ? rejected_direction : null
+                }
+                onClick={() =>
+                  rejected_dispatch({ type: "CHANGE_SORT", column: "project" })
+                }
+              >
+                Project
+              </Table.HeaderCell>
+              <Table.HeaderCell
+                sorted={
                   rejected_column === "rejected_date"
                     ? rejected_direction
                     : null
@@ -337,6 +347,7 @@ export default function EasementsWithMultipleCoverages({
                   onClick={() => setSelected(record)}
                 >
                   <Table.Cell>{record.poly_id}</Table.Cell>
+                  <Table.Cell>{record.project}</Table.Cell>
                   <Table.Cell>
                     <RenderValue value={record.rejected_date} date />
                   </Table.Cell>
@@ -378,6 +389,14 @@ export default function EasementsWithMultipleCoverages({
                 }
               >
                 Poly ID
+              </Table.HeaderCell>
+              <Table.HeaderCell
+                sorted={column === "project" ? direction : null}
+                onClick={() =>
+                  dispatch({ type: "CHANGE_SORT", column: "project" })
+                }
+              >
+                Project
               </Table.HeaderCell>
               <Table.HeaderCell
                 sorted={column === "flight_date" ? direction : null}
@@ -423,6 +442,7 @@ export default function EasementsWithMultipleCoverages({
                   onClick={() => setSelected(record)}
                 >
                   <Table.Cell>{record.poly_id}</Table.Cell>
+                  <Table.Cell>{record.project}</Table.Cell>
                   <Table.Cell>
                     <RenderValue value={record.flight_date} date />
                   </Table.Cell>

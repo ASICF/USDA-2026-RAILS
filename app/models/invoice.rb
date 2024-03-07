@@ -12,8 +12,8 @@ class Invoice
         # Get the state
         state = State.find_by(id: state_id)
 
-        if project == "SL"
-            response = Invoice.build_sl date_from, date_to, state
+        if project == "SL" || project == "NRI"
+            response = Invoice.build project, date_from, date_to, state
         elsif project == "NAIP"
             response = Invoice.build_naip date_from, date_to, state
         end
@@ -22,7 +22,7 @@ class Invoice
 
             CSV.generate(headers: true) do |csv|
 
-                if project == "SL"
+                if project == "SL" || project == "NRI"
                     csv << ["State", "County", "FIPS", "Easements", "Acres", "USDA Unit Price", "Packing Slip", "Date Shipped", "Acquisition Price", "Orthos Price", "Total Price"]
                 else
                     csv << ["State", "FIPS", "DOQQs", "Square Miles", "File Name", "Date Shipped"]
@@ -32,7 +32,7 @@ class Invoice
                     puts "#{key}-----"
 
                     array.each do |record|
-                        if project == "SL"
+                        if project == "SL" || project == "NRI"
                             csv << [
                                 record[:state_name],
                                 record[:county_name],
@@ -68,9 +68,9 @@ class Invoice
 
     end
 
-    def self.build_sl date_from, date_to, state
+    def self.build project, date_from, date_to, state
         # get the state and count with total easements shipped
-        p "build_sl"
+        p "build #{project}"
 
         # result = []
         result = {}
@@ -78,7 +78,7 @@ class Invoice
         begin
 
             # get the state
-            obj = {project: "SL", shipped_date: date_from..date_to}
+            obj = {project: project, shipped_date: date_from..date_to}
             obj[:tiles] = {state_id: state.id} if !state.nil?
         
                 

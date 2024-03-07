@@ -42,15 +42,16 @@ export default function TotalDelivery({ months, states, projects, token }) {
     formState: { errors },
   } = useForm();
 
-  //   console.log("TotalDelivery", {
-  //     months,
-  //     states,
-  //     token,
-  //     totals,
-  //     result,
-  //     values: getValues(),
-  //     errors,
-  //   });
+  console.log("TotalDelivery", {
+    months,
+    states,
+    projects,
+    token,
+    totals,
+    result,
+    values: getValues(),
+    errors,
+  });
 
   useEffect(() => {
     if (result) {
@@ -100,7 +101,7 @@ export default function TotalDelivery({ months, states, projects, token }) {
 
   const resetForm = () => {
     reset();
-    setResult(null)
+    setResult(null);
     setSelectedMonth(null);
   };
 

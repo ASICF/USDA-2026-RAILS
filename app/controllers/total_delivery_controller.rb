@@ -2,7 +2,7 @@ class TotalDeliveryController < ApplicationController
     authorize_resource :easements
 
     def index
-        @states = State.select(:id, :name).order(:name)
+        @states = State.active_nri_sl.exclude_geom.select(:id, :name).order(:name)
         @months = Tile.flown.shipped.select(:ship_date).order(:ship_date).map{|record| {date: record.ship_date.beginning_of_month, name: record.ship_date.strftime("%B %Y") }}.uniq
         @projects = Rails.application.secrets.active_projects
     

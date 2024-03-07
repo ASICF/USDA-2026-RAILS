@@ -919,6 +919,7 @@ class Tile < ApplicationRecord
                                 obj = {
                                     filename: filename,
                                     match_db: true,
+                                    project: tile.project,
                                     flown: tile.flown,
                                     ortho_processing: tile.ortho_processing,
                                     shipped: tile.shipped,

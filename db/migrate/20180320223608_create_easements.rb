@@ -7,6 +7,7 @@ class CreateEasements < ActiveRecord::Migration[5.1]
       t.string :project_no, index: true
       t.string :project_state_name, index: true, null: false
       t.string :phase
+      t.boolean :multiple_geom, default: false, null: false
       t.date :flight_date, index: true
       t.string :scale
       t.decimal :acres, index: true

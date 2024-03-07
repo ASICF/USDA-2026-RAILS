@@ -259,6 +259,7 @@ ActiveRecord::Schema.define(version: 2023_10_11_144023) do
     t.string "project_no"
     t.string "project_state_name", null: false
     t.string "phase"
+    t.boolean "multiple_geom", default: false, null: false
     t.date "flight_date"
     t.string "scale"
     t.decimal "acres"

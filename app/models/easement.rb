@@ -30,6 +30,7 @@ class Easement < ApplicationRecord
     scope :shipped,             -> { includes(:tiles).where.not(tiles: {ship_date: nil}) }
     scope :not_shipped,         -> { includes(:tiles).where(tiles: {ship_date: nil}) }
     scope :exclude_geom,        -> { select( Easement.attribute_names - ['geom'] ) }
+    scope :has_multiple_geom,   -> { where(multiple_geom: true) }
 
     # Validations
     validates :poly_id, uniqueness: true
@@ -447,6 +448,12 @@ class Easement < ApplicationRecord
                         result = ActiveRecord::Base.connection.execute(sql)
                         easement.time_zone_id = result[0]["id"]
 
+                        # Check the number of geometries
+                        sql = "SELECT ST_NumGeometries(ST_GeomFromText('#{easement.geom.to_s}')) as num_geom"
+                        result = ActiveRecord::Base.connection.execute(sql)
+
+                        easement.multiple_geom = result[0]["num_geom"] > 1
+
                         if !easement.save
                             p easement.errors.full_messages.to_sentence
                             raise Exception, easement.errors.full_messages.to_sentence
@@ -608,6 +615,7 @@ class Easement < ApplicationRecord
                         state_name: record.state_name,
                         latitude: record.latitude,
                         longitude: record.longitude,
+                        multi_geom: record.multiple_geom ? "True" : "False",
                         min_sun_angle: Rails.application.secrets.min_sun_angle
                     }
 
@@ -848,6 +856,24 @@ class Easement < ApplicationRecord
         # p output
         # f.close
 
+    end
+
+    def self.test
+
+
+
+        # Get the timezone
+        # sql = "select id
+        # from time_zones tz where st_intersects(ST_GeomFromText('#{easement.geom.to_s}'), tz.geom)
+        # order by (st_area(st_intersection(ST_GeomFromText('#{easement.geom.to_s}'), tz.geom))/st_area(ST_GeomFromText('#{easement.geom.to_s}'))) DESC"
+
+        Easement.all.each do |easement|
+            sql = "SELECT ST_NumGeometries(ST_GeomFromText('#{easement.geom.to_s}')) as num"
+
+            result = ActiveRecord::Base.connection.execute(sql)
+
+            p result[0]["num"]
+        end
     end
 
 end

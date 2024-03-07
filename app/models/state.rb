@@ -19,6 +19,7 @@ class State < ApplicationRecord
     scope :active, -> { where(id: Easement.pluck(:state_id).uniq + Doqq.pluck(:state_id).uniq).order(:name) }
     scope :active_sl, -> { where(id: Easement.sl.pluck(:state_id).uniq).order(:name) }
     scope :active_nri, -> { where(id: Easement.nri.pluck(:state_id).uniq).order(:name) }
+    scope :active_nri_sl, -> { where(id: Easement.pluck(:state_id).uniq).order(:name) }
     scope :active_naip, -> { where(id: Doqq.pluck(:state_id).uniq).order(:name) }
     scope :exclude_geom, -> { select( State.attribute_names - ['geom'] ) }
     # Dynamically build the project states

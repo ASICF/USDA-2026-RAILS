@@ -1,7 +1,7 @@
 class TileDumpCompareController < ApplicationController
   def index
     @projects = Rails.application.secrets.active_projects
-    @states = State.exclude_geom.select(:id, :name)
+    @states = State.active_nri_sl.exclude_geom.select(:id, :name)
   end
 
   def execute

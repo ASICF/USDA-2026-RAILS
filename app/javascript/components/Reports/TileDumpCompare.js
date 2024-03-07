@@ -12,7 +12,7 @@ import {
   Grid,
   List,
   Header,
-  ButtonContent
+  ButtonContent,
 } from "semantic-ui-react";
 
 import "semantic-ui-css/semantic.min.css";
@@ -56,7 +56,7 @@ export default function TileDumpCompare({ projects, states, token }) {
   const onSubmit = (data) => {
     console.error("onSubmit", data);
     setSubmitted(true);
-    setLoading(true)
+    setLoading(true);
     const form = new FormData();
 
     form.append("authenticity_token", token);
@@ -83,7 +83,7 @@ export default function TileDumpCompare({ projects, states, token }) {
       .then(({ data }) => {
         console.log("submit response", data);
         setSubmitted(true);
-        setLoading(false)
+        setLoading(false);
         // Set message
         setMessage({
           status: data.state ? "Success" : "Error",
@@ -91,6 +91,7 @@ export default function TileDumpCompare({ projects, states, token }) {
         });
         // Reset form if successful
         if (data.state) {
+          setSubmitted(false);
           setResult(data.records);
         }
         window.onbeforeunload = null;
@@ -275,22 +276,29 @@ export default function TileDumpCompare({ projects, states, token }) {
         <Divider />
 
         <Button
-          primary
+          animated
           floated="right"
-          type="button"
+          primary
           loading={submitted}
-        disabled={submitted}
+          disabled={submitted}
           onClick={handleSubmit(onSubmit)}
         >
-           <ButtonContent visible>Submit</ButtonContent>
+          <ButtonContent visible>Submit</ButtonContent>
           <ButtonContent hidden>
-          <Icon name='arrow right' />
+            <Icon name="arrow right" />
           </ButtonContent>
         </Button>
-        <Button secondary floated="right" type="button" onClick={() => reset()}>
-        <ButtonContent visible>Reset</ButtonContent>
+        <Button
+          secondary
+          animated
+          floated="right"
+          type="button"
+          style={{ marginRight: "0.5em" }}
+          onClick={() => reset()}
+        >
+          <ButtonContent visible>Reset</ButtonContent>
           <ButtonContent hidden>
-          <Icon name="undo" />
+            <Icon name="undo" />
           </ButtonContent>
         </Button>
         <div style={{ clear: "both" }} />
@@ -320,6 +328,14 @@ export default function TileDumpCompare({ projects, states, token }) {
                 }
               >
                 Poly ID
+              </Table.HeaderCell>
+              <Table.HeaderCell
+                sorted={column === "project" ? direction : null}
+                onClick={() =>
+                  dispatch({ type: "CHANGE_SORT", column: "project" })
+                }
+              >
+                Project
               </Table.HeaderCell>
               <Table.HeaderCell
                 sorted={column === "filename" ? direction : null}
@@ -380,7 +396,10 @@ export default function TileDumpCompare({ projects, states, token }) {
               return (
                 <Table.Row key={record.id}>
                   <Table.Cell>{record.poly_id}</Table.Cell>
-                  <Table.Cell>{record.filename ? record.filename : "NA"}</Table.Cell>
+                  <Table.Cell>{record.project}</Table.Cell>
+                  <Table.Cell>
+                    {record.filename ? record.filename : "NA"}
+                  </Table.Cell>
                   <Table.Cell>{record.county_name}</Table.Cell>
                   <Table.Cell>
                     {record.flight_date

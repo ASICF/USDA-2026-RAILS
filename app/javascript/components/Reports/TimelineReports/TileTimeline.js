@@ -70,6 +70,29 @@ const TileTimeline = ({ records, searchInput }) => {
         <Table.Header>
           <Table.Row textAlign="center">
             <Table.HeaderCell
+              sorted={column === "id" ? direction : null}
+              onClick={() => dispatch({ type: "CHANGE_SORT", column: "id" })}
+            >
+              ID
+            </Table.HeaderCell>
+
+            <Table.HeaderCell
+              sorted={column === "poly_id" ? direction : null}
+              onClick={() =>
+                dispatch({ type: "CHANGE_SORT", column: "poly_id" })
+              }
+            >
+              Poly ID
+            </Table.HeaderCell>
+            <Table.HeaderCell
+              sorted={column === "project" ? direction : null}
+              onClick={() =>
+                dispatch({ type: "CHANGE_SORT", column: "project" })
+              }
+            >
+              Project
+            </Table.HeaderCell>
+            <Table.HeaderCell
               sorted={column === "county_name" ? direction : null}
               onClick={() =>
                 dispatch({ type: "CHANGE_SORT", column: "county_name" })
@@ -94,22 +117,6 @@ const TileTimeline = ({ records, searchInput }) => {
               }
             >
               Flight Date
-            </Table.HeaderCell>
-
-            <Table.HeaderCell
-              sorted={column === "id" ? direction : null}
-              onClick={() => dispatch({ type: "CHANGE_SORT", column: "id" })}
-            >
-              ID
-            </Table.HeaderCell>
-
-            <Table.HeaderCell
-              sorted={column === "poly_id" ? direction : null}
-              onClick={() =>
-                dispatch({ type: "CHANGE_SORT", column: "poly_id" })
-              }
-            >
-              Poly ID
             </Table.HeaderCell>
 
             <Table.HeaderCell
@@ -154,6 +161,15 @@ const TileTimeline = ({ records, searchInput }) => {
             return (
               <Table.Row key={record} textAlign="center">
                 <Table.Cell>
+                  {record.id !== null && <RenderValue value={record.id} />}
+                </Table.Cell>
+                <Table.Cell>
+                  <RenderValue value={record.poly_id} />
+                </Table.Cell>
+                <Table.Cell>
+                  <RenderValue value={record.project} />
+                </Table.Cell>
+                <Table.Cell>
                   <RenderValue value={record.county_name} />
                 </Table.Cell>
                 <Table.Cell>
@@ -161,14 +177,6 @@ const TileTimeline = ({ records, searchInput }) => {
                 </Table.Cell>
                 <Table.Cell>
                   <RenderValue value={record.flight_date} date />
-                </Table.Cell>
-                <Table.Cell>
-                  {record.id !== null && (
-                  <RenderValue value={record.id} />
-                  )}
-                </Table.Cell>
-                <Table.Cell>
-                  <RenderValue value={record.poly_id} />
                 </Table.Cell>
                 <Table.Cell>
                   <RenderValue value={record.project} />

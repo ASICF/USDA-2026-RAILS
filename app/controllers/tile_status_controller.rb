@@ -10,7 +10,7 @@ class TileStatusController < ApplicationController
     if params[:poly_id]
       render json: {
         state: true,
-        result: Tile.select(:poly_id, :county_name, :state_name, :flight_date, :at_done_date, :ortho_proc_date, :ship_date, :invoiced_date, :usda_accepted_date).where("LOWER(poly_id) ILIKE ?", "%#{params[:poly_id].downcase}%").order(:poly_id).limit(50)
+        result: Tile.select(:poly_id, :project, :county_name, :state_name, :flight_date, :at_done_date, :ortho_proc_date, :ship_date, :invoiced_date, :usda_accepted_date).where("LOWER(poly_id) ILIKE ?", "%#{params[:poly_id].downcase}%").order(:poly_id).limit(50)
       }
     else
       render json: {

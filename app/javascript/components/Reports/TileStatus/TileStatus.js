@@ -135,6 +135,9 @@ function TileStatus(props) {
               <Table.Row>
                 <Table.HeaderCell textAlign="center">Poly ID</Table.HeaderCell>
                 <Table.HeaderCell textAlign="center">
+                  Project
+                </Table.HeaderCell>
+                <Table.HeaderCell textAlign="center">
                   County Name
                 </Table.HeaderCell>
                 <Table.HeaderCell textAlign="center">
@@ -172,6 +175,9 @@ function TileStatus(props) {
                   >
                     <Table.Cell>
                       <RenderValue value={data.poly_id} />
+                    </Table.Cell>
+                    <Table.Cell>
+                      <RenderValue value={data.project} />
                     </Table.Cell>
                     <Table.Cell>
                       <RenderValue value={data.county_name} />

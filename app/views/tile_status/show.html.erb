@@ -1,4 +1,5 @@
-<% content_for :template %>
+<% content_for :template, "large-screen"%>
+<% content_for :no_container, true %>
 <%= react_component("Reports/TileStatus/TileStatusShow", {
     tile: @tile,
     footprints: @footprints,

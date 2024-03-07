@@ -21,8 +21,7 @@
     <%= javascript_pack_tag 'application', 'data-turbolinks-track': 'reload' %>
 
   </head>
-
-  <body class="<%= yield(:template).empty? ? '' : yield(:template)%>">
+  <body class="<%= yield(:template) %>">
 
       <% if yield(:ignore_css).empty? %>
 
@@ -33,7 +32,7 @@
         <% else %>
 
           <%= render 'layouts/header' %>
-          <div class="site-container ui container">
+          <div class="site-container <%= yield(:no_container).present? ? '' : 'ui container' %>">
 
               <% if !yield(:template).include? 'full-screen' %>
 

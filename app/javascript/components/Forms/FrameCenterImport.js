@@ -10,7 +10,7 @@ import {
   Breadcrumb,
   Icon,
   List,
-  ButtonContent
+  ButtonContent,
 } from "semantic-ui-react";
 import _ from "lodash";
 
@@ -29,7 +29,8 @@ export default function FrameCenterImport({
   cameras,
   states,
   projects,
-  split_path,
+  sl_split_path,
+  nri_split_path,
   token,
 }) {
   const [message, setMessage] = useState(null);
@@ -76,7 +77,7 @@ export default function FrameCenterImport({
   const onSubmit = (data) => {
     console.error("onSubmit", data);
     setSubmitted(true);
-    setLoading(true)
+    setLoading(true);
     const form = new FormData();
 
     form.append("authenticity_token", token);
@@ -110,7 +111,7 @@ export default function FrameCenterImport({
       .then(({ data }) => {
         console.log("submit response", data);
         setSubmitted(false);
-        setLoading(false)
+        setLoading(false);
         // Set message
         setMessage({
           status: data.state ? "Success" : "Error",
@@ -433,8 +434,11 @@ export default function FrameCenterImport({
           </Form.Field>
 
           <Form.Field>
-            <label>EO Frame Centers (.txt)</label>
-            <p style={{ margin: "1em" }}>{split_path}</p>
+            <label>EO Splitter Output</label>
+            <p style={{ margin: "0.5em" }}>
+              SL:  {sl_split_path}<br/>
+              NRI:  {nri_split_path}
+            </p>
           </Form.Field>
         </Form.Group>
 
@@ -451,7 +455,7 @@ export default function FrameCenterImport({
         >
           <ButtonContent visible>Submit</ButtonContent>
           <ButtonContent hidden>
-          <Icon name='arrow right' />
+            <Icon name="arrow right" />
           </ButtonContent>
         </Button>
         <Button
@@ -463,7 +467,7 @@ export default function FrameCenterImport({
         >
           <ButtonContent visible>Reset</ButtonContent>
           <ButtonContent hidden>
-          <Icon name="undo" />
+            <Icon name="undo" />
           </ButtonContent>
         </Button>
         <div style={{ clear: "both" }} />

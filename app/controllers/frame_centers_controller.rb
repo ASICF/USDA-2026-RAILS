@@ -6,7 +6,8 @@ class FrameCentersController < ApplicationController
         @cameras = Camera.all.order(:name).map { |c| {id: c.id, label: "#{c.company.alias} | #{c.name} | #{c.serial_number}", company_id: c.company_id} }
         @states = State.active_naip.order(:name).map { |state| {id: state.id, name: state.name } }
         @projects = ["NRI/SL"]
-        @split_path = Rails.application.secrets.eo_splitter_p_path
+        @sl_split_path = Rails.application.secrets.sl_eo_splitter_p_path
+        @nri_split_path = Rails.application.secrets.nri_eo_splitter_p_path
     end
 
     def upload

@@ -1,6 +1,7 @@
 class TileDumpController < ApplicationController
   def index
     @states = State.active_sl.select(:id, :name)
+    @projects = Rails.application.secrets.active_projects
 
     # Create History Record
     ReportHistory.create(name: "Tile Dump Compare", user: @current_user)
@@ -13,6 +14,11 @@ class TileDumpController < ApplicationController
           state: false,
           message: "No Input Directory Specified"
       }
+    elsif params[:project].blank?
+        render json: {
+            state: false,
+            message: "No Project specified"
+        }
     elsif params[:state_id].blank?
         render json: {
             state: false,

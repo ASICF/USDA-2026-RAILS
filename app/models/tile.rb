@@ -458,11 +458,12 @@ class Tile < ApplicationRecord
         p params
 
         user = params[:user] || nil
+        project = params[:project]
 
         job = Job.create(
             started_at: Time.now,
             active: true,
-            message: "Iterating Tiffs in Tile Dump folder...",
+            message: "Iterating #{project} Tiffs in Tile Dump folder...",
             process_type: "Tile Dump",
             creator: user
         )
@@ -480,7 +481,7 @@ class Tile < ApplicationRecord
                 # History
                 history = History.new
                 history.message = "Processing"
-                history.action_type = "Tile Dump"
+                history.action_type = "Tile Dump (#{project})"
                 history.creator = user
                 history.save
 
@@ -504,12 +505,24 @@ class Tile < ApplicationRecord
                     filename_without_extension = File.basename(file, '.tif')
 
                     # find the file in the database
-                    tile = state.tiles.find_by(filename: filename_without_extension)
+                    tile = state.tiles.find_by(filename: filename_without_extension, project: project)
+
+                    p "<><><><><><><>"
+                    p filename
+                    p tile
+                    p "<><><><><><><>"
 
                     # Check if the tile has orhto processing or not
                     # then check if the tile dump date is set and if so skip it
                     if !tile
-                        error_file.puts("#{filename} - Tile does not exist in the database\n")
+                        
+                        missing_tile = state.tiles.find_by(filename: filename_without_extension)
+
+                        if missing_tile.project != project
+                            error_file.puts("#{filename} (#{project}) - Tile is in the wrong project folder\n")
+                        else
+                            error_file.puts("#{filename} - Tile does not exist in the database\n")
+                        end
                         error_count += 1
                         next
                     elsif tile && !tile.ortho_processing

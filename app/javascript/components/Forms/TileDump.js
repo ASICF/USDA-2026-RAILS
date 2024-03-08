@@ -20,7 +20,7 @@ import { Controller, useForm } from "react-hook-form";
 import MessageBox from "../Shared/MessageBox";
 import axios from "axios";
 
-function TileDump({ states, token }) {
+function TileDump({ states, projects, token }) {
   const [message, setMessage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [accordionState, setAccordionState] = useState(false);
@@ -34,7 +34,7 @@ function TileDump({ states, token }) {
     formState: { errors },
   } = useForm();
 
-  //   console.log("TileDump", { states });
+  console.log("TileDump", { states, projects });
 
   const handleChange = (e, { name, value }) => {
     setValue(name, value);
@@ -42,6 +42,7 @@ function TileDump({ states, token }) {
 
   const resetForm = () => {
     reset({
+      project: "",
       state_id: "",
       input_directory: "",
     });
@@ -60,6 +61,7 @@ function TileDump({ states, token }) {
     axios
       .post(`/tile_dump/upload`, {
         state_id: data.state_id,
+        project: data.project,
         input_directory: data.input_directory,
         authenticity_token: token,
       })
@@ -72,6 +74,7 @@ function TileDump({ states, token }) {
           text: data.message,
         });
         setLoading(false);
+        resetForm()
 
         window.onbeforeunload = null;
       })
@@ -155,12 +158,48 @@ function TileDump({ states, token }) {
       <Form>
         <Form.Group widths="equal">
           <Controller
+            name={"project"}
+            control={control}
+            rules={{ required: "Required" }}
+            render={({ field: { name, value } }) => (
+              <Form.Select
+                width={8}
+                fluid
+                search
+                selection
+                clearable
+                name={name}
+                data-value={value}
+                label={"Project"}
+                required={true}
+                value={value}
+                onChange={handleChange}
+                autoComplete="off"
+                options={projects.map((record) => {
+                  return {
+                    key: record,
+                    value: record,
+                    text: record,
+                  };
+                })}
+                error={
+                  errors[name]
+                    ? {
+                        content: errors[name].message,
+                        pointing: "above",
+                      }
+                    : false
+                }
+              />
+            )}
+          />
+          <Controller
             name={"state_id"}
             control={control}
             rules={{ required: "Required" }}
             render={({ field: { name, value } }) => (
               <Form.Select
-                width={4}
+                width={8}
                 fluid
                 search
                 selection
@@ -190,6 +229,8 @@ function TileDump({ states, token }) {
               />
             )}
           />
+        </Form.Group>
+        <Form.Group>
           <Controller
             name={"input_directory"}
             control={control}
@@ -197,7 +238,7 @@ function TileDump({ states, token }) {
             render={({ field: { name, onBlur, onChange, value } }) => (
               <Form.Input
                 fluid
-                width={12}
+                width={16}
                 label="Tile Dump Folder"
                 autoComplete="off"
                 name={name}

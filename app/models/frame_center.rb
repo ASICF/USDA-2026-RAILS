@@ -30,6 +30,7 @@ class FrameCenter < ApplicationRecord
     scope :rejected,        -> { where(sun_angle_error: true) }
     scope :approved,        -> { where(sun_angle_error: false) }
     scope :has_rejections,  -> {includes(:rejected_tiles).where.not(rejected_tiles: { id: nil })}
+    scope :has_footprint,  -> { where.not(footprint_id: nil) }
     scope :exclude_geom,    -> { select( FrameCenter.attribute_names - ['geom'] ) }
 
     def rejected?
@@ -88,8 +89,11 @@ class FrameCenter < ApplicationRecord
                 end
 
                 # Check the output path and make sure it works there
-                if !Dir.exist?(Rails.application.secrets.eo_splitter_path)
-                    raise Exception, "Output EO Path (#{Rails.application.secrets.eo_splitter_path}) does not exist"
+                if !Dir.exist?(Rails.application.secrets.nri_eo_splitter_path)
+                    raise Exception, "Output NRI EO Path (#{Rails.application.secrets.nri_eo_splitter_path}) does not exist"
+                end
+                if !Dir.exist?(Rails.application.secrets.sl_eo_splitter_path)
+                    raise Exception, "Output SL EO Path (#{Rails.application.secrets.sl_eo_splitter_path}) does not exist"
                 end
 
                 # Copy the file to the server
@@ -175,6 +179,9 @@ class FrameCenter < ApplicationRecord
         sun_angle_rejections = 0
         rejected_footprints = 0
 
+        # nri = false
+        # sl = false
+
         # Start a Transaction Block
         ActiveRecord::Base.transaction do
             begin
@@ -237,8 +244,6 @@ class FrameCenter < ApplicationRecord
                 if project == "NAIP"
                     state = State.find_by(id: params[:state_id])
                 end
-
-                p upload
 
                 File.open(file, "r", row_sep: :auto) do |f|
                     f.each_line do |line|
@@ -357,6 +362,9 @@ class FrameCenter < ApplicationRecord
                                 fc.sl = footprint.sl
                                 fc.nri = footprint.nri
                                 fc.naip = footprint.naip
+
+                                # nri = true if fc.nri == true
+                                # sl = true if fc.sl == true
 
                                 # if the footprint has a county then associate it to the frame center
                                 if footprint.county_id.present? || footprint.state_id.present?
@@ -562,19 +570,20 @@ class FrameCenter < ApplicationRecord
                     # assemble the final message
                     message = message + sun_angle_rejection_message + rejected_footprints_message + duplicate_message + skipped_message + " for #{project} from \"#{params[:file].original_filename}\"."
 
-                    # Create a new History record
-                    history.message = message + " EOs were split to #{Rails.application.secrets.eo_splitter_p_path}."
-                    history.save
-
-                    # add records to polymorphic association
-                    history.uploads << upload
-                    history.frame_centers = upload.frame_centers
-
                     # ByPass Eo Splitter tool if no valid frame centers
-                    if project == "SL" && upload.frame_centers.count > 0
+                    if project == "NRI/SL" && upload.frame_centers.count > 0
 
-                        # pass the upload to the eo splitter
-                        self.eo_splitter upload, output_path
+                        if upload.frame_centers.nri.count > 0
+                            # pass the upload to the eo splitter
+                            self.eo_splitter "NRI", upload, Rails.application.secrets.nri_eo_splitter_path
+                            message = message + " NRI EOs were split to #{Rails.application.secrets.nri_eo_splitter_p_path}."
+                        end
+
+                        if upload.frame_centers.sl.count > 0
+                            # pass the upload to the eo splitter
+                            self.eo_splitter "SL", upload, Rails.application.secrets.sl_eo_splitter_path
+                            message = message + " SL EOs were split to #{Rails.application.secrets.sl_eo_splitter_p_path}."
+                        end
 
                         # Iterate the tiles and update the median flight date time
                         # => expanded this to incude all tiles that match the criteria since they might not have been completely covered the first time
@@ -590,19 +599,27 @@ class FrameCenter < ApplicationRecord
                         end
                     end
 
+                    # Create a new History record
+                    history.message = message
+                    history.save
+
+                    # add records to polymorphic association
+                    history.uploads << upload
+                    history.frame_centers = upload.frame_centers
+
                     job.update(
                         finished_at: Time.now,
                         active: false,
                         success: true,
                         upload: upload,
-                        message: message + " EOs were split to #{Rails.application.secrets.eo_splitter_p_path}."
+                        message: message
                     )
 
                     # Log and send email
                     Mailbox.ship({
                         users: MailGroup.find_by(name: "AT Done").users | [user],
                         subject: "#{project} Frame Centers have been imported",
-                        message: message + "<br/><br/> EOs were split to #{Rails.application.secrets.eo_splitter_p_path}.",
+                        message: message,
                         route: Rails.application.routes.url_helpers.show_timeline_url(history.id, only_path: false, host: Rails.application.secrets.host)  
                     })
 
@@ -667,7 +684,7 @@ class FrameCenter < ApplicationRecord
 
     end
 
-    def self.eo_splitter upload, output_path=Rails.application.secrets.eo_splitter_path
+    def self.eo_splitter project, upload, output_path=Rails.application.secrets.eo_splitter_path
         # Iterate the EOs and write to folders based on the state and utm zone
         p "eo_splitter #{output_path}"
 
@@ -679,14 +696,29 @@ class FrameCenter < ApplicationRecord
         # if no frame centers then throw error
         raise Exception, "No Frame Center in Upload" if upload.frame_centers.size == 0
 
+        fc_obj = {}
+        
+        if project == "NRI"
+            fc_obj[:nri] = true
+        elsif project == "SL"
+            fc_obj[:sl] = true
+        end
+
         # object to build the renders
         obj = {
             no_footprint: [],
             states: {}
         }
 
+        # p "-----"
+        # p fc_obj
+        # p upload.frame_centers.has_footprint.pluck(:nri).uniq
+        # p upload.frame_centers.has_footprint.pluck(:sl).uniq
+        # p upload.frame_centers.has_footprint.where(fc_obj).count
+        # p "-----"
+
         # capture the first frame center to 
-        first = upload.frame_centers.first
+        first = upload.frame_centers.where(fc_obj).first
 
         # Add the folder to the output path
         output_path = "#{output_path}/EO Split #{first.flight_date.strftime("%F")}"
@@ -708,7 +740,7 @@ class FrameCenter < ApplicationRecord
         #     where(project: first.project, flight_date: first.flight_date.all_day, camera_id: first.camera_id, flown_by_id: first.flown_by_id)
         #         .order(:strip).each do |fc|
 
-        upload.frame_centers.includes(footprint: [:tiles]).order(:strip).each do |fc|
+        upload.frame_centers.where(fc_obj).includes(footprint: [:tiles]).order(:strip).each do |fc|
 
             # if no Footprint then add to the array
             if fc.footprint.nil?
@@ -717,7 +749,7 @@ class FrameCenter < ApplicationRecord
             end
 
             # iterate the easements
-            fc.footprint.tiles.includes(:easement).each do |tile|
+            fc.footprint.tiles.where(project: project).includes(:easement).each do |tile|
 
                 # get the easement of the tile
                 easement = tile.easement

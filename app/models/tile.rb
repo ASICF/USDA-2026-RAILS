@@ -402,6 +402,7 @@ class Tile < ApplicationRecord
         ActiveRecord::Base.transaction do
             begin
                 p "Tile Generation"
+                p "Easement Count: #{easements.count}"
 
                 # Iteramte the Easements
                 easements.each do |easement|

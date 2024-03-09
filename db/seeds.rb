@@ -610,8 +610,10 @@ end
 # SL Contract Rates
 CSV.foreach(Rails.application.secrets.project_cost_path, {:headers => true, :header_converters => :symbol}) do |row|
 
+    pp row
+
     # Find the state
-    state = State.find_by(name: row[:state])
+    state = State.find_by(abv: row[:state])
 
     raise Exception, "Could not find State: #{row[:state]}" if state.nil?
 
@@ -622,8 +624,8 @@ CSV.foreach(Rails.application.secrets.project_cost_path, {:headers => true, :hea
         amount: row[:total].to_d,
         flight_amount: row[:flight_price].to_d,
         production_amount: row[:prod_price].to_d,
-        start_date: "2024-02-09",
-        end_date: "2025-02-08",
+        start_date: "2024-03-09",
+        end_date: "2025-03-09",
         state: state
     )
 
@@ -646,8 +648,8 @@ CSV.foreach(Rails.application.secrets.project_cost_path, {:headers => true, :hea
             company_alias: company.alias,
             phase: 100,
             cost: flight_rate.to_d,
-            start_date: "2024-02-09",
-            end_date: "2025-02-08",
+            start_date: "2024-03-09",
+            end_date: "2025-03-09",
             state: state,
             company: company
         )
@@ -659,8 +661,8 @@ CSV.foreach(Rails.application.secrets.project_cost_path, {:headers => true, :hea
             company_alias: company.alias,
             phase: 300,
             cost: prod_rate.to_d,
-            start_date: "2024-02-09",
-            end_date: "2025-02-08",
+            start_date: "2024-03-09",
+            end_date: "2025-03-09",
             state: state,
             company: company
         )
@@ -668,66 +670,66 @@ CSV.foreach(Rails.application.secrets.project_cost_path, {:headers => true, :hea
 
 end
 
-# NRI Contract rates
-CSV.foreach(Rails.application.secrets.project_cost_path, {:headers => true, :header_converters => :symbol}) do |row|
+# # NRI Contract rates
+# CSV.foreach(Rails.application.secrets.project_cost_path, {:headers => true, :header_converters => :symbol}) do |row|
 
-    # Find the state
-    state = State.find_by(name: row[:state])
+#     # Find the state
+#     state = State.find_by(name: row[:state])
 
-    raise Exception, "Could not find State: #{row[:state]}" if state.nil?
+#     raise Exception, "Could not find State: #{row[:state]}" if state.nil?
 
-    # Create the award
-    ContractAward.create(
-        project: "NRI",
-        project_no: row[:project],
-        amount: row[:total].to_d,
-        flight_amount: row[:flight_price].to_d,
-        production_amount: row[:prod_price].to_d,
-        start_date: "2024-02-09",
-        end_date: "2025-02-08",
-        state: state
-    )
+#     # Create the award
+#     ContractAward.create(
+#         project: "NRI",
+#         project_no: row[:project],
+#         amount: row[:total].to_d,
+#         flight_amount: row[:flight_price].to_d,
+#         production_amount: row[:prod_price].to_d,
+#         start_date: "2024-03-09",
+#         end_date: "2025-03-09",
+#         state: state
+#     )
 
-    # Iterate the companies
-    Company.all.each do |company|
+#     # Iterate the companies
+#     Company.all.each do |company|
 
-        flight_rate = row[:sub_flight]
-        prod_rate = row[:sub_prod]
+#         flight_rate = row[:sub_flight]
+#         prod_rate = row[:sub_prod]
 
-        if company.alias == "ASI"
-            flight_rate = row[:asi_flight]
-            prod_rate = row[:asi_prod]
-        end
+#         if company.alias == "ASI"
+#             flight_rate = row[:asi_flight]
+#             prod_rate = row[:asi_prod]
+#         end
 
-        # Create the Contract Rates
-        # Flight
-        ContractRate.create(
-            project: "NRI",
-            project_no: row[:project],
-            company_alias: company.alias,
-            phase: 100,
-            cost: flight_rate.to_d,
-            start_date: "2024-02-09",
-            end_date: "2025-02-08",
-            state: state,
-            company: company
-        )
+#         # Create the Contract Rates
+#         # Flight
+#         ContractRate.create(
+#             project: "NRI",
+#             project_no: row[:project],
+#             company_alias: company.alias,
+#             phase: 100,
+#             cost: flight_rate.to_d,
+#             start_date: "2024-03-09",
+#             end_date: "2025-03-09",
+#             state: state,
+#             company: company
+#         )
 
-        # Production
-        ContractRate.create(
-            project: "NRI",
-            project_no: row[:project],
-            company_alias: company.alias,
-            phase: 300,
-            cost: prod_rate.to_d,
-            start_date: "2024-02-09",
-            end_date: "2025-02-08",
-            state: state,
-            company: company
-        )
-    end
+#         # Production
+#         ContractRate.create(
+#             project: "NRI",
+#             project_no: row[:project],
+#             company_alias: company.alias,
+#             phase: 300,
+#             cost: prod_rate.to_d,
+#             start_date: "2024-03-09",
+#             end_date: "2025-03-09",
+#             state: state,
+#             company: company
+#         )
+#     end
 
-end
+# end
 
 # iterate the states
 # => SL
@@ -748,21 +750,21 @@ State.active_sl.each do |state|
 end
 
 # => NRI
-State.active_nri.each do |state|
+# State.active_nri.each do |state|
 
-    p state.name
+#     p state.name
     
-    # Update the Easements and Tiles
-    contract_award = ContractAward.find_by(state: state, project: "NRI")
+#     # Update the Easements and Tiles
+#     contract_award = ContractAward.find_by(state: state, project: "NRI")
 
-    # update the easements with the state
-    state.easements.nri.update(contract_award: contract_award)
-    state.tiles.nri.update(contract_award: contract_award)
+#     # update the easements with the state
+#     state.easements.nri.update(contract_award: contract_award)
+#     state.tiles.nri.update(contract_award: contract_award)
 
-    # update the flown tiles
-    state.tiles.nri.flown.each { |tile| tile.set_contract_rate }
+#     # update the flown tiles
+#     state.tiles.nri.flown.each { |tile| tile.set_contract_rate }
 
-end
+# end
 
 return
 

@@ -1453,7 +1453,16 @@ class FinalDelivery < ApplicationRecord
         gt_citation_replace = 'GTCitationGeoKey (Ascii,'+(filename.size + 1).to_s+'): "'+filename+'"'
 
         # Match based on Zones
-        if utm == 13                                      
+        if utm == 10                                      
+            pcs_citation_match = 'PCSCitationGeoKey (Ascii,443): "ESRI PE String = PROJCS["NAD_1983_UTM_Zone_10N",GEOGCS["GCS_North_American_1983",DATUM["D_North_American_1983",SPHEROID["GRS_1980",6378137.0,298.257222101]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],PROJECTION["Transverse_Mercator"],PARAMETER["False_Easting",500000.0],PARAMETER["False_Northing",0.0],PARAMETER["Central_Meridian",-123.0],PARAMETER["Scale_Factor",0.9996],PARAMETER["Latitude_Of_Origin",0.0],UNIT["Meter",1.0]]"'
+            pcs_citation_replace = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM Zone 10N"'
+        elsif utm == 11                                      
+            pcs_citation_match = 'PCSCitationGeoKey (Ascii,443): "ESRI PE String = PROJCS["NAD_1983_UTM_Zone_11N",GEOGCS["GCS_North_American_1983",DATUM["D_North_American_1983",SPHEROID["GRS_1980",6378137.0,298.257222101]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],PROJECTION["Transverse_Mercator"],PARAMETER["False_Easting",500000.0],PARAMETER["False_Northing",0.0],PARAMETER["Central_Meridian",-117.0],PARAMETER["Scale_Factor",0.9996],PARAMETER["Latitude_Of_Origin",0.0],UNIT["Meter",1.0]]"'
+            pcs_citation_replace = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM Zone 11N"'
+        elsif utm == 12                                      
+            pcs_citation_match = 'PCSCitationGeoKey (Ascii,443): "ESRI PE String = PROJCS["NAD_1983_UTM_Zone_12N",GEOGCS["GCS_North_American_1983",DATUM["D_North_American_1983",SPHEROID["GRS_1980",6378137.0,298.257222101]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],PROJECTION["Transverse_Mercator"],PARAMETER["False_Easting",500000.0],PARAMETER["False_Northing",0.0],PARAMETER["Central_Meridian",-111.0],PARAMETER["Scale_Factor",0.9996],PARAMETER["Latitude_Of_Origin",0.0],UNIT["Meter",1.0]]"'
+            pcs_citation_replace = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM Zone 12N"'
+        elsif utm == 13                                      
             pcs_citation_match = 'PCSCitationGeoKey (Ascii,443): "ESRI PE String = PROJCS["NAD_1983_UTM_Zone_13N",GEOGCS["GCS_North_American_1983",DATUM["D_North_American_1983",SPHEROID["GRS_1980",6378137.0,298.257222101]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],PROJECTION["Transverse_Mercator"],PARAMETER["False_Easting",500000.0],PARAMETER["False_Northing",0.0],PARAMETER["Central_Meridian",-105.0],PARAMETER["Scale_Factor",0.9996],PARAMETER["Latitude_Of_Origin",0.0],UNIT["Meter",1.0]]"'
             pcs_citation_replace = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM Zone 13N"'
         elsif utm == 14

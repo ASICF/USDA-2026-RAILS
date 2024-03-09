@@ -383,21 +383,26 @@ class Easement < ApplicationRecord
                     p file
                     p "--------------------"
                     file.each do |record|
-                        puts "Easement Number: #{record.attributes["mod_nestid"]}"
+                        puts "Easement Number: #{record.attributes["NESTID"]}"
                         # pp record.attributes
 
-                        # Find the State
-                        state = State.find_by(abv: record.attributes["Spatial_ST"])
+                        # Find the State 
+                        state = State.find_by(abv: record.attributes["SPATIAL_ST"])
+
+                        # p "=-=-=-=-=-=-=-="
+                        # p state.name
+                        # p record.attributes["SPATIAL_ST"]
+                        # p "=-=-=-=-=-=-=-="
 
                         if state.nil?
-                            raise Exception, "Could not match State with FIPS: #{record.attributes["Spatial_ST"]}"
+                            raise Exception, "Could not match State with FIPS: #{record.attributes["SPATIAL_ST"]}"
                         end
 
                         # Find the county based on the selected state
-                        county = state.counties.find_by(full_fips: "#{record.attributes["Spatial_FI"]}")
+                        county = state.counties.find_by(full_fips: "#{record.attributes["SPATIAL_FI"]}")
 
-                        if county.nil? || county.name != record.attributes["Spatial_Co"]
-                            raise Exception, "Could not match County with FIPS: #{record.attributes["Spatial_FI"]}"
+                        if county.nil? || county.name != record.attributes["SPATIAL_Co"]
+                            raise Exception, "Could not match County with FIPS: #{record.attributes["SPATIAL_FI"]} in State: #{record.attributes["SPATIAL_ST"]}"
                         end
 
                         # Find the contract award
@@ -406,12 +411,12 @@ class Easement < ApplicationRecord
                         # create the easement
                         easement = Easement.new(
                             # scale: record.attributes["Scale"],
-                            acres: record.attributes["fin_acres"],
+                            acres: record.attributes["CalcAcres_"],
                             # buffer_acres: record.attributes["BufferAcre"],
-                            latitude: record.attributes["CENTROID_Y"],
-                            longitude: record.attributes["CENTROID_X"],
-                            original_poly_id: (record.attributes["NESTID"].empty? ? record.attributes["mod_nestid"] : record.attributes["NESTID"]),
-                            poly_id: record.attributes["mod_nestid"].gsub(/[^\w\s_-]+/, '').gsub(/(^|\b\s)\s+($|\s?\b)/, '\\1\\2').gsub(/\s+/, '_'),
+                            latitude: record.attributes["Lat_WGS84"],
+                            longitude: record.attributes["Long_WGS84"],
+                            original_poly_id: record.attributes["NESTID"],
+                            poly_id: record.attributes["NESTID"],
                             project: params[:project],
                             project_no: contract_award.project_no,
                             project_state_name: state.name,
@@ -419,7 +424,7 @@ class Easement < ApplicationRecord
                             # status: record.attributes["Status"],
                             # usda_region: record.attributes["USDARegion"],
                             # asi_block: record.attributes["ASI_Block"],
-                            original_fid: record.attributes["FID"],
+                            original_fid: record.attributes["OBJECTID"],
                             county_name: county.name,
                             state_name: state.name,
                             state_abv: state.abv,
@@ -523,8 +528,8 @@ class Easement < ApplicationRecord
                 p "-----------"
 
                 # Delete the Upload and History
-                upload.destroy if upload
-                history.destroy if history
+                # upload.destroy if upload
+                # history.destroy if history
 
                 # Delete the files
                 # FileUtils.rm_rf("#{path}/") if path

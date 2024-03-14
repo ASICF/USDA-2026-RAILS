@@ -621,6 +621,7 @@ class Easement < ApplicationRecord
                         latitude: record.latitude,
                         longitude: record.longitude,
                         multi_geom: record.multiple_geom ? "True" : "False",
+                        priority: record.priority,
                         min_sun_angle: Rails.application.secrets.min_sun_angle
                     }
 

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2023_10_11_144023) do
+ActiveRecord::Schema.define(version: 2024_03_14_133536) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -284,6 +284,7 @@ ActiveRecord::Schema.define(version: 2023_10_11_144023) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "contract_award_id"
+    t.string "priority"
     t.index ["acres"], name: "index_easements_on_acres"
     t.index ["contract_award_id"], name: "index_easements_on_contract_award_id"
     t.index ["county_id"], name: "index_easements_on_county_id"

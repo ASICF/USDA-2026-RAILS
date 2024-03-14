@@ -497,7 +497,9 @@ class FrameCenter < ApplicationRecord
                                     message: "#{rejection_output[:message]}<br/><br/>The following NRI Tiles have been rejected during Frame Center Import:<br/><ul>#{rejection_output[:rejected_tiles].map {|rt| "<li><b>#{rt.poly_id}</b> - <i>(Flight Date: #{rt.flight_date.strftime("%m/%d/%Y")}, Flown By: #{rt.flown_by_alias})</i></li>"}.join("")}</ul>".html_safe
                                 })
 
-                            elsif Footprint.select(:id).where(id: footprint_ids, sl: true).size > 0
+                            end
+                            
+                            if Footprint.select(:id).where(id: footprint_ids, sl: true).size > 0
 
                                 rejection_output = FrameCenter.auto_reject_tiles Date.parse(params[:flight_date]), upload, camera, company, user, "SL"
 
@@ -971,7 +973,7 @@ class FrameCenter < ApplicationRecord
                 output, history = Rejection.reject_tiles easements.pluck(:poly_id), flight_date, history, false, message
 
                 # set the message for history
-                history.message = "Auto-Rejected #{history.rejected_tiles.count} Tiles, #{history.rejected_footprints.count} Footprints, and #{history.rejected_frame_centers.count} Frame Centers"
+                history.message = "Auto-Rejected #{history.rejected_tiles.count} Tiles, #{history.rejected_footprints.count} Footprints, and #{history.rejected_frame_centers.count} Frame Centers via Frame Center Import."
                 history.save
 
                 output = {

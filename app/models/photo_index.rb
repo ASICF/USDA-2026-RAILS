@@ -143,6 +143,9 @@ class PhotoIndex < ApplicationRecord
                 # Validate the filename
                 arr = params[:file].original_filename.split("_")
 
+                # get the flight date
+                flight_date = Date.strptime(arr[0], "%Y%m%d")
+
                 # Check if the second array element is a company
                 company = Company.find_by(alias: arr[1])
                 if company.nil? || company.id != params[:flown_by_id].to_i
@@ -186,6 +189,8 @@ class PhotoIndex < ApplicationRecord
                 valid_footprints = []
                 footprints_to_be_rejected = []
 
+                skipped = 0
+
                 File.open(file, "r") do |f|
                     f.each_line do |line|
 
@@ -197,6 +202,8 @@ class PhotoIndex < ApplicationRecord
 
                         # extract the strip and frame from the strip_frame
                         strip, frame = arr[1].split("_")
+
+                        record_flight_date = Date.strptime(arr[2], "%m/%d/%Y")
 
                         # p "======"
                         # p "gpstime: #{arr[0]}"
@@ -211,15 +218,20 @@ class PhotoIndex < ApplicationRecord
                         if arr.size != 5
                             raise Exception, "Row malformation found in txt file, please check the file for errors"
                         end
-                        
+
                         next if arr[1] == "Free shot"
+
+                        # check if the flight date in the filename matches the record
+                        if flight_date != record_flight_date
+                            raise Exception, "Filename flight date does not match record flight date"
+                        end
 
                         # Check for duplicate photo indexes
                         if PhotoIndex.where(
                                 strip_frame: arr[1], 
                                 latitude: arr[3].to_f.round(6), 
                                 longitude: arr[4].to_f.round(6), 
-                                flight_date: Date.strptime(arr[2], "%m/%d/%Y"), 
+                                flight_date: record_flight_date, 
                                 gpstime: arr[0],
                                 flown_by: company, 
                                 camera: camera
@@ -236,7 +248,7 @@ class PhotoIndex < ApplicationRecord
                             strip_frame: arr[1],
                             flown_by_name: company.alias,
                             camera_name: camera.name,
-                            flight_date: Date.strptime(arr[2], "%m/%d/%Y"),
+                            flight_date: record_flight_date,
                             gpstime: arr[0],
                             recorded_sun_angle: nil,
                             latitude: arr[3].to_f, 
@@ -304,33 +316,58 @@ class PhotoIndex < ApplicationRecord
                             record.save!
 
                             # add the foorptint to the appropriate array
-                            valid_footprints << footprint if !record.sun_angle_error
-                            footprints_to_be_rejected << footprint if record.sun_angle_error
+                            # valid_footprints << footprint if !record.sun_angle_error
+                            # footprints_to_be_rejected << footprint if record.sun_angle_error
                         else
-                            # query the county and UTM zone
-                            sql = "select id, zone from utms u where st_intersects(ST_GeomFromText('#{record.geom.to_s}'), u.geom)"
-                            result = ActiveRecord::Base.connection.execute(sql)
 
-                            record.utm_id = result[0]["id"]
-                            record.utm_zone = "#{result[0]["zone"]}N"
+                            # Check if the Strip Frame is in the Rejected Footprint
+                            # rejected_footprint = RejectedFootprint.find_by(project: project, camera_id: camera.id, strip_frame: obj[:strip_frame], flight_date: params[:flight_date], flown_by_id: company.id)
+                            rejected_footprint = RejectedFootprint.find_by("rejected_footprints.project = '#{project}' AND rejected_footprints.camera_id = '#{camera.id}' AND rejected_footprints.strip_frame = '#{record.strip_frame}' AND rejected_footprints.flight_date = '#{record.flight_date}' AND rejected_footprints.flown_by_id = '#{company.id}' AND st_contains(rejected_footprints.geom::geometry, ST_SetSRID(ST_Point(#{record.longitude}, #{record.latitude}),4326))")
 
-                            # Query out the county the most majority is in and also include the state info
-                            sql = "select c.id as county_id, c.name as county_name, s.id as state_id, s.abv as state_abv, s.name as state_name from counties c INNER JOIN states s ON c.state_id = s.id
-                                where st_intersects(ST_GeomFromText('#{record.geom.to_s}'), c.geom)"
-                            result = ActiveRecord::Base.connection.execute(sql)
+                            if rejected_footprint
+                                # Reject the Frame Center
 
-                            if result.count > 0
-                                # update the county info
-                                record.county_id = result[0]["county_id"]
-                                record.county_name = result[0]["county_name"]
-                                # update the state info
-                                record.state_id = result[0]["state_id"]
-                                record.state_name = result[0]["state_name"]
+                                # Set the footprint id to the original rejected footprint id
+                                record.footprint_id = rejected_footprint.original_id
+                                record.rejected_footprint_id = rejected_footprint.id
+
+                                # update the project state
+                                record.sl = rejected_footprint.sl
+                                record.nri = rejected_footprint.nri
+                                record.naip = rejected_footprint.naip
+
+                                # update attributes
+                                record.county_name = rejected_footprint.county_name
+                                record.state_name = rejected_footprint.state_name
+                                record.utm_zone = rejected_footprint.utm_zone
+
+                                record.county_id = rejected_footprint.county_id
+                                record.state_id = rejected_footprint.state_id
+                                record.utm_id = rejected_footprint.utm_id
+                                record.save!
+
+                                # Reject the Fream Center
+                                # rejected_frame_center = RejectedFrameCenter.reject record, "Footprint was already Rejected"
+                                
+                                # If the rejected Frame Center is valid then skip, otherwise raise exception
+                                # if rejected_frame_center
+                                #     upload.rejected_frame_centers << rejected_frame_center
+                                #     history.rejected_frame_centers << rejected_frame_center
+                                #     rejected_footprints += 1
+                                #     next
+                                # else
+                                #     raise Exception, "Error attempting to reject Frame Center #{fc.strip_frame} that matched Rejected Footprint #{rejected_footprint.id}"
+                                # end
+                            else
+
+                                # no footprint or rejected footprint found
+                                # Destroy the record and increment the skipped variable 
+
+                                record.destroy
+                                skipped += 1
+                                next
+                                # raise Exception, "Could not find matching Footprint flown by #{company.alias} using #{camera.name} with Strip Frame #{strip_frame} flown on #{file_date.strftime("%m/%d/%Y")} in Footprints and Rejected Footprints"
                             end
-
-                            # Update the notes and save
-                            record.notes = "No Footprint Found"
-                            record.save!
                         end
 
                         history.photo_indices << record
@@ -338,52 +375,40 @@ class PhotoIndex < ApplicationRecord
                 end
 
                 # check if there were any 
-                if valid_footprints.size == 0
+                if upload.photo_indices.approved.size == 0
                     raise Exception, "No Footprints were associated with Photo Indices. Upload aborted."
                 end
 
                 p "FOOTPRINTS TO BE REJECTED: #{footprints_to_be_rejected.pluck(:id)}"
                 # check the footprints that need to be rejected
-                if footprints_to_be_rejected.size > 0
+                if upload.photo_indices.rejected.count > 0
+
+                    footprint_ids = upload.photo_indices.rejected.pluck(:footprint_id)
+                    nri_footprints = Footprint.nri.where(id: footprint_ids)
+                    sl_footprints = Footprint.sl.where(id: footprint_ids)
 
                     p "<><><><><><>"
-                    p "NRI Reject: #{Footprint.nri.select(:id).where(id: footprints_to_be_rejected).size}"
-                    p "SL Reject: #{Footprint.sl.select(:id).where(id: footprints_to_be_rejected).size}"
+                    p "NRI Reject: #{nri_footprints.count}"
+                    p "SL Reject: #{sl_footprints.count}"
                     p "<><><><><><>"
 
                     # Check rejected footprints 
-                    if Footprint.nri.select(:id).where(id: footprints_to_be_rejected).size > 0
+                    if nri_footprints.count > 0
 
-                        PhotoIndex.auto_reject_tiles Footprint.nri.where(id: footprints_to_be_rejected), "NRI", user
+                        rejection_output = PhotoIndex.auto_reject_tiles flight_date, upload, camera, company, user, "NRI"
 
-                        # Find and update photo indices so they point to rejected footprints
-                        upload.photo_indices.each do |pi|
-                            # p "#{pi.strip_frame} | #{pi.footprint_id}"
-
-                            # Find the rejected footprint and return the id
-                            rejected_footprint = RejectedFootprint.select(:id).find_by(original_id: pi.footprint_id)
-
-                            # if the rejected footprint exists then update the photo index file to point to it
-                            if rejected_footprint.present?
-                                pi.update(footprint_id: nil, rejected_footprint_id: rejected_footprint.id)
-                            end
+                        if !rejection_output[:pass]
+                            raise Exception, rejection_output[:error] ? rejection_output[:error] : "Error occurred while attmepting to auto-reject the Photo Indices. Import aborted."
                         end
 
-                    elsif Footprint.nri.select(:id).where(id: footprints_to_be_rejected).size > 0
+                    end
+                    
+                    if sl_footprints.count > 0
 
-                        PhotoIndex.auto_reject_tiles Footprint.sl.where(id: footprints_to_be_rejected), "SL", user
+                        rejection_output = PhotoIndex.auto_reject_tiles flight_date, upload, camera, company, user, "SL"
 
-                        # Find and update photo indices so they point to rejected footprints
-                        upload.photo_indices.each do |pi|
-                            # p "#{pi.strip_frame} | #{pi.footprint_id}"
-
-                            # Find the rejected footprint and return the id
-                            rejected_footprint = RejectedFootprint.select(:id).find_by(original_id: pi.footprint_id)
-
-                            # if the rejected footprint exists then update the photo index file to point to it
-                            if rejected_footprint.present?
-                                pi.update(footprint_id: nil, rejected_footprint_id: rejected_footprint.id)
-                            end
+                        if !rejection_output[:pass]
+                            raise Exception, rejection_output[:error] ? rejection_output[:error] : "Error occurred while attmepting to auto-reject the Photo Indices. Import aborted."
                         end
                     end
                 end
@@ -394,9 +419,13 @@ class PhotoIndex < ApplicationRecord
                     message += " #{history.photo_indices.rejected.count} did not meet the sun angle requirement."
                 end
 
-                if history.photo_indices.where(footprint_id: nil, rejected_footprint_id: nil).count > 0
-                    message += " #{history.photo_indices.where(footprint_id: nil, rejected_footprint_id: nil).count} Photo Indices did not associate to a Footprint."
+                if skipped > 0
+                    message += "#{skipped} Photo Indices were skipped because of no matching Footprints or Rejected Footprints."
                 end
+
+                # if history.photo_indices.where(footprint_id: nil, rejected_footprint_id: nil).count > 0
+                #     message += " #{history.photo_indices.where(footprint_id: nil, rejected_footprint_id: nil).count} Photo Indices did not associate to a Footprint."
+                # end
 
 
                 job.update(
@@ -655,150 +684,282 @@ class PhotoIndex < ApplicationRecord
 
     end
 
-    # def self.list_rejected_strip_frames history
-    #     output = []
-
-    #     p history.rejected_footprints.count
-
-    #     history.rejected_footprints.includes(:historic_assocs).each do |rfp|
-    #         pi = rfp.photo_index
-
-    #         if pi.nil?
-    #             output << "#{rfp.strip_frame} | #{rfp.flight_date}"
-    #         else
-    #             output << "#{rfp.strip_frame} | #{rfp.flight_date.strftime("%F")} | #{pi.sun_angle.to_f}"
-    #         end
-    #     end
-
-    #     # Upload.where(id: [1192, 1193]).each do |upload|     
-    #     #     # upload.history.rejected_footprints.each do |rfp|
-    #     #     #     pi = rfp.photo_index
-
-    #     #     #     if pi.nil?
-    #     #     #         output << "#{rfp.strip_frame} | #{rfp.flight_date}"
-    #     #     #     else
-    #     #     #         output << "#{rfp.strip_frame} | #{rfp.flight_date.strftime("%F")} | #{pi.sun_angle.tof_f.to_s}"
-    #     #     #     end
-    #     #     # end
-    #     # end
-
-    #     p output
-    # end
-
-    def self.auto_reject_tiles footprints, project, user=User.first
-
-        # find the tiles of the associated footprints
-        # reject the tiles
-        # check if any of the rejected footprints are still existing and reject those too
-
-        # Create new history object to store all rejections
-        history = History.new
-        history.action_type = "Photo Index Auto-Reject Tiles"
-        history.creator = user
-        history.save
-
-        tiles_to_review = {}
-
-        message = "Auto Rejection during Photo Index import"
-
-        p "photo index auto reject tiles"
-        p "#{footprints}"
+    def self.auto_reject_tiles flight_date, upload, camera, flown_by, user, project
+        p "----------------"
+        p "auto_reject_tiles"
+        p "project: #{project}"
         p "----------------"
 
-        footprints.each do |footprint|
+        output = {
+            pass: true,
+            error: nil
+        }
 
-            # Check the footprint is SL only
-            if footprint.project == "NAIP"
-                raise Exception, "Footprint: #{footprint.id} is marked as NAIP, not NRI or SL. Cannot reject" 
-            end
+        message = "Auto Rejection during Frame Center import"
 
-            # Create a new array scoped based on the flight date
-            tiles_to_review[footprint.flight_date.strftime("%F")] = [] if tiles_to_review[footprint.flight_date.strftime("%F")].nil?
+        # Start a Transaction Block
+        ActiveRecord::Base.transaction(joinable: false, requires_new: true) do
+            begin
 
-            # pull the associated tiles out to check if they should be rejected
-            tiles_to_review[footprint.flight_date.strftime("%F")] |= Tile.select(:poly_id).where(id: TileFootprint.where(footprint_id: footprint.id).pluck(:tile_id)).pluck(:poly_id)
-        # end
+                pi_reject_obj = {
+                    flight_date: flight_date.all_day, 
+                    camera: camera, 
+                    flown_by: flown_by
+                }
 
-        # # Check to make sure all the footprints were rejected
-        # # => if there is any orphaned footprints they will not get collected by the tile rejection process
-        # Footprint.where(id: footprints.pluck(:id)).each do |footprint|
-            p footprint.id
-
-            # get the frame center before deleting the footprint
-            framecenter = footprint.frame_center
-
-            # Reject the Footprint and return the new rejected_footprint
-            rejected_footprint = RejectedFootprint.reject footprint, message
-
-            if !rejected_footprint
-                raise Exception, "Footprint: #{footprint.id} could not be rejected!"
-            end
-
-            # Reject the associated Frame Center of the footprint
-            if framecenter
-                rejected_frame_center = RejectedFrameCenter.reject framecenter, message
-
-                if !rejected_frame_center
-                    # raise "Frame Center #{fc.id} could not be rejected!"
-                    # raise ActiveRecord::Rollback
-                    raise Exception, "Frame Center #{fc.id} could not be rejected!"
+                if project == "NRI"
+                    pi_reject_obj[:nri] = true
+                elsif project == "SL"
+                    pi_reject_obj[:sl] = true
                 end
 
-                history.rejected_frame_centers << rejected_frame_center
-            end
+                photo_indices_to_reject = upload.photo_indices.rejected.where(pi_reject_obj)
 
-            history.rejected_footprints << rejected_footprint
-        end
-        
-        p "++++++++++++"
-        p "Remaining footprints: #{Footprint.where(id: footprints.pluck(:id)).count}"
+                # Get the Rejected Footprints that have associated frame centers that match flight date, state, camera, and company
+                footprints = photo_indices_to_reject.map {|pi| pi.footprint}
 
-        p "TILES: #{tiles_to_review}"
+                # Create new history object to store all rejections
+                history = History.new
+                history.action_type = "Auto-Reject Tiles"
+                history.creator = user
+                history.save
 
-        tiles_to_review.each do |key, poly_ids|
-            # p key
+                p "---------"
+                p "upload: #{upload.id}"
+                p "photo_indices_to_reject: #{photo_indices_to_reject.pluck(:strip_frame)}"
+                p "total photo_indices: #{upload.photo_indices.count}"
+                p "footprints count: #{footprints.count}"
+                p "---------"
 
-            tiles_to_reject = []
+                footprints.each do |footprint|
 
-            # iterate the array
-            poly_ids.each do |poly_id|
+                    # Check the footprint is SL only
+                    if footprint.project == "NAIP"
+                        raise Exception, "Footprint: #{footprint.id} is marked as NAIP, not SL. Cannot reject" 
+                    end
 
-                tile = Tile.includes(:footprints).find_by(poly_id: poly_id)
-                p "Footprints: #{tile.footprints.pluck(:id)}"
+                    frame_center = footprint.frame_center
 
-                # check if there are any footprints
-                # => if not then add to the tiles_to_reject
-                if tile.footprints.count == 0
-                    tiles_to_reject << poly_id
-                    next
+                    # Reject the Footprint and return the new rejected_footprint
+                    rejected_footprint = RejectedFootprint.reject footprint, message
+
+                    if !rejected_footprint
+                        raise Exception, "Footprint: #{footprint.id} could not be rejected!"
+                    end
+
+                    # check for the photo index that has the original id and update it with the rejected footprint id
+                    PhotoIndex.rejected.where(footprint_id: rejected_footprint.original_id).update(
+                        rejected_footprint_id: rejected_footprint.id,
+                        footprint_id: nil
+                    )
+
+                    # Reject the associated Frame Center of the footprint
+                    if frame_center
+                        rejected_frame_center = RejectedFrameCenter.reject frame_center, message
+
+                        if !rejected_frame_center
+                            # raise "Frame Center #{fc.id} could not be rejected!"
+                            # raise ActiveRecord::Rollback
+                            raise Exception, "Frame Center #{fc.id} could not be rejected!"
+                        end
+
+                        history.rejected_frame_centers << rejected_frame_center
+                    end
+
+                    # # Reject the associated Frame Center
+                    # rejected_frame_center = RejectedFrameCenter.reject frame_center, message
+
+                    # if !rejected_frame_center
+                    #     raise Exception, "Frame Center (StripFrame: #{frame_center.strip_frame}) could not be rejected!"
+                    # end
+
+                    # Add rejected footprint and rejected frame centers to history
+                    history.rejected_footprints << rejected_footprint
+                    # history.rejected_photo_indices << rejected_frame_center
+
                 end
 
-                # Dissolve the associated footprints
-                DissolvedFootprint.footprints tile.footprints.pluck(:id), project 
+                reject_footprint_obj = {
+                    flight_date: flight_date, 
+                    camera: camera, 
+                    flown_by: flown_by
+                }
 
-                # check if compeltely covered
-                easement_to_reject = Easement.flown.includes(:tiles).joins("INNER JOIN dissolved_footprints ON dissolved_footprints.name='footprints' 
+                if project == "NRI"
+                    reject_footprint_obj[:nri] = true
+                elsif project == "SL"
+                    reject_footprint_obj[:sl] = true
+                end
+
+                # p "<><><><><><><><><>"
+                # pp reject_footprint_obj
+                # p "<><><><><><><><><>"
+
+                # Find all footprint uploads in the system that matches the scoped requirements
+                footprint_ids = Footprint.exclude_geom.select(:id).where(reject_footprint_obj).pluck(:id).uniq
+
+                p "==========="
+                p "footprint_ids: #{footprint_ids}"
+                p "==========="
+
+                DissolvedFootprint.find_or_create_by(name: "photo_indices").update(geom: nil)
+
+                # Dissolve all the footprints 
+                sql = "UPDATE dissolved_footprints SET geom = (SELECT ST_Multi(st_union(ST_Multi(geom::geometry))) AS the_geom from footprints where ST_IsValid(geom::geometry)
+                    AND footprints.id IN (#{footprint_ids.uniq.join(", ")}) ) WHERE name='photo_indices'"
+                ActiveRecord::Base.connection.execute(sql)
+
+                # select out easements that aren't contained within the dissolved layer
+                easements = Easement.flown.includes(:tiles).joins("INNER JOIN dissolved_footprints ON dissolved_footprints.name='photo_indices' 
                     AND not st_contains(dissolved_footprints.geom::geometry, easements.geom::geometry)").where(
-                        project: project, poly_id: poly_id
-                    ).group_by(&:flight_date)
+                        project: project, flight_date: flight_date, tiles: {camera: camera, flown_by: flown_by}
+                    )
 
-                # if the easement is found then mark it to be rejected
-                tiles_to_reject << poly_id if easement_to_reject.count == 1
-            
+                p "-----------"
+                p "EASEMENTS: #{easements.count}"
+                p "-----------"
+
+                # Reject the Tiles and associated footprints/frame centers
+                output, history = Rejection.reject_tiles easements.pluck(:poly_id), flight_date, history, false, message
+
+                # set the message for history
+                history.message = "Auto-Rejected #{history.rejected_tiles.count} Tiles, #{history.rejected_footprints.count} Footprints, and #{history.rejected_frame_centers.count} Frame Centers via Photo Index Import."
+                history.save
+
+                output = {
+                    pass: true,
+                    message: history.message,
+                    rejected_tiles: history.rejected_tiles
+                }
+                # return history
+
+            rescue => exception
+                Rails.logger.error "Frame Center Auto Reject Error: #{exception.message}"
+                ActiveRecord::Rollback
+                return {
+                    pass: false,
+                    error: exception.message
+                }
             end
-
-            p "REJECTING: #{tiles_to_reject}"
-
-            if tiles_to_reject.size > 0
-                output, history = Rejection.reject_tiles tiles_to_reject, key, history, false, message
-            end
-            
         end
-
-        history.update(message: "Auto-Rejected #{history.rejected_tiles.count} Tiles, #{history.rejected_footprints.count} Footprints, and #{history.rejected_frame_centers.count} Frame Centers")
-
-        p "done"
 
     end
+
+
+    # def self.auto_reject_tiles footprints, project, user=User.first
+
+    #     # find the tiles of the associated footprints
+    #     # reject the tiles
+    #     # check if any of the rejected footprints are still existing and reject those too
+
+    #     # Create new history object to store all rejections
+    #     history = History.new
+    #     history.action_type = "Photo Index Auto-Reject Tiles"
+    #     history.creator = user
+    #     history.save
+
+    #     tiles_to_review = {}
+
+    #     message = "Auto Rejection during Photo Index import"
+
+    #     p "photo index auto reject tiles"
+    #     p "#{footprints}"
+    #     p "----------------"
+
+    #     footprints.each do |footprint|
+
+    #         # Check the footprint is SL only
+    #         if footprint.project == "NAIP"
+    #             raise Exception, "Footprint: #{footprint.id} is marked as NAIP, not NRI or SL. Cannot reject" 
+    #         end
+
+    #         # Create a new array scoped based on the flight date
+    #         tiles_to_review[footprint.flight_date.strftime("%F")] = [] if tiles_to_review[footprint.flight_date.strftime("%F")].nil?
+
+    #         # pull the associated tiles out to check if they should be rejected
+    #         tiles_to_review[footprint.flight_date.strftime("%F")] |= Tile.select(:poly_id).where(id: TileFootprint.where(footprint_id: footprint.id).pluck(:tile_id)).pluck(:poly_id)
+    #     # end
+
+    #     # # Check to make sure all the footprints were rejected
+    #     # # => if there is any orphaned footprints they will not get collected by the tile rejection process
+    #     # Footprint.where(id: footprints.pluck(:id)).each do |footprint|
+    #         p footprint.id
+
+    #         # get the frame center before deleting the footprint
+    #         framecenter = footprint.frame_center
+
+    #         # Reject the Footprint and return the new rejected_footprint
+    #         rejected_footprint = RejectedFootprint.reject footprint, message
+
+    #         if !rejected_footprint
+    #             raise Exception, "Footprint: #{footprint.id} could not be rejected!"
+    #         end
+
+    #         # Reject the associated Frame Center of the footprint
+    #         if framecenter
+    #             rejected_frame_center = RejectedFrameCenter.reject framecenter, message
+
+    #             if !rejected_frame_center
+    #                 # raise "Frame Center #{fc.id} could not be rejected!"
+    #                 # raise ActiveRecord::Rollback
+    #                 raise Exception, "Frame Center #{fc.id} could not be rejected!"
+    #             end
+
+    #             history.rejected_frame_centers << rejected_frame_center
+    #         end
+
+    #         history.rejected_footprints << rejected_footprint
+    #     end
+        
+    #     p "++++++++++++"
+    #     p "Remaining footprints: #{Footprint.where(id: footprints.pluck(:id)).count}"
+
+    #     p "TILES: #{tiles_to_review}"
+
+    #     tiles_to_review.each do |key, poly_ids|
+    #         # p key
+
+    #         tiles_to_reject = []
+
+    #         # iterate the array
+    #         poly_ids.each do |poly_id|
+
+    #             tile = Tile.includes(:footprints).find_by(poly_id: poly_id)
+    #             p "Footprints: #{tile.footprints.pluck(:id)}"
+
+    #             # check if there are any footprints
+    #             # => if not then add to the tiles_to_reject
+    #             if tile.footprints.count == 0
+    #                 tiles_to_reject << poly_id
+    #                 next
+    #             end
+
+    #             # Dissolve the associated footprints
+    #             DissolvedFootprint.footprints tile.footprints.pluck(:id), project 
+
+    #             # check if compeltely covered
+    #             easement_to_reject = Easement.flown.includes(:tiles).joins("INNER JOIN dissolved_footprints ON dissolved_footprints.name='footprints' 
+    #                 AND not st_contains(dissolved_footprints.geom::geometry, easements.geom::geometry)").where(
+    #                     project: project, poly_id: poly_id
+    #                 ).group_by(&:flight_date)
+
+    #             # if the easement is found then mark it to be rejected
+    #             tiles_to_reject << poly_id if easement_to_reject.count == 1
+            
+    #         end
+
+    #         p "REJECTING: #{tiles_to_reject}"
+
+    #         if tiles_to_reject.size > 0
+    #             output, history = Rejection.reject_tiles tiles_to_reject, key, history, false, message
+    #         end
+            
+    #     end
+
+    #     history.update(message: "Auto-Rejected #{history.rejected_tiles.count} Tiles, #{history.rejected_footprints.count} Footprints, and #{history.rejected_frame_centers.count} Frame Centers")
+
+    #     p "done"
+
+    # end
 
 end

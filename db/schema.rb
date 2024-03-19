@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2024_03_14_133536) do
+ActiveRecord::Schema.define(version: 2024_03_19_214923) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -86,6 +86,9 @@ ActiveRecord::Schema.define(version: 2024_03_14_133536) do
     t.bigint "state_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.date "season_start"
+    t.date "season_end"
+    t.date "season_extension"
     t.index ["project"], name: "index_contract_awards_on_project"
     t.index ["project_no"], name: "index_contract_awards_on_project_no"
     t.index ["state_id"], name: "index_contract_awards_on_state_id"
@@ -284,7 +287,7 @@ ActiveRecord::Schema.define(version: 2024_03_14_133536) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "contract_award_id"
-    t.string "priority"
+    t.integer "priority", default: 0
     t.index ["acres"], name: "index_easements_on_acres"
     t.index ["contract_award_id"], name: "index_easements_on_contract_award_id"
     t.index ["county_id"], name: "index_easements_on_county_id"

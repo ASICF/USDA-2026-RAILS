@@ -1,3 +1,12 @@
+# Update the SL contracts with the season dates
+ContractAward.update_all(
+    season_start: "2024-03-11",
+    season_end: "2024-07-31", 
+    # season_extension: "2024-09-30", 
+)
+
+return false
+
 ActiveRecord::Base.connection.execute("TRUNCATE users RESTART IDENTITY")
 ActiveRecord::Base.connection.execute("TRUNCATE companies RESTART IDENTITY")
 ActiveRecord::Base.connection.execute("TRUNCATE planes RESTART IDENTITY")

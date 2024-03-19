@@ -1,5 +1,4 @@
 Rails.application.routes.draw do
-
   root 'pages#index'
 
   devise_for :users
@@ -88,6 +87,10 @@ Rails.application.routes.draw do
   # => Daily Progress Reports
   get 'daily_progress_reports', to: 'daily_progress_reports#index', as: :daily_progress_reports
   post 'daily_progress_reports/render', to: 'daily_progress_reports#show', as: :display_daily_progress_reports
+
+  # => Weekly Progress Reports
+  get 'weekly_progress_reports', to: 'weekly_progress_reports#index', as: :weekly_progress_reports
+  post 'weekly_progress_reports/generate', to: 'weekly_progress_reports#generate', as: :generate_weekly_progress_reports
 
   # => Invoice Report
   get 'invoice', to: 'invoices#index', as: :invoice_reports

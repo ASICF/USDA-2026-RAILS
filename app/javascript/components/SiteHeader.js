@@ -14,7 +14,6 @@ import SiteSidebar from "./SiteSidebar";
 import axios from "axios";
 
 const SiteHeader = (props) => {
-
   const [width, setWidth] = useState(window.innerWidth);
 
   const [loggedOut, setLoggedOut] = useState(false);
@@ -264,13 +263,22 @@ const SiteHeader = (props) => {
               <Dropdown item text="Flight">
                 <Dropdown.Menu>
                   {role === "Admin" || role === "Manager" ? (
-                    <Dropdown.Item
-                      as="a"
-                      href={`/daily_progress_reports`}
-                      data-turbolinks="false"
-                    >
-                      Daily Progress
-                    </Dropdown.Item>
+                    <>
+                      <Dropdown.Item
+                        as="a"
+                        href={`/daily_progress_reports`}
+                        data-turbolinks="false"
+                      >
+                        Daily Progress
+                      </Dropdown.Item>
+                      <Dropdown.Item
+                        as="a"
+                        href={`/weekly_progress_reports`}
+                        data-turbolinks="false"
+                      >
+                        Weekly Progress
+                      </Dropdown.Item>
+                    </>
                   ) : null}
                   <Dropdown.Item
                     as="a"

@@ -1,7 +1,7 @@
 # Update the SL contracts with the season dates
 ContractAward.update_all(
     season_start: "2024-03-11",
-    season_end: "2024-07-31", 
+    season_end: "2024-09-30", 
     # season_extension: "2024-09-30", 
 )
 

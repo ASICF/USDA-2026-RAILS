@@ -21,11 +21,11 @@ import { DateInput } from "semantic-ui-calendar-react";
 import { Controller, useForm } from "react-hook-form";
 import axios from "axios";
 
-const WeeklyProgressReport = ({ projects, path, token }) => {
+const WeeklyProgressReport = ({ projects, path, to, cc, token }) => {
   const [submitted, setSubmitted] = useState(false);
   const [message, setMessage] = useState(null);
 
-  console.log("WeeklyProgressReport", { projects, path, token });
+  console.log("WeeklyProgressReport", { projects, path, to, cc, token });
 
   const {
     handleSubmit,
@@ -83,6 +83,11 @@ const WeeklyProgressReport = ({ projects, path, token }) => {
           </i>{" "}
           and available to download via the Timeline Report.
         </p>
+
+        <b>Send To:</b>
+        <List bulleted items={to} />
+        <b>CC:</b>
+        <List bulleted items={cc} />
       </Message>
       <Divider />
 

@@ -59,7 +59,7 @@ class WeeklyProgressReport
                 percentage_flown = state.tiles.flown.count.to_f / state.tiles.count.to_f * 100
                 percentage_delivered = state.tiles.shipped.count.to_f / state.tiles.count.to_f * 100
 
-                season_dates = contract.season_start && contract.season_end ? "#{contract.season_start.strftime("%d/%m")} - #{contract.season_end.strftime("%d/%m")}" : nil
+                season_dates = contract.season_start && contract.season_end ? "#{contract.season_start.strftime("%m/%d")} - #{contract.season_end.strftime("%m/%d")}" : nil
                 season_extension = contract.season_extension.nil? ? nil : "Approved #{contract.season_extension.strftime("%d/%m")}"
 
                 sheet.add_row [

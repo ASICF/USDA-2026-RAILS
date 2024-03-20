@@ -215,8 +215,8 @@ function DailyProgressReport(props) {
             </p>
             <b>TO:</b>
             <List bulleted items={props.to} />
-            {/* <b>CC:</b>
-            <List bulleted items={props.cc} /> */}
+            <b>CC:</b>
+            <List bulleted items={props.cc} />
           </Message.Content>
         </Message>
 

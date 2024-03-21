@@ -195,15 +195,15 @@ class Audit
             email_output = ["Errors were detected in the Quick Database Audit. Due to the severity of the issue, this message will continue to be sent until fixed."]
 
             # Check if the easement count matches the contract totals
-            if Easement.count != Rails.application.secrets.contract_easements || Tile.count != Rails.application.secrets.contract_easements
+            if Easement.count != Rails.application.secrets.sl_contract_easements || Tile.count != Rails.application.secrets.sl_contract_easements
             
                 html = "<p>There is a mismatch within the Database and our contracted totals.</p>"
                 html += '<ul>'
-                if Easement.count != Rails.application.secrets.contract_easements
-                    html += "<li>Easement count does not match our contracted totals. #{Easement.count} out of #{Rails.application.secrets.contract_easements}</li>"
+                if Easement.count != Rails.application.secrets.sl_contract_easements
+                    html += "<li>Easement count does not match our contracted totals. #{Easement.count} out of #{Rails.application.secrets.sl_contract_easements}</li>"
                 end
-                if Easement.count != Rails.application.secrets.contract_easements
-                    html += "<li>Tile count does not match our contracted totals. #{Tile.count} out of #{Rails.application.secrets.contract_easements}</li>"
+                if Easement.count != Rails.application.secrets.sl_contract_easements
+                    html += "<li>Tile count does not match our contracted totals. #{Tile.count} out of #{Rails.application.secrets.sl_contract_easements}</li>"
                 end
                 html += '</ul>'
 

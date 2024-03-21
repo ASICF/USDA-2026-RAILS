@@ -1,9 +1,190 @@
-# Update the SL contracts with the season dates
-ContractAward.update_all(
-    season_start: "2024-03-11",
-    season_end: "2024-09-30", 
-    # season_extension: "2024-09-30", 
-)
+# # Update the SL contracts with the season dates
+# ContractAward.update_all(
+#     season_start: "2024-03-11",
+#     season_end: "2024-09-30", 
+#     # season_extension: "2024-09-30", 
+# )
+
+# Upload Shapefiles
+require 'rgeo/shapefile'
+
+# Import the States
+RGeo::Shapefile::Reader.open("#{Rails.application.secrets.state_path}") do |file|
+    # puts "File contains #{file.num_records} records."
+    p "States"
+    p "--------------------"
+    file.each do |record|
+
+        # p "------------"
+        # p "checking: #{record.attributes["STUSPS"]}"
+        # p Rails.application.secrets.active_states.include?(record.attributes["STUSPS"])
+        # p State.find_by(abv: record.attributes["STUSPS"]).nil?
+
+        # if Rails.application.secrets.active_sl_states.include?(record.attributes["STUSPS"]) && State.find_by(abv: record.attributes["STUSPS"]).nil? || Rails.application.secrets.active_naip_states.include?(record.attributes["STUSPS"]) && State.find_by(abv: record.attributes["STUSPS"]).nil?
+        if (Rails.application.secrets.active_nri_states.include?(record.attributes["STUSPS"]) ) && State.find_by(abv: record.attributes["STUSPS"]).nil? 
+
+            puts "MATCH: #{record.attributes["STUSPS"]}"
+            # puts "Record number #{record.index}:"
+            # puts "  Geometry: #{record.geometry.as_text}"
+            # puts "  Attributes: #{record.attributes.inspect}"
+            State.create(
+                fips: record.attributes["STATEFP"],
+                abv: record.attributes["STUSPS"],
+                name: record.attributes["NAME"],
+                geom: record.geometry
+            )
+        end
+    end
+end
+
+# # Import the Counties
+RGeo::Shapefile::Reader.open("#{Rails.application.secrets.county_path}") do |file|
+    # puts "File contains #{file.num_records} records."
+    p "Counties"
+    p "--------------------"
+
+    file.each do |record|
+
+        if ["15","72"].include?(record.attributes["STATEFP"])
+
+            state = State.find_by(fips: record.attributes["STATEFP"])
+
+            if state.present? && state.easements.count == 0
+
+                puts "Matched #{state.name} - Record number #{record.index}:"
+                # puts "  Geometry: #{record.geometry.as_text}"
+                # puts "  Attributes: #{record.attributes.inspect}"
+                # state = State.where(fips: record.attributes["STATEFP"]).first
+                state.counties.create(
+                    fips: record.attributes["COUNTYFP"],
+                    full_fips: record.attributes["GEOID"],
+                    name: record.attributes["NAME"],
+                    geom: record.geometry
+                )
+            end
+        end
+    end
+end
+
+# Import the UTM
+RGeo::Shapefile::Reader.open("#{Rails.application.secrets.utm_path}") do |file|
+    # puts "File contains #{file.num_records} records."
+    p "UTM"
+    p "--------------------"
+    file.each do |record|
+        # p "++++++++++++"
+        puts "UTM Zone: #{record.attributes["ZONE"]} - #{record.attributes["ZONE"].to_i}"
+        # puts "  Geometry: #{record.geometry.as_text}"
+        # puts "  Attributes: #{record.attributes.inspect}"
+
+        # p [1,2,3,4,5,6,7,8,9,20].include?(record.attributes["ZONE"].to_i)
+        # p Utm.find_by(zone: record.attributes["ZONE"]).present?
+        # p "++++++++++++"
+
+        # next if ![1,2,3,4,5,6,7,8,9,20].include?(record.attributes["ZONE"].to_i) || 
+        # next if Utm.find_by(zone: record.attributes["ZONE"]).present?
+
+        # # puts "Record number #{record.index}:"
+
+        # next if Utm.find_by(zone: record.attributes["ZONE"]).present?
+
+        if [1,2,3,4,5,6,7,8,9,20].include?(record.attributes["ZONE"].to_i)
+
+            Utm.create(
+                # swlon: record.attributes["swlon"],
+                # swlat: record.attributes["swlat"],
+                hemisphere: "N",
+                zone: record.attributes["ZONE"],
+                geom: record.geometry
+            )
+        end 
+    end
+end
+
+
+# Import the Timezone
+RGeo::Shapefile::Reader.open("#{Rails.application.secrets.timezone_path}") do |file|
+    # puts "File contains #{file.num_records} records."
+    p "TimeZone"
+    p "--------------------"
+    file.each do |record|
+        # p "++++++++++++"
+        puts "Timezone #{record.attributes["TZID"]}"
+
+        next if !["TZID: Pacific/Honolulu", "America/Puerto_Rico", "America/St_Thomas"].include? record.attributes["TZID"]
+
+        TimeZone.create(
+            name: record.attributes["TZID"],
+            geom: record.geometry
+        )
+    end
+end
+
+
+# NRI Contract rates
+CSV.foreach(Rails.application.secrets.project_cost_path, {:headers => true, :header_converters => :symbol}) do |row|
+
+    # Find the state
+    state = State.find_by(abv: row[:state])
+
+    raise Exception, "Could not find State: #{row[:state]}" if state.nil?
+
+    next if row[:project_type] != "NRI"
+
+    # Create the award
+    ContractAward.create(
+        project: row[:project_type],
+        project_no: row[:project],
+        amount: row[:total].to_d,
+        flight_amount: row[:flight_price].to_d,
+        production_amount: row[:prod_price].to_d,
+        start_date: "2024-03-09",
+        end_date: "2025-03-09",
+        season_start: "2024-03-11",
+        season_end: "2024-12-31",
+        state: state
+    )
+
+    # Iterate the companies
+    Company.all.each do |company|
+
+        flight_rate = row[:sub_flight]
+        prod_rate = row[:sub_prod]
+
+        if company.alias == "ASI"
+            flight_rate = row[:asi_flight]
+            prod_rate = row[:asi_prod]
+        end
+
+        # Create the Contract Rates
+        # Flight
+        ContractRate.create(
+            project: row[:project_type],
+            project_no: row[:project],
+            company_alias: company.alias,
+            phase: 100,
+            cost: flight_rate.to_d,
+            start_date: "2024-03-09",
+            end_date: "2025-03-09",
+            state: state,
+            company: company
+        )
+
+        # Production
+        ContractRate.create(
+            project: "NRI",
+            project_no: row[:project],
+            company_alias: company.alias,
+            phase: 300,
+            cost: prod_rate.to_d,
+            start_date: "2024-03-09",
+            end_date: "2025-03-09",
+            state: state,
+            company: company
+        )
+    end
+
+end
 
 return false
 
@@ -679,66 +860,6 @@ CSV.foreach(Rails.application.secrets.project_cost_path, {:headers => true, :hea
 
 end
 
-# # NRI Contract rates
-# CSV.foreach(Rails.application.secrets.project_cost_path, {:headers => true, :header_converters => :symbol}) do |row|
-
-#     # Find the state
-#     state = State.find_by(name: row[:state])
-
-#     raise Exception, "Could not find State: #{row[:state]}" if state.nil?
-
-#     # Create the award
-#     ContractAward.create(
-#         project: "NRI",
-#         project_no: row[:project],
-#         amount: row[:total].to_d,
-#         flight_amount: row[:flight_price].to_d,
-#         production_amount: row[:prod_price].to_d,
-#         start_date: "2024-03-09",
-#         end_date: "2025-03-09",
-#         state: state
-#     )
-
-#     # Iterate the companies
-#     Company.all.each do |company|
-
-#         flight_rate = row[:sub_flight]
-#         prod_rate = row[:sub_prod]
-
-#         if company.alias == "ASI"
-#             flight_rate = row[:asi_flight]
-#             prod_rate = row[:asi_prod]
-#         end
-
-#         # Create the Contract Rates
-#         # Flight
-#         ContractRate.create(
-#             project: "NRI",
-#             project_no: row[:project],
-#             company_alias: company.alias,
-#             phase: 100,
-#             cost: flight_rate.to_d,
-#             start_date: "2024-03-09",
-#             end_date: "2025-03-09",
-#             state: state,
-#             company: company
-#         )
-
-#         # Production
-#         ContractRate.create(
-#             project: "NRI",
-#             project_no: row[:project],
-#             company_alias: company.alias,
-#             phase: 300,
-#             cost: prod_rate.to_d,
-#             start_date: "2024-03-09",
-#             end_date: "2025-03-09",
-#             state: state,
-#             company: company
-#         )
-#     end
-
-# end
 
 # iterate the states
 # => SL

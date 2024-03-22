@@ -195,15 +195,30 @@ class Audit
             email_output = ["Errors were detected in the Quick Database Audit. Due to the severity of the issue, this message will continue to be sent until fixed."]
 
             # Check if the easement count matches the contract totals
-            if Easement.count != Rails.application.secrets.sl_contract_easements || Tile.count != Rails.application.secrets.sl_contract_easements
+            if Rails.application.secrets.active_projects.include? "SL" && Easement.sl.count != Rails.application.secrets.sl_contract_easements || Tile.sl.count != Rails.application.secrets.sl_contract_easements
             
-                html = "<p>There is a mismatch within the Database and our contracted totals.</p>"
+                html = "<p>There is a mismatch within the Database and SL contracted totals.</p>"
                 html += '<ul>'
                 if Easement.count != Rails.application.secrets.sl_contract_easements
-                    html += "<li>Easement count does not match our contracted totals. #{Easement.count} out of #{Rails.application.secrets.sl_contract_easements}</li>"
+                    html += "<li>SL Easement count does not match SL contracted totals. #{Easement.sl.count} out of #{Rails.application.secrets.sl_contract_easements}</li>"
                 end
                 if Easement.count != Rails.application.secrets.sl_contract_easements
-                    html += "<li>Tile count does not match our contracted totals. #{Tile.count} out of #{Rails.application.secrets.sl_contract_easements}</li>"
+                    html += "<li>SL Tile count does not match SL contracted totals. #{Tile.sl.count} out of #{Rails.application.secrets.sl_contract_easements}</li>"
+                end
+                html += '</ul>'
+
+                email_output << html
+            end
+
+            if Rails.application.secrets.active_projects.include? "NRI" && Easement.nri.count != Rails.application.secrets.nri_contract_easements || Tile.nri.count != Rails.application.secrets.nri_contract_easements
+
+                html = "<p>There is a mismatch within the Database and NRI contracted totals.</p>"
+                html += '<ul>'
+                if Easement.count != Rails.application.secrets.nri_contract_easements
+                    html += "<li>NRI Easement count does not match NRI contracted totals. #{Easement.nri.count} out of #{Rails.application.secrets.nri_contract_easements}</li>"
+                end
+                if Easement.count != Rails.application.secrets.nri_contract_easements
+                    html += "<li>NRI Tile count does not match NRI contracted totals. #{Tile.nri.count} out of #{Rails.application.secrets.nri_contract_easements}</li>"
                 end
                 html += '</ul>'
 
@@ -513,7 +528,7 @@ class Audit
         # iterate all counties that tiles are marked as fully flown but not shipped
         # => verify all the county_flown_dates are the same
         county_errors = []
-        County.tiles_flown_but_not_shipped_sl.each do |county_id|
+        County.sl_tiles_flown_but_not_shipped.each do |county_id|
             county = County.includes(:tiles).find_by(id: county_id)
 
             review_desc = []

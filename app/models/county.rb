@@ -12,7 +12,9 @@ class County < ApplicationRecord
     # Scopes
     scope :active,          -> { where(id: Easement.pluck(:county_id).uniq).order(:name) }
     scope :active_sl,       -> { where(id: Easement.sl.pluck(:county_id).uniq).order(:name) }
-    scope :tiles_flown_but_not_shipped_sl,  -> { where(id: Tile.exclude_geom.county_flown.not_shipped.order(:county_name).pluck(:county_id).uniq)}
+    scope :active_nri,       -> { where(id: Easement.sl.pluck(:county_id).uniq).order(:name) }
+    scope :sl_tiles_flown_but_not_shipped,  -> { where(id: Tile.sl.exclude_geom.county_flown.not_shipped.order(:county_name).pluck(:county_id).uniq)}
+    scope :nri_tiles_flown_but_not_shipped,  -> { where(id: Tile.nri.exclude_geom.county_flown.not_shipped.order(:county_name).pluck(:county_id).uniq)}
     scope :exclude_geom,    -> { select( County.attribute_names - ['geom'] ) }
 
     # def self.copy_doqqs_to_county_folders

@@ -2,7 +2,7 @@ class State < ApplicationRecord
     include Concerns::Archive
 
     # Associations
-    has_many :counties
+    has_many :counties, dependent: :destroy
     has_many :easements
     has_many :footprints
     has_many :frame_centers

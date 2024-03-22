@@ -281,11 +281,21 @@ class Tile < ApplicationRecord
 
         if flight_date_time_array.length > 0
 
-            # Get the median Flight Date Time
-            median = flight_date_time_array[flight_date_time_array.length / 2]
 
-            # Average the flight date
-            self.median_flight_date_time = Time.at(median).utc
+            if self.project == "SL"
+    
+                # Average the flight date
+                self.median_flight_date_time = Time.at(flight_date_time_array[0]).utc
+
+            else
+
+                # Get the median Flight Date Time
+                median = flight_date_time_array[flight_date_time_array.length / 2]
+    
+                # Average the flight date
+                self.median_flight_date_time = Time.at(median).utc
+
+            end
             
             if !self.save
                 raise Exception, "Could not calculate Median Flight Date Time for Tile: #{self.poly_id} | #{self.errors.full_messages.to_sentence}"
@@ -450,7 +460,7 @@ class Tile < ApplicationRecord
 
         # Calculate Tile Flight times
         # => run as delayed job
-        Task.delay.update_flight_times
+        # Task.delay.update_flight_times
 
     end
 
@@ -762,11 +772,11 @@ class Tile < ApplicationRecord
     end
 
     def build_filename
-        # Updated for SL
-        "ortho_#{self.state.abv}_15_#{self.poly_id}_#{self.easement.flight_date.strftime("%Y%m%d")}"
-
-        # Old NRI
-        # "ortho_#{self.easement.poly_id}_15_#{self.easement.flight_date.strftime("%Y%m%d")}"
+        if self.project == "SL"
+            "ortho_#{self.state.abv}_15_#{self.poly_id}_#{self.easement.flight_date.strftime("%Y%m%d")}"
+        elsif self.project == "NRI"
+            "ortho_#{self.easement.poly_id}_15_#{self.easement.flight_date.strftime("%Y%m%d")}"
+        end
     end
 
     def self.generate_cutfile params

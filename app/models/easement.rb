@@ -383,58 +383,123 @@ class Easement < ApplicationRecord
                     p file
                     p "--------------------"
                     file.each do |record|
-                        puts "Easement Number: #{record.attributes["NESTID"]}"
-                        # pp record.attributes
 
-                        # Find the State 
-                        state = State.find_by(abv: record.attributes["SPATIAL_ST"])
+                        if params[:project] == "SL"
 
-                        # p "=-=-=-=-=-=-=-="
-                        # p state.name
-                        # p record.attributes["SPATIAL_ST"]
-                        # p "=-=-=-=-=-=-=-="
+                            puts "Easement Number: #{record.attributes["NESTID"]}"
+                            # pp record.attributes
 
-                        if state.nil?
-                            raise Exception, "Could not match State with FIPS: #{record.attributes["SPATIAL_ST"]}"
+                            # Find the State 
+                            state = State.find_by(abv: record.attributes["SPATIAL_ST"])
+
+                            # p "=-=-=-=-=-=-=-="
+                            # p state.name
+                            # p record.attributes["SPATIAL_ST"]
+                            # p "=-=-=-=-=-=-=-="
+
+                            if state.nil?
+                                raise Exception, "Could not match State with FIPS: #{record.attributes["SPATIAL_ST"]}"
+                            end
+
+                            # Find the county based on the selected state
+                            county = state.counties.find_by(full_fips: "#{record.attributes["SPATIAL_FI"]}")
+
+                            if county.nil? || county.name != record.attributes["SPATIAL_Co"]
+                                raise Exception, "Could not match County with FIPS: #{record.attributes["SPATIAL_FI"]} in State: #{record.attributes["SPATIAL_ST"]}"
+                            end
+
+                            # Find the contract award
+                            contract_award = ContractAward.find_by(state: state, project: params[:project])
+
+                            # create the easement
+                            easement = Easement.new(
+                                # scale: record.attributes["Scale"],
+                                acres: record.attributes["CalcAcres_"],
+                                # buffer_acres: record.attributes["BufferAcre"],
+                                latitude: record.attributes["Lat_WGS84"],
+                                longitude: record.attributes["Long_WGS84"],
+                                original_poly_id: record.attributes["NESTID"],
+                                poly_id: record.attributes["NESTID"],
+                                project: params[:project],
+                                project_no: contract_award.project_no,
+                                project_state_name: state.name,
+                                # phase: record.attributes["phase"],
+                                # status: record.attributes["Status"],
+                                # usda_region: record.attributes["USDARegion"],
+                                # asi_block: record.attributes["ASI_Block"],
+                                original_fid: record.attributes["OBJECTID"],
+                                county_name: county.name,
+                                state_name: state.name,
+                                state_abv: state.abv,
+                                geom: record.geometry,
+                                contract_award: contract_award,
+                                county: county,
+                                state: state,
+                                project_state: state,
+                                upload: upload
+                            )
+
+                        else
+
+                            puts "Poly ID: #{record.attributes["POLY_ID"]}"
+                            pp record.attributes
+
+                            # Find the county based on the selected state
+                            county = County.find_by(full_fips: "#{record.attributes["FIPS_l"]}")
+
+                            if county.nil?
+                                raise Exception, "Could not match County with FIPS: #{record.attributes["FIPS_l"]}"
+                            end
+
+                            state = county.state
+
+                            if state.nil?
+                                raise Exception, "Could not match State with FIPS: #{record.attributes["SPATIAL_ST"]}"
+                            end
+
+                            # Find the contract award
+                            contract_award = ContractAward.find_by(state: state, project: params[:project])
+
+                            # create the easement
+                            easement = Easement.new(
+                                # scale: record.attributes["Scale"],
+                                acres: record.attributes["Acreage"],
+                                # buffer_acres: record.attributes["BufferAcre"],
+                                latitude: record.geometry.centroid.y,
+                                longitude: record.geometry.centroid.x,
+                                original_poly_id: record.attributes["POLY_ID"],
+                                poly_id: record.attributes["POLY_ID"],
+                                project: params[:project],
+                                project_no: contract_award.project_no,
+                                project_state_name: state.name,
+                                # phase: record.attributes["phase"],
+                                # status: record.attributes["Status"],
+                                # usda_region: record.attributes["USDARegion"],
+                                # asi_block: record.attributes["ASI_Block"],
+                                original_fid: record.attributes["FID"],
+                                county_name: county.name,
+                                state_name: state.name,
+                                state_abv: state.abv,
+                                geom: record.geometry,
+                                contract_award: contract_award,
+                                county: county,
+                                state: state,
+                                project_state: state,
+                                upload: upload
+                            )
+
+
                         end
 
-                        # Find the county based on the selected state
-                        county = state.counties.find_by(full_fips: "#{record.attributes["SPATIAL_FI"]}")
+                        # check that the easement is within the associated county
+                        matched_county = County.find_by("counties.full_fips = '#{record.attributes["FIPS_l"]}' AND st_contains(counties.geom::geometry, ST_SetSRID(ST_Point(#{easement.longitude}, #{easement.latitude}),4326))")
 
-                        if county.nil? || county.name != record.attributes["SPATIAL_Co"]
-                            raise Exception, "Could not match County with FIPS: #{record.attributes["SPATIAL_FI"]} in State: #{record.attributes["SPATIAL_ST"]}"
+                        # pp matched_county
+
+                        if (!matched_county || matched_county.id != county.id) && !["15009_030401R", "72115_030302R"].include?(easement.poly_id)
+                            pp easement
+                            raise Exception, "Easement #{easement.poly_id} lat/long does not exist within specified county (fips match: #{county.full_fips} | loc match: #{matched_county.nil? ? "NA" : matched_county.full_fips})"
                         end
-
-                        # Find the contract award
-                        contract_award = ContractAward.find_by(state: state, project: params[:project])
-
-                        # create the easement
-                        easement = Easement.new(
-                            # scale: record.attributes["Scale"],
-                            acres: record.attributes["CalcAcres_"],
-                            # buffer_acres: record.attributes["BufferAcre"],
-                            latitude: record.attributes["Lat_WGS84"],
-                            longitude: record.attributes["Long_WGS84"],
-                            original_poly_id: record.attributes["NESTID"],
-                            poly_id: record.attributes["NESTID"],
-                            project: params[:project],
-                            project_no: contract_award.project_no,
-                            project_state_name: state.name,
-                            # phase: record.attributes["phase"],
-                            # status: record.attributes["Status"],
-                            # usda_region: record.attributes["USDARegion"],
-                            # asi_block: record.attributes["ASI_Block"],
-                            original_fid: record.attributes["OBJECTID"],
-                            county_name: county.name,
-                            state_name: state.name,
-                            state_abv: state.abv,
-                            geom: record.geometry,
-                            contract_award: contract_award,
-                            county: county,
-                            state: state,
-                            project_state: state,
-                            upload: upload
-                        )
 
                         # Get the footprint UTM zone
                         sql = "select id, zone, (st_area(st_intersection(ST_GeomFromText('#{easement.geom.to_s}'), u.geom))/st_area(ST_GeomFromText('#{easement.geom.to_s}'))) as area
@@ -517,11 +582,10 @@ class Easement < ApplicationRecord
                 # output[:pass] = false
                 # output[:errors] = exception.message
 
-
                 p "-----------"
                 p exception.backtrace.count
                 exception.backtrace.each do |x|
-                    next if !x.include? "footprint.rb"
+                    next if !x.include? "easement.rb"
                     x.match(/^(.+?):(\d+)(|:in `(.+)')$/); 
                    p [$1,$2,$4]
                 end
@@ -862,24 +926,6 @@ class Easement < ApplicationRecord
         # p output
         # f.close
 
-    end
-
-    def self.test
-
-
-
-        # Get the timezone
-        # sql = "select id
-        # from time_zones tz where st_intersects(ST_GeomFromText('#{easement.geom.to_s}'), tz.geom)
-        # order by (st_area(st_intersection(ST_GeomFromText('#{easement.geom.to_s}'), tz.geom))/st_area(ST_GeomFromText('#{easement.geom.to_s}'))) DESC"
-
-        Easement.all.each do |easement|
-            sql = "SELECT ST_NumGeometries(ST_GeomFromText('#{easement.geom.to_s}')) as num"
-
-            result = ActiveRecord::Base.connection.execute(sql)
-
-            p result[0]["num"]
-        end
     end
 
 end

@@ -111,7 +111,7 @@ RGeo::Shapefile::Reader.open("#{Rails.application.secrets.timezone_path}") do |f
         # p "++++++++++++"
         puts "Timezone #{record.attributes["TZID"]}"
 
-        next if !["TZID: Pacific/Honolulu", "America/Puerto_Rico", "America/St_Thomas"].include? record.attributes["TZID"]
+        next if !["Pacific/Honolulu", "America/Puerto_Rico", "America/St_Thomas"].include? record.attributes["TZID"]
 
         TimeZone.create(
             name: record.attributes["TZID"],

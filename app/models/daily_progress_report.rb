@@ -32,9 +32,21 @@ class DailyProgressReport
                     }
                 }
 
+                nri_associated_tiles_not_reported = []
+                sl_associated_tiles_not_reported = []
+
                 # find the tiles that were recently associated by the easements with multiple coverages 
-                nri_associated_tiles_not_reported = Tile.nri.flown.where(associate_date: flight_date.strftime("%F")).order(:poly_id)
-                sl_associated_tiles_not_reported = Tile.sl.flown.where(associate_date: flight_date.strftime("%F")).order(:poly_id)
+                sl_associated_tiles_not_reported |= Tile.sl.flown.where(associate_date: flight_date.strftime("%F")).order(:poly_id)
+                nri_associated_tiles_not_reported |= Tile.nri.flown.where(associate_date: flight_date.strftime("%F")).order(:poly_id)
+
+                # Get the Tiles that match the flight date, even if they have been reported
+                # => Also check the rejected tiles 
+                sl_associated_tiles_not_reported |= Tile.sl.flown.where(flight_date: flight_date.strftime("%F")).order(:poly_id)
+                nri_associated_tiles_not_reported |= Tile.nri.flown.where(flight_date: flight_date.strftime("%F")).order(:poly_id)
+
+                # find the tiles that were recently associated by the easements with multiple coverages 
+                # nri_associated_tiles_not_reported = Tile.nri.flown.where(associate_date: flight_date.strftime("%F")).order(:poly_id)
+                # sl_associated_tiles_not_reported = Tile.sl.flown.where(associate_date: flight_date.strftime("%F")).order(:poly_id)
 
                 # p "-------"
                 # p "NRI: #{nri_associated_tiles_not_reported.count}"
@@ -128,7 +140,7 @@ class DailyProgressReport
                         obj[:sl][:accepted] = DailyProgressReport.build_project_report flight_date, sl_associated_tiles_not_reported, sl_tiles_not_reported, file_path
 
                         # push the tiles to the history obj
-                        history.tiles << nri_tiles_not_reported
+                        history.tiles << sl_tiles_not_reported
 
                         out_file = File.open(file_path, "a")
                         out_file.puts("")

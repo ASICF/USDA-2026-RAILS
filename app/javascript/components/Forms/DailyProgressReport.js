@@ -221,7 +221,7 @@ function DailyProgressReport(props) {
         </Message>
 
         <Segment.Group>
-          {result.nri && (
+          {result.nri && result.nri.accepted.length > 0 && (
             <>
               <Segment tertiary>
                 <b>NRI</b>
@@ -252,7 +252,7 @@ function DailyProgressReport(props) {
               </Segment>
             </>
           )}
-          {result.sl && (
+          {result.sl && result.sl.accepted.length > 0 && (
             <>
               <Segment tertiary>
                 <b>SL Project</b>

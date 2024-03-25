@@ -360,6 +360,11 @@ class Tile < ApplicationRecord
         # only proceed if the flight date is set
         if self.flight_date
 
+            p self.flight_date
+            p self.flown_by
+            p self.state.id
+            p self.project
+
             # find the contract rate
             rates = ContractRate.find_rates self.flight_date, self.flown_by, self.state, self.project
 

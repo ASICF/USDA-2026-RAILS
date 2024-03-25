@@ -57,35 +57,27 @@ class FrameCenter < ApplicationRecord
                     raise Exception, "Invalid Project (#{params[:project]}), must be #{Rails.application.secrets.active_projects.join(", ")}"
                 end
 
-                # Validate the filename
-                arr = params[:file].original_filename.split("_")
-
                 # Check to make sure the filename flight date matches the form flight date
-                file_date = Date.parse(arr[0])
-                if file_date != Date.parse(params[:flight_date])
+                if params[:flight_date].blank?
                     raise Exception, "Filename flight date does not match Form Flight Date"
                 end
 
                 # Check if the second array element is a company
-                company = Company.find_by(alias: arr[1])
-                if company.nil? || company.id != params[:flown_by_id].to_i
-                    if company.nil? 
-                        raise Exception, "Contractor #{arr[1]} does not exist in application"
-                    elsif company.id != params[:flown_by_id].to_i
-                        raise Exception, "Contractor #{arr[1]} does not match specified Flown By Company in Form"
-                    end
+                company = Company.find_by(id: params[:flown_by_id])
+                if company.nil? 
+                    raise Exception, "Contractor does not exist in application"
                 end
 
                 # Make sure the camera exists
                 camera = Camera.find_by(id: params[:camera_id])
-                if camera.nil? || (camera.name.downcase != arr[2].downcase)
+                if camera.nil?
                     raise Exception, "Camera name does not match the Filename"
                 end
 
                 # Check if the third element is a utm zone
-                utm_zone = Utm.find_by(zone: arr[3].tr("z", ""))
+                utm_zone = Utm.find_by(id: params[:utm_id])
                 if utm_zone.nil?
-                    raise Exception, "UTM Zone #{arr[3]} is not a valid UTM Zone"
+                    raise Exception, "UTM Zone is not a valid UTM Zone"
                 end
 
                 # Check the output path and make sure it works there
@@ -186,35 +178,27 @@ class FrameCenter < ApplicationRecord
         ActiveRecord::Base.transaction do
             begin
 
-                # Validate the filename
-                arr = params[:file].original_filename.split("_")
-
                 # Check to make sure the filename flight date matches the form flight date
-                file_date = Date.parse(arr[0])
-                if file_date != Date.parse(params[:flight_date])
+                if params[:flight_date].blank?
                     raise Exception, "Filename flight date does not match Form Flight Date"
                 end
 
                 # Check if the second array element is a company
-                company = Company.find_by(alias: arr[1])
-                if company.nil? || company.id != params[:flown_by_id].to_i
-                    if company.nil? 
-                        raise Exception, "Contractor #{arr[1]} does not exist in application"
-                    elsif company.id != params[:flown_by_id].to_i
-                        raise Exception, "Contractor #{arr[1]} does not match specified Flown By Company in Form"
-                    end
+                company = Company.find_by(id: params[:flown_by_id])
+                if company.nil? 
+                    raise Exception, "Contractor does not exist in application"
                 end
 
                 # Make sure the camera exists
                 camera = Camera.find_by(id: params[:camera_id])
-                if camera.nil? || (camera.name.downcase != arr[2].downcase)
+                if camera.nil?
                     raise Exception, "Camera name does not match the Filename"
                 end
 
                 # Check if the third element is a utm zone
-                filename_utm_zone = Utm.find_by(zone: arr[3].tr("z", ""))
-                if filename_utm_zone.nil?
-                    raise Exception, "UTM Zone #{arr[3]} is not a valid UTM Zone"
+                utm_zone = Utm.find_by(id: params[:utm_id])
+                if utm_zone.nil?
+                    raise Exception, "UTM Zone is not a valid UTM Zone"
                 end
 
                 # set the state
@@ -245,35 +229,58 @@ class FrameCenter < ApplicationRecord
                     state = State.find_by(id: params[:state_id])
                 end
 
+                o = {
+                    one: 0,
+                    greater_than_one: 0,
+                    zero: 0
+                }
+
+                wrong_utm = 0
+                skip_lines = 0
+
                 File.open(file, "r", row_sep: :auto) do |f|
-                    f.each_line do |line|
+                    f.each_line.with_index do |line, index|
 
-                        # p line
+                        p "#{index} - #{line.tr("\t\r\n","")}"
 
-                        if line.length > 5
+                        if index == 0 && line[0..9] == "**********"
+                            p "SKIP"
+                            skip_lines = 45
+                            next
+                        elsif index + 1 < skip_lines
+                            next
+                        end
 
-                            arr = line.split(' ')
 
-                            if arr.size != 11
-                                raise Exception, "Row malformation found in txt file, please check the file for errors"
-                            end
+                        # next if line.tr("\t\r\n","")[0, ]
 
-                            # Get the strip frame and check if it has ".tif" in it
-                            strip_frame = arr[1].include?(".tif") ? arr[1].gsub(".tif", "") : arr[1]
+                        # next if index + 1 < 45
 
-                            p strip_frame
+                        arr = line.tr("\t\r\n","").split(' ')
+
+                        # p arr
+                        # p arr.size
+
+                        # pp o
+
+                        if arr.size >= 10 || arr.size <= 11
+
+                            # if arr.size != 11
+                            #     raise Exception, "Row malformation found in txt file, please check the file for errors"
+                            # end
+
 
                             obj = {
                                 project: project,
-                                strip: arr[0],
-                                strip_frame: strip_frame,
-                                gpstime: arr[2],
-                                x: arr[3],
-                                y: arr[4],
-                                z: arr[5],
-                                omega: arr[6],
-                                phi: arr[7],
-                                kappa: arr[8],
+                                # strip: arr[0],
+                                # strip_frame: strip_frame,
+                                # gpstime: gpstime,
+                                # x: arr[3],
+                                # y: arr[4],
+                                # z: arr[5],
+                                # omega: arr[6],
+                                # phi: arr[7],
+                                # kappa: arr[8],
                                 upload: upload,
                                 nri: false,
                                 sl: false,
@@ -283,25 +290,86 @@ class FrameCenter < ApplicationRecord
                                 flown_by_alias: company.alias,
                                 flown_by_name: company.name,
                                 camera: camera,
-                                # utm_zone: "#{utm_zone.zone}N",
-                                # utm: utm_zone
+                                # latitude: latitude,
+                                # longitude: longitude,
+                                # geom: RGeo::Geographic.spherical_factory(srid: 4326).point(arr[10], arr[9])
+                                utm_zone: "#{utm_zone.zone}N",
+                                utm_id: utm_zone.id
                             }
 
-                            # Rails.logger.error "LOG - Strip Frame: #{strip_frame}"
 
-                            # Calculate the Latitude and longitude for geometry
-                            obj[:latitude] = arr[9]
-                            obj[:longitude] = arr[10]
-                            obj[:geom] = RGeo::Geographic.spherical_factory(srid: 4326).point(arr[10], arr[9])
+                            # check if the strip frame is set or not
+                            if arr.size == 10
 
-                            # Get the latitude and longitude
-                            latitude = obj[:latitude].to_f
-                            longitude = obj[:longitude].to_f
+                                gpstime = arr[1].to_f
+                                latitude = arr[8].to_f
+                                longitude = arr[9].to_f
+                                flight_date = params[:flight_date]
+                                flight_date_time = DateTime.parse(params[:flight_date]).beginning_of_week(:sunday) + gpstime.seconds
 
-                            # Calcualte the GPS Time
-                            # => Get the Sunday of the week the flight date starts on
-                            # => Add the GPS Time to it as seconds
-                            obj[:flight_date] = DateTime.parse(params[:flight_date]).beginning_of_week(:sunday) + obj[:gpstime].to_f.seconds
+                                # query against the photo index and find the strip frame based on GPS Time, flight date, and geometry
+
+                                # photo_index = PhotoIndex.find_by("photo_indices.project = '#{project}' AND photo_indices.camera_id = '#{camera.id}' AND photo_indices.flight_date_time = '#{flight_date_time.utc}'
+                                #     AND photo_indices.flight_date = '#{params[:flight_date]}' AND photo_indices.flown_by_id = '#{company.id}' #{project == "NAIP" ? " AND project_state_id=#{state.id} " : ""}
+                                #     AND ST_Equals(photo_indices.geom::geometry, ST_SetSRID(ST_Point(#{longitude}, #{latitude}),4326))")
+
+                                # p "photo_indices.project = '#{project}' AND photo_indices.camera_id = '#{camera.id}' AND ROUND(photo_indices.gpstime, 0) = '#{gpstime.to_f.round(0)}' AND photo_indices.utm_id = '#{utm_zone.id}' 
+                                # AND photo_indices.flight_date = '#{params[:flight_date]}' AND photo_indices.flown_by_id = '#{company.id}' #{project == "NAIP" ? " AND project_state_id=#{state.id} " : ""}
+                                # AND ROUND(photo_indices.latitude, 1) = #{latitude.round(1)} AND ROUND(photo_indices.longitude, 1) = '#{longitude.round(1)}'"
+
+                                photo_index = PhotoIndex.where("photo_indices.project = '#{project}' AND photo_indices.camera_id = '#{camera.id}' AND ROUND(photo_indices.gpstime, 0) = '#{gpstime.round(0)}'
+                                    AND photo_indices.flight_date = '#{params[:flight_date]}' AND photo_indices.flown_by_id = '#{company.id}' #{project == "NAIP" ? " AND project_state_id=#{state.id} " : ""}
+                                    AND ROUND(photo_indices.latitude, 1) = #{latitude.round(1)} AND ROUND(photo_indices.longitude, 1) = '#{longitude.round(1)}'")
+
+                                p "GPSTime: #{gpstime.to_f}"
+                                p "GPSTime Rounded: #{gpstime.to_f.round(0)}"
+                                p "Latitude: #{latitude.round(1)}"
+                                p "longitude: #{longitude.round(1)}"
+                                p "COUNT: #{photo_index.count}"
+
+                                # Check if the photo index is equal to zero or greater than one and if so then abort and rollback
+                                if photo_index.count == 0
+                                    raise Exception, "No Photo Index found that matched Line #{index + 1}"
+                                elsif photo_index.count > 1
+                                    raise Exception, "More than one Photo Index found for Line #{index + 1}"
+                                else
+                                    p "Strip Frame: #{photo_index.first.strip_frame}"
+
+                                    obj[:strip] = photo_index.first.strip
+                                    obj[:strip_frame] = photo_index.first.strip_frame
+                                    obj[:x] =  arr[2]
+                                    obj[:y] =  arr[3]
+                                    obj[:z] =  arr[4]
+                                    obj[:omega] =  arr[5]
+                                    obj[:phi] =  arr[6]
+                                    obj[:kappa] =  arr[7]
+                                    obj[:gpstime] = arr[1]
+                                    obj[:latitude] = latitude
+                                    obj[:longitude] = longitude
+                                    obj[:flight_date] = flight_date_time
+                                    obj[:geom] = RGeo::Geographic.spherical_factory(srid: 4326).point(longitude, latitude)
+                                end
+
+                            elsif arr.size == 11
+
+                                # Get the strip frame and check if it has ".tif" in it
+                                strip_frame = arr[1].include?(".tif") ? arr[1].gsub(".tif", "") : arr[1]
+
+                                obj[:strip] = arr[0]
+                                obj[:strip_frame] = strip_frame
+                                obj[:x] =  arr[3]
+                                obj[:y] =  arr[4]
+                                obj[:z] =  arr[5]
+                                obj[:omega] =  arr[6]
+                                obj[:phi] =  arr[7]
+                                obj[:kappa] =  arr[8]
+                                obj[:gpstime] = arr[2]
+                                obj[:latitude] = arr[9].to_f
+                                obj[:longitude] = arr[10].to_f
+                                obj[:flight_date] = DateTime.parse(params[:flight_date]).beginning_of_week(:sunday) + arr[2].to_f.seconds
+                                obj[:geom] = RGeo::Geographic.spherical_factory(srid: 4326).point(arr[10], arr[9])
+
+                            end
 
                             # Make sure the Flight Date matches the Calculated GPS Time
                             if obj[:flight_date].strftime("%F") != params[:flight_date]
@@ -309,7 +377,7 @@ class FrameCenter < ApplicationRecord
                             end
 
                             # # Get the sun angle 
-                            elevation, azimuth = Solar.position(obj[:flight_date], longitude, latitude)
+                            elevation, azimuth = Solar.position(obj[:flight_date], obj[:longitude], obj[:latitude])
                             obj[:sun_angle] = elevation
 
                             sun_angle_passed = true
@@ -322,7 +390,8 @@ class FrameCenter < ApplicationRecord
                                 sun_angle_passed = false
                             end
 
-                            if FrameCenter.where(latitude: latitude.round(6), longitude: longitude.round(6), strip_frame: obj[:strip_frame], flight_date: obj[:flight_date], flown_by_id: params[:flown_by_id], camera_id: camera.id).count > 0
+                            if FrameCenter.where(latitude: obj[:latitude].round(6), longitude: obj[:longitude].round(6), strip_frame: obj[:strip_frame], flight_date: obj[:flight_date], flown_by_id: params[:flown_by_id], camera_id: camera.id).count > 0
+                                p " - Duplicate"
                                 # Skip to the next record if matched since it already exists
                                 # duplicate << obj[:strip_frame]
                                 duplicate += 1
@@ -331,12 +400,17 @@ class FrameCenter < ApplicationRecord
                             end
 
                             # Calculate the UTM zone
-                            utm = Utm.exclude_geom.find_by("st_contains(utms.geom::geometry, ST_SetSRID(ST_Point(#{longitude}, #{latitude}),4326))")
+                            utm = Utm.exclude_geom.find_by("st_contains(utms.geom::geometry, ST_SetSRID(ST_Point(#{obj[:longitude]}, #{obj[:latitude]}),4326))")
 
                             # check if the utm zone matches the filename utm zone
-                            if utm.zone != filename_utm_zone.zone
-                                raise Exception, "Frame Center #{obj[:strip_frame]} is contained within Zone #{utm.zone}N outside of Zone #{filename_utm_zone.zone}N as specified in the filename"
+                            if utm.zone != utm_zone.zone
+                                p "- Wrong UTM"
+                                wrong_utm += 1
+                                next
+                                # raise Exception, "Frame Center #{obj[:strip_frame]} is contained within Zone #{utm.zone}N outside of Zone #{utm_zone.zone}N as specified in the filename"
                             end
+
+                            p "Test"
 
                             # Create the record
                             fc = FrameCenter.new(obj)
@@ -353,10 +427,12 @@ class FrameCenter < ApplicationRecord
                             # p "strip_frame: #{obj[:strip_frame]}"
                             # p "flown_by_id: #{company.id}"
                             # p fc.strip_frame
-                            # p footprint
+                            p "FOOTPRINT"
+                            p footprint
 
                             # There should only be 1 footprint that matches the requirement, if not then raise alarm
                             if footprint && footprint.frame_center.nil?
+                                p "Found Footprint: #{footprint.id}"
 
                                 # update the project state
                                 fc.sl = footprint.sl
@@ -370,6 +446,7 @@ class FrameCenter < ApplicationRecord
                                 if footprint.county_id.present? || footprint.state_id.present?
                                     fc.county_name = footprint.county_name
                                     fc.state_name = footprint.state_name
+                                    fc.state_abv = footprint.state_abv
                                     fc.county_id = footprint.county_id
                                     fc.state_id = footprint.state_id
                                     # fc.utm_zone = footprint.utm_zone
@@ -411,6 +488,8 @@ class FrameCenter < ApplicationRecord
 
                             else
 
+                                 p "- No Footprint found"
+
                                 # Check if the Strip Frame is in the Rejected Footprint
                                 # rejected_footprint = RejectedFootprint.find_by(project: project, camera_id: camera.id, strip_frame: obj[:strip_frame], flight_date: params[:flight_date], flown_by_id: company.id)
                                 rejected_footprint = RejectedFootprint.find_by("rejected_footprints.project = '#{project}' AND rejected_footprints.camera_id = '#{camera.id}' AND rejected_footprints.strip_frame = '#{obj[:strip_frame]}' AND rejected_footprints.flight_date = '#{params[:flight_date]}' AND rejected_footprints.flown_by_id = '#{company.id}' AND st_contains(rejected_footprints.geom::geometry, ST_SetSRID(ST_Point(#{fc.longitude}, #{fc.latitude}),4326))")
@@ -448,8 +527,10 @@ class FrameCenter < ApplicationRecord
                             end
 
                         else
+                            raise Exception, "Row malformation found in txt file, please check the file for errors"
+
                             # Check if removing all spaces leaves an empty string
-                            raise Exception, "#{strip_frame}:#{fc.errors.full_messages.to_sentence}" if line.strip.length != 0
+                            # raise Exception, "#{strip_frame}:#{fc.errors.full_messages.to_sentence}" if line.strip.length != 0
                         end
 
                     end
@@ -561,7 +642,7 @@ class FrameCenter < ApplicationRecord
                     sun_angle_rejection_message = ", #{sun_angle_rejections.to_s} were rejected due to not meeting the minimum sun angle" if sun_angle_rejections > 0 
                     
                     # check the rejected footprints count
-                    rejected_footprints_message = ", #{rejected_footprints.to_s} were rejected and assigned to existing Rejected Footprints" if rejected_footprints > 0 
+                    rejected_footprints_message = ", #{rejected_footprints.to_s} associated to existing Rejected Footprints" if rejected_footprints > 0 
 
                     # check the duplicate counts
                     duplicate_message = ", #{duplicate.to_s} duplicates were skipped" if duplicate > 0
@@ -599,6 +680,10 @@ class FrameCenter < ApplicationRecord
                         history.doqqs.each do |doqq|
                             doqq.generate_median_flight_date_time
                         end
+                    end
+
+                    if wrong_utm > 0 
+                        message += " #{wrong_utm} Frame Centers were skipped due to wrong UTM Zone."
                     end
 
                     # Create a new History record

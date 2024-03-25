@@ -29,6 +29,7 @@ export default function FrameCenterImport({
   cameras,
   states,
   projects,
+  utms,
   sl_split_path,
   nri_split_path,
   token,
@@ -51,6 +52,7 @@ export default function FrameCenterImport({
 
   console.log("FrameCenterImport", {
     errors: errors,
+    utms,
     // companies,
     // cameras,
     // states,
@@ -69,6 +71,7 @@ export default function FrameCenterImport({
       project: "NRI/SL",
       flown_by_id: 1,
       camera_id: 4,
+      utm_id: "",
       flight_date: "",
       file: "",
     });
@@ -84,6 +87,7 @@ export default function FrameCenterImport({
     form.append("frame_centers[project]", data.project);
     form.append("frame_centers[flown_by_id]", data.flown_by_id);
     form.append("frame_centers[camera_id]", data.camera_id);
+    form.append("frame_centers[utm_id]", data.camera_id);
     form.append(
       "frame_centers[flight_date]",
       moment(data.flight_date, "l").format("YYYY-MM-DD")
@@ -375,6 +379,41 @@ export default function FrameCenterImport({
               />
             )}
           />
+
+          <Controller
+            name={"utm_id"}
+            control={control}
+            rules={{ required: "Required" }}
+            render={({ field: { name, value } }) => (
+              <Form.Select
+                fluid
+                search
+                selection
+                name={name}
+                required={true}
+                data-value={value}
+                label={"UTM"}
+                value={value || ""}
+                onChange={handleChange}
+                autoComplete="off"
+                options={utms.map((record) => {
+                  return {
+                    key: record.id,
+                    text: record.name,
+                    value: record.id,
+                  };
+                })}
+                error={
+                  errors["utm_id"]
+                    ? {
+                        content: errors["utm_id"].message,
+                        pointing: "above",
+                      }
+                    : false
+                }
+              />
+            )}
+          />
           {project === "NAIP" && (
             <Controller
               name={"state_id"}
@@ -436,8 +475,9 @@ export default function FrameCenterImport({
           <Form.Field>
             <label>EO Splitter Output</label>
             <p style={{ margin: "0.5em" }}>
-              SL:  {sl_split_path}<br/>
-              NRI:  {nri_split_path}
+              SL: {sl_split_path}
+              <br />
+              NRI: {nri_split_path}
             </p>
           </Form.Field>
         </Form.Group>

@@ -93,11 +93,11 @@ class Audit
                 end
 
                 # check if the rates are set or not
-                if tile.total_amount.nil?
-                    tile.set_contract_rate
-                    tile.update(review_desc: "Tile was marked as flown but did not have contract rates set")
-                    flown_tiles_no_contract_rates << tile.poly_id
-                end
+                # if tile.total_amount.nil?
+                #     tile.set_contract_rate
+                #     tile.update(review_desc: "Tile was marked as flown but did not have contract rates set")
+                #     flown_tiles_no_contract_rates << tile.poly_id
+                # end
             end
         end
 
@@ -292,17 +292,17 @@ class Audit
 
 
             # If there is any filename mistmatches then send an email
-            if flown_tiles_no_contract_rates.count > 0
+            # if flown_tiles_no_contract_rates.count > 0
 
-                html = "<p>There were Flown Tiles that did not have the Contract Rate set. The Quick Audit updated these values.</p>"
-                html += '<ul>'
-                flown_tiles_no_contract_rates.each do |poly_id|
-                    html += "<li>#{poly_id}</li>"
-                end
-                html += '</ul>'
+            #     html = "<p>There were Flown Tiles that did not have the Contract Rate set. The Quick Audit updated these values.</p>"
+            #     html += '<ul>'
+            #     flown_tiles_no_contract_rates.each do |poly_id|
+            #         html += "<li>#{poly_id}</li>"
+            #     end
+            #     html += '</ul>'
 
-                email_output << html
-            end
+            #     email_output << html
+            # end
 
             # If there is any filename mistmatches then send an email
             if no_footprints.count > 0

@@ -6,6 +6,7 @@ class FrameCentersController < ApplicationController
         @cameras = Camera.all.order(:name).map { |c| {id: c.id, label: "#{c.company.alias} | #{c.name} | #{c.serial_number}", company_id: c.company_id} }
         @states = State.active_naip.order(:name).map { |state| {id: state.id, name: state.name } }
         @projects = ["NRI/SL"]
+        @utms = Utm.exclude_geom.order(:zone).map{|utm| {id: utm.id, name: "#{utm.zone}N"}}
         @sl_split_path = Rails.application.secrets.sl_eo_splitter_p_path
         @nri_split_path = Rails.application.secrets.nri_eo_splitter_p_path
     end
@@ -14,7 +15,7 @@ class FrameCentersController < ApplicationController
         # p params
         # p frame_center_params
 
-        if frame_center_params[:project].blank? || frame_center_params[:file].blank? || frame_center_params[:flight_date].blank? || frame_center_params[:flown_by_id].blank? || frame_center_params[:camera_id].blank?
+        if frame_center_params[:project].blank? || frame_center_params[:file].blank? || frame_center_params[:flight_date].blank? || frame_center_params[:flown_by_id].blank? || frame_center_params[:camera_id].blank?  || frame_center_params[:utm_id].blank?
             # redirect_to new_frame_centers_path, error: "No Shapefile Found"
 
             render json: {
@@ -45,7 +46,7 @@ class FrameCentersController < ApplicationController
     end
 
     def frame_center_params
-        params.require(:frame_centers).permit(:project, :flown_by_id, :camera_id, :flight_date, :state_id, :file, :output_path)
+        params.require(:frame_centers).permit(:project, :flown_by_id, :camera_id, :utm_id, :flight_date, :state_id, :file, :output_path)
     end
 
 end

@@ -9,25 +9,46 @@ class PhotoIndexController < ApplicationController
     p params
     p strong_params
 
-    if strong_params[:project].blank? || strong_params[:file].blank? || strong_params[:flown_by_id].blank? || strong_params[:camera_id].blank?
-        # redirect_to new_frame_centers_path, error: "No Shapefile Found"
+    # if strong_params[:project].blank? || strong_params[:file].blank? || strong_params[:flown_by_id].blank? || strong_params[:camera_id].blank? || strong_params[:flight_date].blank?
 
+
+    if strong_params[:project].blank?
+      render json: {
+          state: false,
+          message: "No Project Specified"
+      }
+    elsif strong_params[:file].blank?
         render json: {
             state: false,
-            message: "Missing required parameter. Double check form and resubmit."
+            message: "No State specified"
+        }
+    elsif strong_params[:flown_by_id].blank?
+        render json: {
+            state: false,
+            message: "No Company specified"
+        }
+    elsif strong_params[:camera_id].blank?
+        render json: {
+            state: false,
+            message: "No Company specified"
+        }
+    elsif strong_params[:flight_date].blank?
+        render json: {
+            state: false,
+            message: "No Flight Date specified"
         }
     else
-        # response = FrameCenter.import(strong_params, @current_user)
-        response = PhotoIndex.prepare_import strong_params, current_user
+      # response = FrameCenter.import(strong_params, @current_user)
+      response = PhotoIndex.prepare_import strong_params, current_user
 
-        p "---------------"
-        p response
-        p "---------------"
+      p "---------------"
+      p response
+      p "---------------"
 
-        render json: {
-            state: response[:pass],
-            message: response[:message]
-        }
+      render json: {
+          state: response[:pass],
+          message: response[:message]
+      }
 
     end
   end
@@ -57,7 +78,7 @@ class PhotoIndexController < ApplicationController
   end
 
   def strong_params
-    params.require(:photo_index).permit(:project, :flown_by_id, :camera_id, :file)
+    params.require(:photo_index).permit(:project, :flown_by_id, :camera_id, :flight_date, :file)
   end
 
 end

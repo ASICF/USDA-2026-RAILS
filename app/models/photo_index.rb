@@ -46,23 +46,39 @@ class PhotoIndex < ApplicationRecord
                     raise Exception, "Invalid Project (#{params[:project]}), must be #{Rails.application.secrets.active_projects.join(", ")}"
                 end
 
-                # Validate the filename
-                arr = params[:file].original_filename.split("_")
+                # # Validate the filename
+                # arr = params[:file].original_filename.split("_")
+
+                # # Check if the second array element is a company
+                # company = Company.find_by(alias: arr[1])
+                # if company.nil? || company.id != params[:flown_by_id].to_i
+                #     if company.nil? 
+                #         raise Exception, "Contractor #{arr[1]} does not exist in application"
+                #     elsif company.id != params[:flown_by_id].to_i
+                #         raise Exception, "Contractor #{arr[1]} does not match specified Flown By Company in Form"
+                #     end
+                # end
+
+                # # Check the Camera
+                # camera = Camera.find_by(id: params[:camera_id])
+                # camera_filename = Camera.find_by(name: arr[2])
+                # if camera.id != camera_filename.id
+                #     raise Exception, "Camera extract from Filename does not match the Camera supplied by the form"
+                # end
+
+                if params[:flight_date].nil? 
+                    raise Exception, "Missing Flight Date"
+                end
 
                 # Check if the second array element is a company
-                company = Company.find_by(alias: arr[1])
-                if company.nil? || company.id != params[:flown_by_id].to_i
-                    if company.nil? 
-                        raise Exception, "Contractor #{arr[1]} does not exist in application"
-                    elsif company.id != params[:flown_by_id].to_i
-                        raise Exception, "Contractor #{arr[1]} does not match specified Flown By Company in Form"
-                    end
+                company = Company.find_by(id: params[:flown_by_id].to_i)
+                if company.nil? 
+                    raise Exception, "Contractor does not exist in application"
                 end
 
                 # Check the Camera
                 camera = Camera.find_by(id: params[:camera_id])
-                camera_filename = Camera.find_by(name: arr[2])
-                if camera.id != camera_filename.id
+                if camera.nil?
                     raise Exception, "Camera extract from Filename does not match the Camera supplied by the form"
                 end
 
@@ -144,22 +160,20 @@ class PhotoIndex < ApplicationRecord
                 arr = params[:file].original_filename.split("_")
 
                 # get the flight date
-                flight_date = Date.strptime(arr[0], "%Y%m%d")
+                flight_date = params[:flight_date].to_date
 
-                # Check if the second array element is a company
-                company = Company.find_by(alias: arr[1])
-                if company.nil? || company.id != params[:flown_by_id].to_i
-                    if company.nil? 
-                        raise Exception, "Contractor #{arr[1]} does not exist in application"
-                    elsif company.id != params[:flown_by_id].to_i
-                        raise Exception, "Contractor #{arr[1]} does not match specified Flown By Company in Form"
-                    end
+                if flight_date.nil? 
+                    raise Exception, "Missing Flight Date"
+                end
+
+                company = Company.find_by(id: params[:flown_by_id].to_i)
+                if company.nil? 
+                    raise Exception, "Contractor does not exist in application"
                 end
 
                 # Check the Camera
                 camera = Camera.find_by(id: params[:camera_id])
-                camera_filename = Camera.find_by(name: arr[2])
-                if camera.id != camera_filename.id
+                if camera.nil?
                     raise Exception, "Camera extract from Filename does not match the Camera supplied by the form"
                 end
 
@@ -192,18 +206,33 @@ class PhotoIndex < ApplicationRecord
                 skipped = 0
 
                 File.open(file, "r") do |f|
-                    f.each_line do |line|
+
+                    f.each_line.with_index do |line, index|
+
+                        p "#{index} - #{line.tr("\r\n","")}"
+
+                        # split the array by commans
+                        arr = line.split(",")
+
+                        # skip if the array does not have 7 fields
+                        next if arr.size != 7
+
+                        # skip if it's the header line
+                        next if line[0..2] == "UTC"
+
+                        # skip if the line is a free shot
+                        next if line.downcase.include? "free shot"
+
+                        # skip the first 
+                        # next if index+1 < 8
 
                         # Remove the newlines from end of line
                         line = line.tr("\r\n","")
 
                         # split the array by commans
-                        arr = line.split(" ")
+                        arr = line.split(",")
 
-                        # extract the strip and frame from the strip_frame
-                        strip, frame = arr[1].split("_")
-
-                        record_flight_date = Date.strptime(arr[2], "%m/%d/%Y")
+                        record_flight_date = Date.strptime(arr[4], "%m/%d/%Y")
 
                         # p "======"
                         # p "gpstime: #{arr[0]}"
@@ -214,29 +243,34 @@ class PhotoIndex < ApplicationRecord
                         # p "latitude: #{arr[3]}"
                         # p "longitude: #{arr[4]}"
 
-                        # if the line is not 7 indices then throw error
-                        if arr.size != 5
-                            raise Exception, "Row malformation found in txt file, please check the file for errors"
-                        end
-
-                        next if arr[1] == "Free shot"
+                        # # if the line is not 7 indices then throw error
+                        # if arr.size != 5
+                        #     raise Exception, "Row malformation found in txt file, please check the file for errors"
+                        # end
 
                         # check if the flight date in the filename matches the record
                         if flight_date != record_flight_date
                             raise Exception, "Filename flight date does not match record flight date"
                         end
 
+                        strip = "#{"0" * (4 - arr[2].to_s.length)}#{arr[2]}"
+                        frame = "#{"0" * (4 - arr[3].to_s.length)}#{arr[3]}"
+                        strip_frame = "#{strip}_#{frame}"
+                        latitude = arr[6].to_f.round(6)
+                        longitude = arr[5].to_f.round(6)
+                        gpstime = arr[1]
+
                         # Check for duplicate photo indexes
                         if PhotoIndex.where(
-                                strip_frame: arr[1], 
-                                latitude: arr[3].to_f.round(6), 
-                                longitude: arr[4].to_f.round(6), 
+                                strip_frame: strip_frame, 
+                                latitude: latitude, 
+                                longitude: longitude, 
                                 flight_date: record_flight_date, 
-                                gpstime: arr[0],
+                                gpstime: gpstime,
                                 flown_by: company, 
                                 camera: camera
                             ).count > 0
-                            p "Found duplicate strip frame: #{strip}_#{frame}. Skipping"
+                            p "Found duplicate strip frame: #{strip_frame}. Skipping"
                             next
                         end
 
@@ -245,19 +279,21 @@ class PhotoIndex < ApplicationRecord
                             project: params[:project],
                             strip: strip,
                             frame: frame,
-                            strip_frame: arr[1],
+                            strip_frame: strip_frame,
                             flown_by_name: company.alias,
                             camera_name: camera.name,
                             flight_date: record_flight_date,
-                            gpstime: arr[0],
+                            gpstime: gpstime,
                             recorded_sun_angle: nil,
-                            latitude: arr[3].to_f, 
-                            longitude: arr[4].to_f,
-                            geom: RGeo::Geographic.spherical_factory(srid: 4326).point(arr[4].to_f, arr[3].to_f),
+                            latitude: latitude, 
+                            longitude: longitude,
+                            geom: RGeo::Geographic.spherical_factory(srid: 4326).point(longitude, latitude),
                             camera: camera,
                             upload: upload,
                             flown_by: company
                         )
+
+                        pp record
 
                         # p record.flight_date
 

@@ -10,7 +10,7 @@ import {
   Breadcrumb,
   Icon,
   List,
-  ButtonContent
+  ButtonContent,
 } from "semantic-ui-react";
 import _ from "lodash";
 
@@ -61,6 +61,7 @@ export default function PhotoIndexImport({
       project: "NRI/SL",
       flown_by_id: 1,
       camera_id: 4,
+      flight_date: "",
       file: "",
     });
   };
@@ -68,13 +69,17 @@ export default function PhotoIndexImport({
   const onSubmit = (data) => {
     console.error("onSubmit", data);
     setSubmitted(true);
-    setLoading(true)
+    setLoading(true);
     const form = new FormData();
 
     form.append("authenticity_token", token);
     form.append("photo_index[project]", data.project);
     form.append("photo_index[flown_by_id]", data.flown_by_id);
     form.append("photo_index[camera_id]", data.camera_id);
+    form.append(
+      "photo_index[flight_date]",
+      moment(data.flight_date, "l").format("YYYY-MM-DD")
+    );
     form.append("photo_index[file]", data.file[0]);
 
     setMessage({
@@ -96,7 +101,7 @@ export default function PhotoIndexImport({
       .then(({ data }) => {
         console.log("submit response", data);
         setSubmitted(false);
-        setLoading(false)
+        setLoading(false);
         // Set message
         setMessage({
           status: data.state ? "Success" : "Error",
@@ -151,7 +156,12 @@ export default function PhotoIndexImport({
         </Accordion.Title>
         <Accordion.Content active={accordionState}>
           <Header as="h4">Summary</Header>
-          <p>Uploads the Photo Index File that is used to check sun angles and reject footprints if they are not met. This is not a replacement for the EO import but a way for Flight to quickly determine if a Footprint needs to be reflown due to Sun Angle.</p>
+          <p>
+            Uploads the Photo Index File that is used to check sun angles and
+            reject footprints if they are not met. This is not a replacement for
+            the EO import but a way for Flight to quickly determine if a
+            Footprint needs to be reflown due to Sun Angle.
+          </p>
           <Divider />
           <Grid divided="vertically">
             <Grid.Row columns={2}>
@@ -164,7 +174,8 @@ export default function PhotoIndexImport({
                   <List.Item>
                     Text file <b>must</b> contain the attributes named{" "}
                     <b>RUN</b>, <b>FRAME</b>, <b>GPS TIME</b>, <b>DATE</b>,{" "}
-                    <b>WGS LATITUDE</b>, <b>WGS LONGITUDE</b>, and <b>SUN ANGLE</b>
+                    <b>WGS LATITUDE</b>, <b>WGS LONGITUDE</b>, and{" "}
+                    <b>SUN ANGLE</b>
                   </List.Item>
                 </List>
               </Grid.Column>
@@ -176,14 +187,15 @@ export default function PhotoIndexImport({
                     provided Flight Date
                   </List.Item>
                   <List.Item>
-                    The associated footprint is found based on the Flight Date, Strip Frame, Camera, Flown By, and if the Latitude/Longitude contained within the footprint
+                    The associated footprint is found based on the Flight Date,
+                    Strip Frame, Camera, Flown By, and if the Latitude/Longitude
+                    contained within the footprint
                   </List.Item>
                   <List.Item>
-                    If the Sun Angle is invalid then it will reject the footprint
+                    If the Sun Angle is invalid then it will reject the
+                    footprint
                   </List.Item>
-                  <List.Item>
-                    The Tile does not get updated with 
-                  </List.Item>
+                  <List.Item>The Tile does not get updated with</List.Item>
                 </List>
               </Grid.Column>
             </Grid.Row>
@@ -285,6 +297,36 @@ export default function PhotoIndexImport({
           />
         </Form.Group>
         <Form.Group widths="equal">
+          <Form.Field error={errors.hasOwnProperty("flight_date")}>
+            <div className="calendar-input">
+              <Controller
+                name={"flight_date"}
+                control={control}
+                rules={{
+                  required: "Required",
+                }}
+                render={({ field: { name, value, defaultValue } }) => (
+                  <DateInput
+                    closable
+                    clearable
+                    name={name}
+                    label={"Flight Date"}
+                    required={true}
+                    value={value || ""}
+                    dateFormat="MM/DD/YYYY"
+                    iconPosition="left"
+                    onChange={handleChange}
+                    autoComplete="off"
+                  />
+                )}
+              />
+            </div>
+            {errors[`flight_date`] && (
+              <Label pointing prompt>
+                {errors[`flight_date`].message}
+              </Label>
+            )}
+          </Form.Field>
           <Controller
             name={"camera_id"}
             control={control}
@@ -417,13 +459,13 @@ export default function PhotoIndexImport({
           disabled={submitted}
           onClick={handleSubmit(onSubmit)}
         >
-            <ButtonContent visible>Submit</ButtonContent>
+          <ButtonContent visible>Submit</ButtonContent>
           <ButtonContent hidden>
-          <Icon name='arrow right' />
+            <Icon name="arrow right" />
           </ButtonContent>
         </Button>
         <Button
-        animated
+          animated
           secondary
           floated="right"
           type="button"
@@ -431,7 +473,7 @@ export default function PhotoIndexImport({
         >
           <ButtonContent visible>Reset</ButtonContent>
           <ButtonContent hidden>
-          <Icon name="undo" />
+            <Icon name="undo" />
           </ButtonContent>
         </Button>
         <div style={{ clear: "both" }} />

@@ -40,10 +40,10 @@
 
     <div class="ui divider"></div>
 
-    <% if @state.completed_counties.count == @state.active_counties.count %>
+    <% if @state.completed_counties("SL").count == @state.active_counties("SL").count %>
 
         <% 
-            min_fly_by_date = @state.active_counties.first.tiles.flown.not_dumped.not_shipped.order(flight_date: :desc).pluck(:flight_date).first
+            min_fly_by_date = @state.active_counties("SL").first.tiles.flown.not_dumped.not_shipped.order(flight_date: :desc).pluck(:flight_date).first
             @state.counties.each do |county|
 
                 county_min_fly = county.tiles.flown.not_dumped.not_shipped.order(flight_date: :desc).pluck(:flight_date).first
@@ -74,7 +74,7 @@
 
         <div class="ui green segment">
             <div class="ui small header">
-                <%= @state.completed_counties.count %> of <%= @state.active_counties.count %> Counties Completed for <%= @state.name %>
+                <%= @state.completed_counties("SL").count %> of <%= @state.active_counties("SL").count %> Counties Completed for <%= @state.name %>
             </div>
             <ul>
                 <li>Due Date: <b><%= due_date.strftime("%A, %m/%d/%Y") %></b></li>
@@ -86,7 +86,7 @@
 
         <div class="ui red segment">
             <div class="ui small header">
-                <%= @state.completed_counties.count %> of <%= @state.active_counties.count %> Counties Completed for <%= @state.name %>
+                <%= @state.completed_counties("SL").count %> of <%= @state.active_counties("SL").count %> Counties Completed for <%= @state.name %>
             </div>
         </div>
 
@@ -118,7 +118,7 @@
                 </tr>
             </thead>
             <tbody>
-                <% @state.active_counties.each do |county| %>
+                <% @state.active_counties("SL").each do |county| %>
 
                     <%
                         # Calculate final fly date

@@ -28,11 +28,11 @@ class State < ApplicationRecord
     # Rails.application.secrets.active_nri_states.each {|abv| scope "#{abv.downcase}_nri", -> { where(abv: abv) }}
 
     def active_counties project
-        County.includes(:tiles).where(state: self, tiles: { project: project }).where.not( tiles: { county_id: nil } ).order("name ASC")
+        County.includes(:tiles).where(state: self, tiles: { project: project }).order("name ASC")
     end
 
-    def completed_counties
-        County.includes(:tiles).where(state: self).where.not( tiles: { at_start_date: nil, at_done_date: nil, ortho_proc_date: nil } ).order("name ASC")
+    def completed_counties project
+        County.includes(:tiles).where(state: self, tiles: { project: project }).where.not( tiles: { at_start_date: nil, at_done_date: nil, ortho_proc_date: nil } ).order("name ASC")
     end
 
     def wip_by_state project, date_from, date_to

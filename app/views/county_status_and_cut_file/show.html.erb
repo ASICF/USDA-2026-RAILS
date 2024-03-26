@@ -6,6 +6,8 @@
     <%= link_to "County Status and Cut File", county_status_and_cut_files_path, class: "section" %>
     <span class="divider">/</span>
     <div class="active section"><%= @state.name %></div>
+    <span class="divider">/</span>
+    <div class="active section"><%= @project %></div>
 </div>
 
 <%= form_tag generate_cut_file_path, multipart: true, method: :post, id: "generate_cut_file", class: "ui form" do %>
@@ -19,6 +21,7 @@
         <div class="content">
 
             <%= hidden_field_tag :state_id, params[:state_id] %>
+            <%= hidden_field_tag :project, @project %>
 
             <div class="required field">
                 <label>Ortho Processing Date</label>
@@ -40,10 +43,10 @@
 
     <div class="ui divider"></div>
 
-    <% if @state.completed_counties("SL").count == @state.active_counties("SL").count %>
+    <% if @state.completed_counties(@project).count == @state.active_counties(@project).count %>
 
         <% 
-            min_fly_by_date = @state.active_counties("SL").first.tiles.flown.not_dumped.not_shipped.order(flight_date: :desc).pluck(:flight_date).first
+            min_fly_by_date = @state.active_counties(@project).first.tiles.flown.not_dumped.not_shipped.order(flight_date: :desc).pluck(:flight_date).first
             @state.counties.each do |county|
 
                 county_min_fly = county.tiles.flown.not_dumped.not_shipped.order(flight_date: :desc).pluck(:flight_date).first
@@ -74,7 +77,7 @@
 
         <div class="ui green segment">
             <div class="ui small header">
-                <%= @state.completed_counties("SL").count %> of <%= @state.active_counties("SL").count %> Counties Completed for <%= @state.name %>
+                <%= @state.completed_counties(@project).count %> of <%= @state.active_counties(@project).count %> Counties Completed for <%= @state.name %>
             </div>
             <ul>
                 <li>Due Date: <b><%= due_date.strftime("%A, %m/%d/%Y") %></b></li>
@@ -86,7 +89,7 @@
 
         <div class="ui red segment">
             <div class="ui small header">
-                <%= @state.completed_counties("SL").count %> of <%= @state.active_counties("SL").count %> Counties Completed for <%= @state.name %>
+                <%= @state.completed_counties(@project).count %> of <%= @state.active_counties(@project).count %> Counties Completed for <%= @state.name %>
             </div>
         </div>
 
@@ -118,7 +121,7 @@
                 </tr>
             </thead>
             <tbody>
-                <% @state.active_counties("SL").each do |county| %>
+                <% @state.active_counties(@project).each do |county| %>
 
                     <%
                         # Calculate final fly date

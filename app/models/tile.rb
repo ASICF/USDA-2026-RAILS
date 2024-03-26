@@ -801,6 +801,7 @@ class Tile < ApplicationRecord
         }
 
         user = params[:user]
+        project = params[:project]
 
         # Get the folder name by converting the current time to seconds
         folder = Time.now.to_i
@@ -841,7 +842,7 @@ class Tile < ApplicationRecord
             County.where(id: params[:counties]).order(name: :asc).each do |county|
 
                 # Iterate the county tiles that have not been shipped yet
-                county.tiles.flown.at_done.not_dumped.not_shipped.each do |tile|
+                county.tiles.flown.at_done.not_dumped.not_shipped.where(project: project).each do |tile|
 
                     # Set the ortho processing date and status
                     # => only set it if the Tile Ortho Proc Date is nil
@@ -878,12 +879,12 @@ class Tile < ApplicationRecord
             output[:pass] = true
 
             # Copy cutfile to P drive
-            FileUtils.cp("#{path}/original/#{file_name}", "#{Rails.application.secrets.cutfile_folder}/#{file_name}")
+            FileUtils.cp("#{path}/original/#{file_name}", "#{Rails.application.secrets.cutfile_folder}/#{project}/#{file_name}")
 
             # Create a new History record
             history = History.new
-            history.message = "Created Cut File for #{output[:count]} tiles"
-            history.action_type = "Create Cut File"
+            history.message = "Created #{project} Cut File for #{output[:count]} Tiles"
+            history.action_type = "Create Cut File (#{project})"
             history.creator = user
             history.save
 
@@ -895,7 +896,7 @@ class Tile < ApplicationRecord
             Mailbox.ship({
                 users: MailGroup.find_by(name: "Ortho Processing").users | [user],
                 subject: "Cut File was generated",
-                message: "<p>Cut File #{file_name} was generated for #{output[:count]} Tiles. A Copy is stored in #{Rails.application.secrets.cutfile_folder_p_path}\\#{file_name}</p>",
+                message: "<p>Cut File #{file_name} was generated for #{output[:count]} Tiles. A Copy is stored in #{Rails.application.secrets.cutfile_folder_p_path}\\#{project}\\#{file_name}</p>",
                 route: Rails.application.routes.url_helpers.show_timeline_url(history.id, only_path: false, host: Rails.application.secrets.host)
             })
 

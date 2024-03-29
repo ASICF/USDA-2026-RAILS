@@ -4,7 +4,7 @@ class CountyStatusAndCutFileController < ApplicationController
     def index
         @sl_states = State.active_sl.exclude_geom.select(:id, :name)
         @nri_states = State.active_nri.exclude_geom.select(:id, :name)
-        @projects = ["NRI", "SL"]
+        @projects = ["SL", "NRI"]
     end
 
     def show

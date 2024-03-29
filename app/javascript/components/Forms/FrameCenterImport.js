@@ -87,7 +87,7 @@ export default function FrameCenterImport({
     form.append("frame_centers[project]", data.project);
     form.append("frame_centers[flown_by_id]", data.flown_by_id);
     form.append("frame_centers[camera_id]", data.camera_id);
-    form.append("frame_centers[utm_id]", data.camera_id);
+    form.append("frame_centers[utm_id]", data.utm_id);
     form.append(
       "frame_centers[flight_date]",
       moment(data.flight_date, "l").format("YYYY-MM-DD")

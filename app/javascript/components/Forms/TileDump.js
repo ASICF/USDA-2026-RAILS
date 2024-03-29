@@ -20,7 +20,9 @@ import { Controller, useForm } from "react-hook-form";
 import MessageBox from "../Shared/MessageBox";
 import axios from "axios";
 
-function TileDump({ states, projects, token }) {
+function TileDump({ sl_states, nri_states, projects, token }) {
+  const [project, setProject] = useState("SL");
+  const [stateOptions, setStateOptions] = useState(sl_states);
   const [message, setMessage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [accordionState, setAccordionState] = useState(false);
@@ -34,9 +36,19 @@ function TileDump({ states, projects, token }) {
     formState: { errors },
   } = useForm();
 
-  console.log("TileDump", { states, projects });
+  console.log("TileDump", { sl_states, nri_states, projects });
+
+  useEffect(() => {
+    console.error({ project });
+    if (project === "SL") {
+      setStateOptions(sl_states);
+    } else if (project === "NRI") {
+      setStateOptions(nri_states);
+    }
+  }, [project]);
 
   const handleChange = (e, { name, value }) => {
+    if (name === "project") setProject(value);
     setValue(name, value);
   };
 
@@ -211,7 +223,7 @@ function TileDump({ states, projects, token }) {
                 value={value}
                 onChange={handleChange}
                 autoComplete="off"
-                options={states.map((record) => {
+                options={stateOptions.map((record) => {
                   return {
                     key: record.id,
                     value: record.id,

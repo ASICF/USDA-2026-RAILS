@@ -1,13 +1,14 @@
 class FinalDelivery < ApplicationRecord
     require 'csv'
 
-    def self.sl_validate_files params, current_user
+    def self.nrisl_validate_files params, current_user
 
         # Check that the folder exists
         # Get all completed counties 
-
+        project = params[:project]
         counties = {}
         output = {
+            project: project,
             input_directory: params[:input_directory],
             pass: false,
             count: 0,
@@ -16,8 +17,21 @@ class FinalDelivery < ApplicationRecord
 
         path = Task.build params[:input_directory]
 
+        p "#{params[:input_directory]}/Big_Tiles"
+
+        if !path
+            output[:message] = "Invalid Input Directory: #{params[:input_directory]}" 
+            return output
+        end
+
+        if !File.directory?("#{path}/Big_Tiles")
+            output[:message] = "No folder called \"Big_Tiles\" found. Create folder to store splits and try again: #{params[:input_directory]}\\Big_Tiles"
+            return output
+        end
+
         # If the path can't build
-        raise Exception, "Invalid Input Directory: #{params[:input_directory]}" if !path
+        # raise Exception, "Invalid Input Directory: #{params[:input_directory]}" if !path
+        # raise Exception, "No folder called \Big_Tiles\" found. Create folder to store splits and try again: #{params[:input_directory]}\\Big_Tiles" if !File.directory?("#{params[:input_directory]}/Big_Tiles")
 
         # get the active counties in the states
         state = State.includes(:tiles).find(params[:state_id])
@@ -37,15 +51,28 @@ class FinalDelivery < ApplicationRecord
             filename_without_extension = File.basename(file, '.tif')
 
             # find the file in the database
-            tile = state.tiles.find_by(filename: filename_without_extension)
+            tile = state.tiles.find_by(filename: filename_without_extension, project: project)
 
             # throw error if Tile is not valid
             if tile.nil?
-                missing_tiles << filename_without_extension
-                next
+                diff_project = "NRI"
+
+                # check if the tile is in the other project
+                if project == "NRI"
+                    diff_project = "SL"
+                end
+
+                # check if the file is in the wrong project
+                if state.tiles.find_by(filename: filename_without_extension, project: diff_project).present?
+                    return output[:message] = "Detected file #{filename} which is for #{diff_project}. Please move to appropriate file"
+                else
+                    missing_tiles << filename_without_extension
+                    next
+                end
+
             end
 
-            # if there is a msising tile then just skip it
+            # if there is a missing tile then just skip it
             next if missing_tiles.count > 0
 
             # Add to the total
@@ -58,9 +85,9 @@ class FinalDelivery < ApplicationRecord
                     county_name: tile.county_name,
                     state_name: tile.state_name,
                     full_fips: tile.county.full_fips,
-                    total_tiles: state.tiles.where(county_id: tile.county_id).count,
-                    ready_to_ship: state.tiles.flown.at_done.ortho_processed.dumped.not_shipped.where(county_id: tile.county_id).count,
-                    total_shipped_tiles: state.tiles.shipped.where(county_id: tile.county_id).count,
+                    total_tiles: state.tiles.where(county_id: tile.county_id, project: project).count,
+                    ready_to_ship: state.tiles.flown.at_done.ortho_processed.dumped.not_shipped.where(county_id: tile.county_id, project: project).count,
+                    total_shipped_tiles: state.tiles.shipped.where(county_id: tile.county_id, project: project).count,
                     folder_count: 1
                 }
             else
@@ -98,7 +125,7 @@ class FinalDelivery < ApplicationRecord
 
     end
 
-    def self.sl_prepare params, current_user
+    def self.nrisl_prepare params, current_user
 
         response = {
             pass: false,
@@ -106,6 +133,7 @@ class FinalDelivery < ApplicationRecord
         }
 
         path = nil
+        project = params[:project]
 
         # Start a Transaction Block
         ActiveRecord::Base.transaction do
@@ -156,7 +184,7 @@ class FinalDelivery < ApplicationRecord
                     # Check if the tiles in the counties are marked as ready to ship
                     counties.each do |county|
                         # Check the ready to ship tile count
-                        if county.tiles.count != county.tiles.flown.at_done.ortho_processed.dumped.not_shipped.count
+                        if county.tiles.where(project: project).count != county.tiles.flown.at_done.ortho_processed.dumped.not_shipped.where(project: project).count
                             raise Exception, "County #{county.name} totals do not match the ready to ship totals, make sure the tiles have been marked as dumped"
                         end
                     end
@@ -180,7 +208,7 @@ class FinalDelivery < ApplicationRecord
                 }
 
             rescue Exception => exception
-                Rails.logger.error "SL Final Delivery Prep Error: #{exception.message}"
+                Rails.logger.error "#{project} Final Delivery Prep Error: #{exception.message}"
                 p "-----------"
                 p exception.backtrace.count
                 exception.backtrace.each do |x|
@@ -200,14 +228,14 @@ class FinalDelivery < ApplicationRecord
         if response[:pass] && path
             p "ALL GOOD DUDE"
 
-            FinalDelivery.delay.sl_execute params, current_user, path
+            FinalDelivery.delay.nrisl_execute params, current_user, path
         end
 
         response
 
     end
 
-    def self.sl_execute params, current_user, path
+    def self.nrisl_execute params, current_user, path
 
         p "--------------"
         p "FINAL DELIVERY"
@@ -224,15 +252,6 @@ class FinalDelivery < ApplicationRecord
             file_path: nil,
             psn: nil
         }
-
-        # Created new Job
-        job = Job.create(
-            started_at: Time.now,
-            message: "Processing Request...",
-            active: true,
-            process_type: "SL Final Delivery",
-            creator: current_user
-        )
     
         count = 0
         current_time = Time.now
@@ -240,10 +259,20 @@ class FinalDelivery < ApplicationRecord
         coverage = params[:coverage]
         psn = nil
         validation_path = params[:input_directory]
+        project = params[:project]
 
         # Stores variables for the job process
         process_success = false
         error_message = "Something went wrong. Contact Programming."
+
+        # Created new Job
+        job = Job.create(
+            started_at: Time.now,
+            message: "Processing Request...",
+            active: true,
+            process_type: "#{project} Final Delivery",
+            creator: current_user
+        )
 
         # Start a Transaction Block
         ActiveRecord::Base.transaction do
@@ -274,7 +303,7 @@ class FinalDelivery < ApplicationRecord
                 if delivery_type == "Production"
 
                     # Build a new packing slip
-                    psn = PackingSlip.new(name: params[:packing_slip_name], shipped_date: Time.now, project: "SL")
+                    psn = PackingSlip.new(name: params[:packing_slip_name], shipped_date: Time.now, project: project)
 
                     # If the packing slip exists then abort
                     # => If not then create a new packing slip
@@ -291,10 +320,10 @@ class FinalDelivery < ApplicationRecord
                 end
 
                 # Create the geotag output
-                final_delivery_path = "#{path}/Final_Delivery_#{psn_folder_name}/SL"
+                final_delivery_path = "#{path}/Final_Delivery_#{psn_folder_name}/#{project}"
 
-                # build teh validation path for later
-                validation_path = "#{params[:input_directory]}\\Final_Delivery_#{psn_folder_name}\\SL"
+                # build the validation path for later
+                validation_path = "#{params[:input_directory]}\\Final_Delivery_#{psn_folder_name}\\#{project}"
 
                 # Create the final delivery path
                 FileUtils.mkdir_p final_delivery_path
@@ -305,7 +334,7 @@ class FinalDelivery < ApplicationRecord
                 # get the state
                 state = State.find_by(id: params[:state_id])
 
-                Tile.where(county_id: params[:counties], state_id: state.id).each do |tile|
+                Tile.where(county_id: params[:counties], state_id: state.id, project: project).each do |tile|
 
                     # p "+++++++++"
                     # p tile.id
@@ -376,6 +405,9 @@ class FinalDelivery < ApplicationRecord
 
                     # Generate the metadata for the tif
                     template = "#{Rails.root}/assets/2024_SL_Template.xml"
+                    if project == "NRI"
+                        template = "#{Rails.root}/assets/2024_NRI_Template.xml"
+                    end
 
                     # Read the template file
                     template_text = File.read(template)
@@ -412,61 +444,6 @@ class FinalDelivery < ApplicationRecord
 
                     # update the gtf file
                     FinalDelivery.build_gtf gtf_file, filename_without_extension, tile.utm.zone, tile.poly_id
-
-                    # # Get the text from the GTF File
-                    # gtf_text = File.read(gtf_file)
-
-                    # # Get the GT Citation Match and value to replace
-                    # gt_citation_match = 'GTCitationGeoKey (Ascii,33): "PCS Name = NAD_1983_UTM_Zone_'+tile.utm.zone.to_s+'N"'
-                    # gt_citation_replace = 'GTCitationGeoKey (Ascii,'+(tile.filename.size + 1).to_s+'): "'+tile.filename+'"'
-
-                    # # Match based on Zones
-                    # if tile.utm.zone == 13                                      
-                    #     pcs_citation_match = 'PCSCitationGeoKey (Ascii,443): "ESRI PE String = PROJCS["NAD_1983_UTM_Zone_13N",GEOGCS["GCS_North_American_1983",DATUM["D_North_American_1983",SPHEROID["GRS_1980",6378137.0,298.257222101]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],PROJECTION["Transverse_Mercator"],PARAMETER["False_Easting",500000.0],PARAMETER["False_Northing",0.0],PARAMETER["Central_Meridian",-105.0],PARAMETER["Scale_Factor",0.9996],PARAMETER["Latitude_Of_Origin",0.0],UNIT["Meter",1.0]]"'
-                    #     pcs_citation_replace = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM Zone 13N"'
-                    # elsif tile.utm.zone == 14
-                    #     pcs_citation_match = 'PCSCitationGeoKey (Ascii,442): "ESRI PE String = PROJCS["NAD_1983_UTM_Zone_14N",GEOGCS["GCS_North_American_1983",DATUM["D_North_American_1983",SPHEROID["GRS_1980",6378137.0,298.257222101]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],PROJECTION["Transverse_Mercator"],PARAMETER["False_Easting",500000.0],PARAMETER["False_Northing",0.0],PARAMETER["Central_Meridian",-99.0],PARAMETER["Scale_Factor",0.9996],PARAMETER["Latitude_Of_Origin",0.0],UNIT["Meter",1.0]]"'
-                    #     pcs_citation_replace = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM Zone 14N"'
-                    # elsif tile.utm.zone == 15
-                    #     pcs_citation_match = 'PCSCitationGeoKey (Ascii,442): "ESRI PE String = PROJCS["NAD_1983_UTM_Zone_15N",GEOGCS["GCS_North_American_1983",DATUM["D_North_American_1983",SPHEROID["GRS_1980",6378137.0,298.257222101]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],PROJECTION["Transverse_Mercator"],PARAMETER["False_Easting",500000.0],PARAMETER["False_Northing",0.0],PARAMETER["Central_Meridian",-93.0],PARAMETER["Scale_Factor",0.9996],PARAMETER["Latitude_Of_Origin",0.0],UNIT["Meter",1.0]]"'
-                    #     pcs_citation_replace = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM Zone 15N"'
-                    # elsif tile.utm.zone == 16
-                    #     pcs_citation_match = 'PCSCitationGeoKey (Ascii,442): "ESRI PE String = PROJCS["NAD_1983_UTM_Zone_16N",GEOGCS["GCS_North_American_1983",DATUM["D_North_American_1983",SPHEROID["GRS_1980",6378137.0,298.257222101]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],PROJECTION["Transverse_Mercator"],PARAMETER["False_Easting",500000.0],PARAMETER["False_Northing",0.0],PARAMETER["Central_Meridian",-87.0],PARAMETER["Scale_Factor",0.9996],PARAMETER["Latitude_Of_Origin",0.0],UNIT["Meter",1.0]]"'
-                    #     pcs_citation_replace = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM Zone 16N"'
-                    # elsif tile.utm.zone == 17
-                    #     pcs_citation_match = 'PCSCitationGeoKey (Ascii,442): "ESRI PE String = PROJCS["NAD_1983_UTM_Zone_17N",GEOGCS["GCS_North_American_1983",DATUM["D_North_American_1983",SPHEROID["GRS_1980",6378137.0,298.257222101]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],PROJECTION["Transverse_Mercator"],PARAMETER["False_Easting",500000.0],PARAMETER["False_Northing",0.0],PARAMETER["Central_Meridian",-81.0],PARAMETER["Scale_Factor",0.9996],PARAMETER["Latitude_Of_Origin",0.0],UNIT["Meter",1.0]]"'
-                    #     pcs_citation_replace = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM Zone 17N"'
-                    # elsif tile.utm.zone == 18
-                    #     pcs_citation_match = 'PCSCitationGeoKey (Ascii,442): "ESRI PE String = PROJCS["NAD_1983_UTM_Zone_18N",GEOGCS["GCS_North_American_1983",DATUM["D_North_American_1983",SPHEROID["GRS_1980",6378137.0,298.257222101]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],PROJECTION["Transverse_Mercator"],PARAMETER["False_Easting",500000.0],PARAMETER["False_Northing",0.0],PARAMETER["Central_Meridian",-75.0],PARAMETER["Scale_Factor",0.9996],PARAMETER["Latitude_Of_Origin",0.0],UNIT["Meter",1.0]]"'
-                    #     pcs_citation_replace = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM Zone 18N"'
-                    # elsif tile.utm.zone == 19
-                    #     pcs_citation_match = 'PCSCitationGeoKey (Ascii,442): "ESRI PE String = PROJCS["NAD_1983_UTM_Zone_19N",GEOGCS["GCS_North_American_1983",DATUM["D_North_American_1983",SPHEROID["GRS_1980",6378137.0,298.257222101]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],PROJECTION["Transverse_Mercator"],PARAMETER["False_Easting",500000.0],PARAMETER["False_Northing",0.0],PARAMETER["Central_Meridian",-69.0],PARAMETER["Scale_Factor",0.9996],PARAMETER["Latitude_Of_Origin",0.0],UNIT["Meter",1.0]]"'
-                    #     pcs_citation_replace = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM Zone 18N"'
-                    # else
-                    #     raise Exception, "#{filename}: UTM Zone #{tile.utm.zone} does not have a valid PSCitationGeoKey replacement value!"
-                    # end
-
-                    # # Check if the pcs_citation_match was ever set
-                    # if pcs_citation_match.nil? 
-                    #     raise Exception, "#{filename}: PCSCitationGeoKey were not set for UTM Zone #{tile.utm_zone}!"
-                    # end
-
-                    # # Check if the gt_citation_match is within the gtf file
-                    # if !gtf_text.include? gt_citation_match
-                    #     raise Exception, "#{filename}: GTCitationGeoKey (#{gt_citation_match}) does not match GTF (#{county_path}/#{filename_without_extension}.gtf)!"
-                    # end
-
-                    # # Check if the pcs_citation_match is within the gtf file
-                    # if !gtf_text.include? pcs_citation_match
-                    #     raise Exception, "#{filename}: PCSCitationGeoKey (#{pcs_citation_match}) does not match GTF (#{county_path}/#{filename_without_extension}.gtf)!"
-                    # end
-
-                    # # Update the text of the GTF file
-                    # gtf_text = gtf_text.gsub(gt_citation_match, gt_citation_replace)
-                    # gtf_text = gtf_text.gsub(pcs_citation_match, pcs_citation_replace)
-
-                    # # Write the metadata back to the file
-                    # File.open(gtf_file, "w") {|file| file.puts gtf_text }
 
                     # Update the Tiff tags and copy to the county folder
                     geotif_response = system("geotifcp -g '#{gtf_file}' '#{path}/#{filename}' '#{county_path}/#{filename}'")
@@ -520,7 +497,7 @@ class FinalDelivery < ApplicationRecord
                     # # extract the folder name
                     state_abv = Pathname(folder).each_filename.to_a[-1]
 
-                    p state_abv
+                    # p state_abv
 
                     state = State.exclude_geom.find_by(abv: state_abv)
 
@@ -531,7 +508,7 @@ class FinalDelivery < ApplicationRecord
 
                         utm_indexes = {}
 
-                        p county_fips
+                        # p county_fips
 
                         # Iterate the files in the folder
                         Dir.glob("#{final_delivery_path}/#{state_abv}/#{county_fips}/Orthos/*.tif").each do |file|
@@ -551,7 +528,7 @@ class FinalDelivery < ApplicationRecord
                             utm_indexes[utm_zone] << file
                         end
 
-                        p utm_indexes
+                        # p utm_indexes
 
                         utm_indexes.each do |utm_key, utm|
 
@@ -594,7 +571,7 @@ class FinalDelivery < ApplicationRecord
                 # Log and send email
                 Mailbox.ship({
                     users: MailGroup.find_by(name: "Final Delivery").users | [current_user],
-                    subject: "SL #{delivery_type} Final Delivery Finished Successfully",
+                    subject: "#{project} #{delivery_type} Final Delivery Finished Successfully",
                     message: message,
                     route: delivery_type == "Production" ? Rails.application.routes.url_helpers.packing_slip_worksheet_url(psn, only_path: false, host: Rails.application.secrets.host) : nil
                 })
@@ -631,8 +608,8 @@ class FinalDelivery < ApplicationRecord
             # Log and send email
             Mailbox.ship({
                 users: MailGroup.find_by(name: "Final Delivery").users | [current_user],
-                subject: "SL Final Delivery Failed",
-                message: "SL Final Delivery Failed, error encountered is listed below: <br/><br/>#{error_message}".html_safe
+                subject: "#{project} Final Delivery Failed",
+                message: "#{project} Final Delivery Failed, error encountered is listed below: <br/><br/>#{error_message}".html_safe
             })
 
             # Update the Job
@@ -640,7 +617,7 @@ class FinalDelivery < ApplicationRecord
                 finished_at: Time.now,
                 active: false,
                 success: false,
-                message: "SL Final Delivery Failed",
+                message: "#{project} Final Delivery Failed",
                 error_message: error_message
             )
         else
@@ -666,13 +643,14 @@ class FinalDelivery < ApplicationRecord
 
         # get the path from the input directory
         path = Task.build input_directory
+        project = packing_slip.project
         
         # if no path is built then abort the process and send email
         if !path
             # Log and send email
             Mailbox.ship({
                 users: MailGroup.find_by(name: "Final Delivery").users | [current_user],
-                subject: "SL Final Delivery Validation Failed",
+                subject: "#{project} Final Delivery Validation Failed",
                 message: "Final Delivery Valdiation failed due to the supplied path not existing: #{input_directory}. Please verify and try again.",
             })
             return
@@ -680,7 +658,7 @@ class FinalDelivery < ApplicationRecord
 
         # Create a new History record
         history = History.new
-        history.action_type = "SL Final Delivery Validation"
+        history.action_type = "#{project} Final Delivery Validation"
         history.creator = current_user
         history.save
 
@@ -695,10 +673,10 @@ class FinalDelivery < ApplicationRecord
             psn_folder_name = packing_slip.name.gsub(/[^\w\s_-]+/, '').gsub(/(^|\b\s)\s+($|\s?\b)/, '\\1\\2').gsub(/\s+/, '_')
 
             # Add a check to make sure all the tiles in the final delivery are in the packing slip
-            psn_poly_ids = packing_slip.tiles.pluck(:poly_id)
+            psn_poly_ids = packing_slip.tiles.where(project: project).pluck(:poly_id)
         end
 
-        # set teh filename and path
+        # set the filename and path
         error_filename = "Final_Delivery_Validation_#{psn_folder_name} - #{Date.today.strftime("%F")}.txt"
         error_path = "#{path}/#{error_filename}"
 
@@ -725,25 +703,41 @@ class FinalDelivery < ApplicationRecord
             # get the poly_id without the extension if it was split
             poly_id = filename_arr[3]
 
-            if filename_without_extension == "ortho_MA_15_7313209800H0ZA0007_A_20241004"
-                poly_id = "7313209800H0ZA0007_A"
-            elsif filename_without_extension == "ortho_MA_15_7313209800H0ZA0007_B_20241005"
-                poly_id = "7313209800H0ZA0007_B"
-            elsif filename_without_extension == "ortho_ND_15_ND_08_WAHL_20240629"
-                poly_id = "ND_08_WAHL"
-            end
+            # if filename_without_extension == "ortho_MA_15_7313209800H0ZA0007_A_20241004"
+            #     poly_id = "7313209800H0ZA0007_A"
+            # elsif filename_without_extension == "ortho_MA_15_7313209800H0ZA0007_B_20241005"
+            #     poly_id = "7313209800H0ZA0007_B"
+            # elsif filename_without_extension == "ortho_ND_15_ND_08_WAHL_20240629"
+            #     poly_id = "ND_08_WAHL"
+            # end
 
             # Get the tile but if no packing slip then don't include it
             if packing_slip
-                tile = Tile.shipped.find_by(poly_id: poly_id, packing_slip_id: packing_slip.id)
+                tile = Tile.shipped.find_by(poly_id: poly_id, packing_slip_id: packing_slip.id, project: project)
             else
                 tile = Tile.find_by(poly_id: poly_id)
+            end
+
+            # do a check to see if the 3rd and 4th index joined with an underscore are a tile instead
+            if tile.nil?
+
+                poly_id = "#{filename_arr[3]}_#{filename_arr[4]}"
+
+                if packing_slip
+                    tile = Tile.shipped.find_by(poly_id: poly_id, packing_slip_id: packing_slip.id, project: project)
+                else
+                    tile = Tile.find_by(poly_id: poly_id)
+                end
             end
 
             # check if the tile exists
             if tile.nil?
                 if packing_slip
-                    error_file.puts("#{filename_without_extension} - Tile (#{poly_id}) does not exist in packing slip\n")
+                    if Tile.shipped.find_by(poly_id: poly_id, packing_slip_id: packing_slip.id).present?
+                        error_file.puts("#{filename_without_extension} - Tile (#{poly_id}) is not in the #{project}!\n")
+                    else
+                        error_file.puts("#{filename_without_extension} - Tile (#{poly_id}) does not exist in packing slip\n")
+                    end
                 else
                     error_file.puts("#{filename_without_extension} - Tile (#{poly_id}) does not exist in app\n")
                 end
@@ -774,7 +768,7 @@ class FinalDelivery < ApplicationRecord
             file_errors << "Does Not have GTCitationGeoKey" if !listgeo_response.include? "GTCitationGeoKey"
             file_errors << "Does Not have PCSCitationGeoKey" if !listgeo_response.include? "PCSCitationGeoKey"
             file_errors << "Invalid UTM Zone found, should be zone #{tile.utm_zone}" if !listgeo_response.include? "PCS_NAD83_UTM_zone_#{tile.utm_zone}"
-            # file_errors << "Invalid UTM Zone, should be zone #{tile.utm_zone}" if !listgeo_response.include? "NAD83 / UTM Zone #{tile.utm_zone}"
+            # file_errors << "Invalid UTM Zone, should be zone #{tile.utm_zone}" if !listgeo_response.include? "NAD83 / UTM zone #{tile.utm_zone}"
 
             # validate the gtcitationgeokey
             gt_citation_match = 'GTCitationGeoKey (Ascii,'+(filename_without_extension.size + 1).to_s+'): "'+filename_without_extension+'"'
@@ -785,20 +779,32 @@ class FinalDelivery < ApplicationRecord
             end
 
             # Match based on Zones
-            if tile.utm.zone == 13                                      
-                pcs_citation_match = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM Zone 13N"'
+            if tile.utm.zone == 10                                      
+                pcs_citation_match = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM zone 10N"'
+            elsif tile.utm.zone == 11                                      
+                pcs_citation_match = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM zone 11N"'
+            elsif tile.utm.zone == 12                                      
+                pcs_citation_match = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM zone 12N"'
+            elsif tile.utm.zone == 13                                      
+                pcs_citation_match = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM zone 13N"'
             elsif tile.utm.zone == 14
-                pcs_citation_match = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM Zone 14N"'
+                pcs_citation_match = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM zone 14N"'
             elsif tile.utm.zone == 15
-                pcs_citation_match = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM Zone 15N"'
+                pcs_citation_match = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM zone 15N"'
             elsif tile.utm.zone == 16
-                pcs_citation_match = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM Zone 16N"'
+                pcs_citation_match = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM zone 16N"'
             elsif tile.utm.zone == 17
-                pcs_citation_match = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM Zone 17N"'
+                pcs_citation_match = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM zone 17N"'
             elsif tile.utm.zone == 18
-                pcs_citation_match = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM Zone 18N"'
+                pcs_citation_match = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM zone 18N"'
             elsif tile.utm.zone == 19
-                pcs_citation_match = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM Zone 18N"'
+                pcs_citation_match = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM zone 19N"'
+            elsif tile.utm.zone == 20
+                pcs_citation_match = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM zone 20N"'
+            elsif tile.utm.zone == 4
+                pcs_citation_match = 'PCSCitationGeoKey (Ascii,20): "NAD83 / UTM zone 4N"'
+            elsif tile.utm.zone == 5
+                pcs_citation_match = 'PCSCitationGeoKey (Ascii,20): "NAD83 / UTM zone 5N"'
             else
                 pcs_citation_match = nil
                 file_errors << "Does not have a valid PSCitationGeoKey!"
@@ -843,10 +849,10 @@ class FinalDelivery < ApplicationRecord
 
         # Set the Default response
         if packing_slip
-            subject = "SL Final Delivery Validation Failed"
+            subject = "#{project} Final Delivery Validation Failed"
             message = "No Tiles were validated in #{input_directory} for Packing Slip \"#{packing_slip.name}\""
         else
-            subject = "SL Pre-Production Final Delivery Validation Failed"
+            subject = "#{project} Pre-Production Final Delivery Validation Failed"
             message = "No Tiles were validated in #{input_directory} for Pre-Production Final Delivery"
         end
 
@@ -854,19 +860,19 @@ class FinalDelivery < ApplicationRecord
         if error_count > 0
             # Add check for packing slip
             if packing_slip
-                subject = "SL Final Delivery Validation Failed"
+                subject = "#{project} Final Delivery Validation Failed"
                 message = "#{error_count} Errors were encountered while validating Packing Slip \"#{packing_slip.name}\" in #{input_directory}. Check the Error Text File at #{error_path}"
             else
-                subject = "SL Pre-Production Final Delivery Validation Failed"
+                subject = "#{project} Pre-Production Final Delivery Validation Failed"
                 message = "#{error_count} Errors were encountered while validating Pre-Production Final Delivery in #{input_directory}. Check the Error Text File at #{error_path}"
             end
         elsif valid_count > 0
             # add check for packing slip
             if packing_slip
-                subject = "SL Final Delivery Validation Succeeded"
+                subject = "#{project} Final Delivery Validation Succeeded"
                 message = "Validated #{valid_count} Delvierables in #{input_directory} for Packing Slip \"#{packing_slip.name}\""
             else
-                subject = "SL Pre-Production Final Delivery Validation Succeeded"
+                subject = "#{project} Pre-Production Final Delivery Validation Succeeded"
                 message = "Validated #{valid_count} Delvierables in #{input_directory} for Pre-Production Final Delivery"
             end
 
@@ -899,13 +905,14 @@ class FinalDelivery < ApplicationRecord
 
         # get the path from the input directory
         path = Task.build tile_dump_path
+        project = packing_slip.project
         
         # if no path is built then abort the process and send email
         if !path
             # Log and send email
             Mailbox.ship({
                 users: MailGroup.find_by(name: "Final Delivery").users | [current_user],
-                subject: "SL Final Delivery Check for Splits Failed",
+                subject: "#{project} Final Delivery Check for Splits Failed",
                 message: "Final Delivery Split Checker failed due to the supplied path not existing: #{tile_dump_path}. Please verify and try again.",
             })
             return
@@ -914,12 +921,12 @@ class FinalDelivery < ApplicationRecord
         split_tiles_path = "#{path}/Big_Tiles"
         p split_tiles_path
 
-        # check that the big tiles folder exists
+        # check that the Big_Tiles folder exists
         if !File.directory?(split_tiles_path)
             # Log and send email
             Mailbox.ship({
                 users: MailGroup.find_by(name: "Final Delivery").users | [current_user],
-                subject: "SL Final Delivery Check for Splits Failed",
+                subject: "#{project} Final Delivery Check for Splits Failed",
                 message: "Final Delivery Split Checker failed because no \'Big_Tiles\" Folder exists in #{tile_dump_path}. Please update filename if there is a split folder.",
             })
             return
@@ -946,7 +953,7 @@ class FinalDelivery < ApplicationRecord
                 final_poly_id = "#{arr[3]}_#{arr[4]}"
                 original_poly_id = arr[3]
 
-                if Tile.find_by(filename: filename_without_extension).present?
+                if Tile.find_by(filename: filename_without_extension, project: project).present?
                     original_poly_id = "#{arr[3]}_#{arr[4]}"
                 end
 
@@ -958,7 +965,7 @@ class FinalDelivery < ApplicationRecord
             # Validation
 
             # Does the Poly ID exist?
-            tile_exists = Tile.find_by(poly_id: original_poly_id)
+            tile_exists = Tile.find_by(poly_id: original_poly_id, project: project)
 
             if tile_exists.nil? && !validation_error_poly_ids.include?(original_poly_id)
                 validation_error_poly_ids << original_poly_id
@@ -980,7 +987,7 @@ class FinalDelivery < ApplicationRecord
                 # end
 
                 # Find the tile in the packing slip
-                tile = packing_slip.tiles.ortho_processed.dumped.shipped.find_by(poly_id: original_poly_id)
+                tile = packing_slip.tiles.ortho_processed.dumped.shipped.find_by(poly_id: original_poly_id, project: project)
 
                 need_to_be_split |= [tile.poly_id]
 
@@ -1005,7 +1012,7 @@ class FinalDelivery < ApplicationRecord
         validation_error_html += '</ul>'
 
         # Send out Email
-        subject = "SL Final Delivery Check for Splits Succeeded"
+        subject = "#{project} Final Delivery Check for Splits Succeeded"
         message = nil
 
         # No splits and not validation errors
@@ -1455,34 +1462,43 @@ class FinalDelivery < ApplicationRecord
         # Match based on Zones
         if utm == 10                                      
             pcs_citation_match = 'PCSCitationGeoKey (Ascii,443): "ESRI PE String = PROJCS["NAD_1983_UTM_Zone_10N",GEOGCS["GCS_North_American_1983",DATUM["D_North_American_1983",SPHEROID["GRS_1980",6378137.0,298.257222101]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],PROJECTION["Transverse_Mercator"],PARAMETER["False_Easting",500000.0],PARAMETER["False_Northing",0.0],PARAMETER["Central_Meridian",-123.0],PARAMETER["Scale_Factor",0.9996],PARAMETER["Latitude_Of_Origin",0.0],UNIT["Meter",1.0]]"'
-            pcs_citation_replace = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM Zone 10N"'
+            pcs_citation_replace = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM zone 10N"'
         elsif utm == 11                                      
             pcs_citation_match = 'PCSCitationGeoKey (Ascii,443): "ESRI PE String = PROJCS["NAD_1983_UTM_Zone_11N",GEOGCS["GCS_North_American_1983",DATUM["D_North_American_1983",SPHEROID["GRS_1980",6378137.0,298.257222101]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],PROJECTION["Transverse_Mercator"],PARAMETER["False_Easting",500000.0],PARAMETER["False_Northing",0.0],PARAMETER["Central_Meridian",-117.0],PARAMETER["Scale_Factor",0.9996],PARAMETER["Latitude_Of_Origin",0.0],UNIT["Meter",1.0]]"'
-            pcs_citation_replace = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM Zone 11N"'
+            pcs_citation_replace = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM zone 11N"'
         elsif utm == 12                                      
             pcs_citation_match = 'PCSCitationGeoKey (Ascii,443): "ESRI PE String = PROJCS["NAD_1983_UTM_Zone_12N",GEOGCS["GCS_North_American_1983",DATUM["D_North_American_1983",SPHEROID["GRS_1980",6378137.0,298.257222101]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],PROJECTION["Transverse_Mercator"],PARAMETER["False_Easting",500000.0],PARAMETER["False_Northing",0.0],PARAMETER["Central_Meridian",-111.0],PARAMETER["Scale_Factor",0.9996],PARAMETER["Latitude_Of_Origin",0.0],UNIT["Meter",1.0]]"'
-            pcs_citation_replace = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM Zone 12N"'
+            pcs_citation_replace = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM zone 12N"'
         elsif utm == 13                                      
             pcs_citation_match = 'PCSCitationGeoKey (Ascii,443): "ESRI PE String = PROJCS["NAD_1983_UTM_Zone_13N",GEOGCS["GCS_North_American_1983",DATUM["D_North_American_1983",SPHEROID["GRS_1980",6378137.0,298.257222101]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],PROJECTION["Transverse_Mercator"],PARAMETER["False_Easting",500000.0],PARAMETER["False_Northing",0.0],PARAMETER["Central_Meridian",-105.0],PARAMETER["Scale_Factor",0.9996],PARAMETER["Latitude_Of_Origin",0.0],UNIT["Meter",1.0]]"'
-            pcs_citation_replace = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM Zone 13N"'
+            pcs_citation_replace = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM zone 13N"'
         elsif utm == 14
             pcs_citation_match = 'PCSCitationGeoKey (Ascii,442): "ESRI PE String = PROJCS["NAD_1983_UTM_Zone_14N",GEOGCS["GCS_North_American_1983",DATUM["D_North_American_1983",SPHEROID["GRS_1980",6378137.0,298.257222101]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],PROJECTION["Transverse_Mercator"],PARAMETER["False_Easting",500000.0],PARAMETER["False_Northing",0.0],PARAMETER["Central_Meridian",-99.0],PARAMETER["Scale_Factor",0.9996],PARAMETER["Latitude_Of_Origin",0.0],UNIT["Meter",1.0]]"'
-            pcs_citation_replace = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM Zone 14N"'
+            pcs_citation_replace = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM zone 14N"'
         elsif utm == 15
             pcs_citation_match = 'PCSCitationGeoKey (Ascii,442): "ESRI PE String = PROJCS["NAD_1983_UTM_Zone_15N",GEOGCS["GCS_North_American_1983",DATUM["D_North_American_1983",SPHEROID["GRS_1980",6378137.0,298.257222101]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],PROJECTION["Transverse_Mercator"],PARAMETER["False_Easting",500000.0],PARAMETER["False_Northing",0.0],PARAMETER["Central_Meridian",-93.0],PARAMETER["Scale_Factor",0.9996],PARAMETER["Latitude_Of_Origin",0.0],UNIT["Meter",1.0]]"'
-            pcs_citation_replace = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM Zone 15N"'
+            pcs_citation_replace = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM zone 15N"'
         elsif utm == 16
             pcs_citation_match = 'PCSCitationGeoKey (Ascii,442): "ESRI PE String = PROJCS["NAD_1983_UTM_Zone_16N",GEOGCS["GCS_North_American_1983",DATUM["D_North_American_1983",SPHEROID["GRS_1980",6378137.0,298.257222101]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],PROJECTION["Transverse_Mercator"],PARAMETER["False_Easting",500000.0],PARAMETER["False_Northing",0.0],PARAMETER["Central_Meridian",-87.0],PARAMETER["Scale_Factor",0.9996],PARAMETER["Latitude_Of_Origin",0.0],UNIT["Meter",1.0]]"'
-            pcs_citation_replace = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM Zone 16N"'
+            pcs_citation_replace = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM zone 16N"'
         elsif utm == 17
             pcs_citation_match = 'PCSCitationGeoKey (Ascii,442): "ESRI PE String = PROJCS["NAD_1983_UTM_Zone_17N",GEOGCS["GCS_North_American_1983",DATUM["D_North_American_1983",SPHEROID["GRS_1980",6378137.0,298.257222101]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],PROJECTION["Transverse_Mercator"],PARAMETER["False_Easting",500000.0],PARAMETER["False_Northing",0.0],PARAMETER["Central_Meridian",-81.0],PARAMETER["Scale_Factor",0.9996],PARAMETER["Latitude_Of_Origin",0.0],UNIT["Meter",1.0]]"'
-            pcs_citation_replace = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM Zone 17N"'
+            pcs_citation_replace = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM zone 17N"'
         elsif utm == 18
             pcs_citation_match = 'PCSCitationGeoKey (Ascii,442): "ESRI PE String = PROJCS["NAD_1983_UTM_Zone_18N",GEOGCS["GCS_North_American_1983",DATUM["D_North_American_1983",SPHEROID["GRS_1980",6378137.0,298.257222101]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],PROJECTION["Transverse_Mercator"],PARAMETER["False_Easting",500000.0],PARAMETER["False_Northing",0.0],PARAMETER["Central_Meridian",-75.0],PARAMETER["Scale_Factor",0.9996],PARAMETER["Latitude_Of_Origin",0.0],UNIT["Meter",1.0]]"'
-            pcs_citation_replace = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM Zone 18N"'
+            pcs_citation_replace = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM zone 18N"'
         elsif utm == 19
             pcs_citation_match = 'PCSCitationGeoKey (Ascii,442): "ESRI PE String = PROJCS["NAD_1983_UTM_Zone_19N",GEOGCS["GCS_North_American_1983",DATUM["D_North_American_1983",SPHEROID["GRS_1980",6378137.0,298.257222101]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],PROJECTION["Transverse_Mercator"],PARAMETER["False_Easting",500000.0],PARAMETER["False_Northing",0.0],PARAMETER["Central_Meridian",-69.0],PARAMETER["Scale_Factor",0.9996],PARAMETER["Latitude_Of_Origin",0.0],UNIT["Meter",1.0]]"'
-            pcs_citation_replace = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM Zone 18N"'
+            pcs_citation_replace = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM zone 19N"'
+        elsif utm == 20
+            pcs_citation_match = 'PCSCitationGeoKey (Ascii,442): "ESRI PE String = PROJCS["NAD_1983_UTM_Zone_20N",GEOGCS["GCS_North_American_1983",DATUM["D_North_American_1983",SPHEROID["GRS_1980",6378137.0,298.257222101]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],PROJECTION["Transverse_Mercator"],PARAMETER["False_Easting",500000.0],PARAMETER["False_Northing",0.0],PARAMETER["Central_Meridian",-63.0],PARAMETER["Scale_Factor",0.9996],PARAMETER["Latitude_Of_Origin",0.0],UNIT["Meter",1.0]]"'
+            pcs_citation_replace = 'PCSCitationGeoKey (Ascii,21): "NAD83 / UTM zone 20N"'
+        elsif utm == 4
+            pcs_citation_match = 'PCSCitationGeoKey (Ascii,442): "ESRI PE String = PROJCS["NAD_1983_UTM_Zone_4N",GEOGCS["GCS_North_American_1983",DATUM["D_North_American_1983",SPHEROID["GRS_1980",6378137.0,298.257222101]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],PROJECTION["Transverse_Mercator"],PARAMETER["False_Easting",500000.0],PARAMETER["False_Northing",0.0],PARAMETER["Central_Meridian",-159.0],PARAMETER["Scale_Factor",0.9996],PARAMETER["Latitude_Of_Origin",0.0],UNIT["Meter",1.0]]"'
+            pcs_citation_replace = 'PCSCitationGeoKey (Ascii,20): "NAD83 / UTM zone 4N"'
+        elsif utm == 5
+            pcs_citation_match = 'PCSCitationGeoKey (Ascii,442): "ESRI PE String = PROJCS["NAD_1983_UTM_Zone_5N",GEOGCS["GCS_North_American_1983",DATUM["D_North_American_1983",SPHEROID["GRS_1980",6378137.0,298.257222101]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],PROJECTION["Transverse_Mercator"],PARAMETER["False_Easting",500000.0],PARAMETER["False_Northing",0.0],PARAMETER["Central_Meridian",-153.0],PARAMETER["Scale_Factor",0.9996],PARAMETER["Latitude_Of_Origin",0.0],UNIT["Meter",1.0]]"'
+            pcs_citation_replace = 'PCSCitationGeoKey (Ascii,20): "NAD83 / UTM zone 5N"'
         else
             raise Exception, "#{filename}: UTM Zone #{utm} does not have a valid PSCitationGeoKey replacement value!"
         end

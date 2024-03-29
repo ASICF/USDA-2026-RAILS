@@ -27,10 +27,32 @@ import axios from "axios";
 import { tableSortReducer } from "../Shared/TableSort";
 import { _ } from "lodash";
 
-export default function FinalDelivery({ states, token }) {
+export default function FinalDelivery({
+  sl_states,
+  nri_states,
+  projects,
+  token,
+}) {
+  const [project, setProject] = useState("SL");
+  const [stateOptions, setStateOptions] = useState(sl_states);
   const [message, setMessage] = useState(null);
   const [validatedObj, setValidatedObj] = useState(null);
   const [result, setResult] = useState(null);
+
+  console.log("FinalDelivery", {
+    sl_states,
+    nri_states,
+    projects,
+  });
+
+  useEffect(() => {
+    console.error({ project });
+    if (project === "SL") {
+      setStateOptions(sl_states);
+    } else if (project === "NRI") {
+      setStateOptions(nri_states);
+    }
+  }, [project]);
 
   const resetForm = () => {
     setValidatedObj(null);
@@ -43,6 +65,12 @@ export default function FinalDelivery({ states, token }) {
         <Breadcrumb.Section>Exports</Breadcrumb.Section>
         <Breadcrumb.Divider />
         <Breadcrumb.Section>Final Delivery</Breadcrumb.Section>
+        {project && (
+          <>
+            <Breadcrumb.Divider />
+            <Breadcrumb.Section>{project}</Breadcrumb.Section>
+          </>
+        )}
         <Breadcrumb.Divider />
         <Breadcrumb.Section>
           Generate Metadata and Assign Packing Slip Number
@@ -60,7 +88,10 @@ export default function FinalDelivery({ states, token }) {
 
       {!result && (
         <ValidateFormSL
-          states={states}
+          projects={projects}
+          project={project}
+          setProject={setProject}
+          states={stateOptions}
           setValidatedObj={setValidatedObj}
           setResult={setResult}
           token={token}
@@ -69,7 +100,8 @@ export default function FinalDelivery({ states, token }) {
       )}
 
       {result && (
-        <FinalDeliveryFormSL
+        <FinalDeliveryFormNRISL
+          project={project}
           result={result}
           validatedObj={validatedObj}
           token={token}
@@ -82,6 +114,9 @@ export default function FinalDelivery({ states, token }) {
 }
 
 function ValidateFormSL({
+  projects,
+  project,
+  setProject,
   token,
   states,
   setValidatedObj,
@@ -98,6 +133,7 @@ function ValidateFormSL({
   } = useForm();
 
   const handleChange = (e, { name, value }) => {
+    if (name === "project") setProject(value);
     setValue(name, value);
   };
 
@@ -118,6 +154,7 @@ function ValidateFormSL({
       .post(`/final_delivery/generate_metadata_and_assign_psn/validate`, {
         authenticity_token: token,
         input_directory: data.input_directory,
+        project: data.project,
         state_id: data.state,
       })
       .then(({ data }) => {
@@ -166,14 +203,49 @@ function ValidateFormSL({
       />
       <Divider />
 
-      <Form.Group>
+      <Form.Group widths="equal">
+        <Controller
+          name={"project"}
+          control={control}
+          rules={{ required: "Required" }}
+          defaultValue={project}
+          render={({ field: { name, value, defaultValue } }) => (
+            <Form.Select
+              fluid
+              search
+              selection
+              name={name}
+              data-value={value}
+              label={"Project"}
+              required={true}
+              value={value || ""}
+              defaultValue={defaultValue}
+              onChange={handleChange}
+              autoComplete="off"
+              options={projects.map((record) => {
+                return {
+                  key: record,
+                  text: record,
+                  value: record,
+                };
+              })}
+              error={
+                errors["project"]
+                  ? {
+                      content: errors["project"].message,
+                      pointing: "above",
+                    }
+                  : false
+              }
+            />
+          )}
+        />
         <Controller
           name={"state"}
           control={control}
           rules={{ required: "Required" }}
           render={({ field: { name, value } }) => (
             <Form.Select
-              width={4}
               fluid
               search
               selection
@@ -203,7 +275,9 @@ function ValidateFormSL({
             />
           )}
         />
+      </Form.Group>
 
+      <Form.Group widths="equal">
         <Controller
           name={"input_directory"}
           control={control}
@@ -211,7 +285,6 @@ function ValidateFormSL({
           render={({ field: { name, onBlur, onChange, value } }) => (
             <Form.Input
               fluid
-              width={12}
               label="Input Directory"
               autoComplete="off"
               name={name}
@@ -245,7 +318,8 @@ function ValidateFormSL({
   );
 }
 
-function FinalDeliveryFormSL({
+function FinalDeliveryFormNRISL({
+  project,
   result,
   validatedObj,
   token,
@@ -256,7 +330,7 @@ function FinalDeliveryFormSL({
 
   const [counties, setCounties] = useState([]);
   const [accordionState, setAccordionState] = useState(true);
-  const [deliveryType, setDeliveryType] = useState(null);
+  const [deliveryType, setDeliveryType] = useState("Production");
   const [coverage, setCoverage] = useState(null);
   const [submitObj, setSubmitObj] = useState(null);
   const [confirmModal, showConfirmModal] = useState(false);
@@ -277,15 +351,22 @@ function FinalDeliveryFormSL({
     register,
     unregister,
     control,
+    getValues,
     formState: { errors },
-  } = useForm();
+  } = useForm({
+    defaultValues: {
+      delivery_type: "Production",
+      project: project,
+    },
+  });
 
-  console.log("FinalDeliveryFormSL", {
+  console.log("FinalDeliveryFormNRISL", {
     result,
     validatedObj,
     coverage,
     deliveryType,
     submitted,
+    values: getValues(),
   });
 
   useEffect(() => {
@@ -394,6 +475,7 @@ function FinalDeliveryFormSL({
     }
 
     setSubmitObj({
+      project: project,
       input_directory: validatedObj.input_directory,
       packing_slip_name: data.packing_slip_name,
       count: validatedObj.count,
@@ -630,6 +712,7 @@ function FinalDeliveryFormSL({
                     data-value={value}
                     label={"Delivery Type"}
                     required={true}
+                    defaultValue={deliveryType}
                     value={value}
                     onChange={typeChange}
                     autoComplete="off"

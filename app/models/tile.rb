@@ -534,7 +534,7 @@ class Tile < ApplicationRecord
                         
                         missing_tile = state.tiles.find_by(filename: filename_without_extension)
 
-                        if missing_tile.project != project
+                        if missing_tile && missing_tile.project != project
                             error_file.puts("#{filename} (#{project}) - Tile is in the wrong project folder\n")
                         else
                             error_file.puts("#{filename} - Tile does not exist in the database\n")
@@ -663,107 +663,130 @@ class Tile < ApplicationRecord
                     message: message
                 })
 
+                process_success = true
+
             rescue Exception => exception
                 
                 Rails.logger.error "Tile Dump Error: #{exception.message}"
                 p "-----------"
                 # p exception.backtrace.count
                 exception.backtrace.each do |x|
-                    next if !x.include? "footprint.rb"
+                    next if !x.include? "tile.rb"
                     x.match(/^(.+?):(\d+)(|:in `(.+)')$/); 
                    p [$1,$2,$4]
                 end
                 p "-----------"
             end
         end
+        
 
-        return
+        # # Run if the process failed
+        # if !process_success
 
-        # Copy the file to the server
-        # Get the folder name by converting the current time to seconds
-        folder = Time.now.to_i
+        #     # Log and send email
+        #     Mailbox.ship({
+        #         users: MailGroup.find_by(name: "Tile Dump").users | [current_user],
+        #         subject: "#{project} Tile Dump Failed",
+        #         message: "#{project} Tile Dump Failed, error encountered is listed below: <br/><br/>#{error_message}".html_safe
+        #     })
 
-        path = "#{Rails.root}/assets/tile_dump/#{folder}"
+        #     # Update the Job
+        #     job.update(
+        #         finished_at: Time.now,
+        #         active: false,
+        #         success: false,
+        #         message: "#{project} Final Delivery Failed",
+        #         error_message: error_message
+        #     )
+        # end
 
-        # Create a folder if it doesn't exist
-        FileUtils.mkdir_p(path)
-        FileUtils.mkdir("#{path}/original")
+        # return
 
-        File.write("#{path}/original/#{File.basename(params[:file].original_filename)}", File.read(params[:file].path))
+        # # Copy the file to the server
+        # # Get the folder name by converting the current time to seconds
+        # folder = Time.now.to_i
 
-        # Start a Transaction Block
-        ActiveRecord::Base.transaction do
-            begin
+        # path = "#{Rails.root}/assets/tile_dump/#{folder}"
 
-                File.open(params[:file].path, "r", row_sep: :auto) do |f|
-                    f.each_line do |line|
+        # # Create a folder if it doesn't exist
+        # FileUtils.mkdir_p(path)
+        # FileUtils.mkdir("#{path}/original")
 
-                        filename = File.basename(line.strip, ".tif")
+        # File.write("#{path}/original/#{File.basename(params[:file].original_filename)}", File.read(params[:file].path))
 
-                        tile = Tile.flown.at_done.ortho_processed.find_by(filename: filename)
+        # # Start a Transaction Block
+        # ActiveRecord::Base.transaction do
+        #     begin
 
-                        p "-----"
-                        p filename
-                        p tile
-                        p "-----"
+        #         File.open(params[:file].path, "r", row_sep: :auto) do |f|
+        #             f.each_line do |line|
 
-                        if tile.present?
-                            if tile.dump_date.nil?
-                                output[:count] += 1
-                                tile.update(dump_date: Time.now)
-                            else
-                                output[:skip] += 1
-                            end
-                        else
-                            # Abort and rollback
-                            output[:errors] = ["File #{line} does not exist in the database."]
-                            raise ActiveRecord::Rollback
-                        end
+        #                 filename = File.basename(line.strip, ".tif")
 
-                    end
-                end
+        #                 tile = Tile.flown.at_done.ortho_processed.find_by(filename: filename)
 
-                # Log and send email
-                Mailbox.ship({
-                    users: MailGroup.find_by(name: "Tile Dump").users | [user],
-                    subject: "Tile Dump Completed",
-                    message: "<p>#{output[:count]} Tiles were marked as Dumped, #{output[:skip]} were skipped as they already had a Dump Date assigned.</p>"
-                })
+        #                 p "-----"
+        #                 p filename
+        #                 p tile
+        #                 p "-----"
 
-            rescue ActiveRecord::StatementInvalid => exception
-                output[:errors] << exception.message
-            end
-        end
+        #                 if tile.present?
+        #                     if tile.dump_date.nil?
+        #                         output[:count] += 1
+        #                         tile.update(dump_date: Time.now)
+        #                     else
+        #                         output[:skip] += 1
+        #                     end
+        #                 else
+        #                     # Abort and rollback
+        #                     output[:errors] = ["File #{line} does not exist in the database."]
+        #                     raise ActiveRecord::Rollback
+        #                 end
 
-        if output[:errors].count == 0
+        #             end
+        #         end
 
-            message = "Updated Tile Dump Date on #{output[:count]} tiles"
+        #         # Log and send email
+        #         Mailbox.ship({
+        #             users: MailGroup.find_by(name: "Tile Dump").users | [user],
+        #             subject: "Tile Dump Completed",
+        #             message: "<p>#{output[:count]} Tiles were marked as Dumped, #{output[:skip]} were skipped as they already had a Dump Date assigned.</p>"
+        #         })
 
-            # check if any were skipped
-            if output[:skip] > 0
-                message += ", and skipped #{output[:skip]} tiles because they already have a Dump Date set"
-            end
+        #     rescue ActiveRecord::StatementInvalid => exception
+        #         output[:errors] << exception.message
+        #     end
+        # end
 
-            output[:message] = message
+        # if output[:errors].count == 0
 
-            # Log and send email
-            Mailbox.ship({
-                users: [user],
-                subject: "Tile Dump Failed",
-                message: message
-            })
+        #     message = "Updated Tile Dump Date on #{output[:count]} tiles"
 
-            # History
-            history = History.new
-            history.message = message
-            history.action_type = "Tile Dump"
-            history.creator = params[:user]
-            history.save
-        else
-            output[:pass] = false
-        end
+        #     # check if any were skipped
+        #     if output[:skip] > 0
+        #         message += ", and skipped #{output[:skip]} tiles because they already have a Dump Date set"
+        #     end
 
-        output
+        #     output[:message] = message
+
+        #     # Log and send email
+        #     Mailbox.ship({
+        #         users: [user],
+        #         subject: "Tile Dump Failed",
+        #         message: message
+        #     })
+
+        #     # History
+        #     history = History.new
+        #     history.message = message
+        #     history.action_type = "Tile Dump"
+        #     history.creator = params[:user]
+        #     history.save
+        # else
+        #     output[:pass] = false
+        # end
+
+        # output
     end
 
     # Update the filenames

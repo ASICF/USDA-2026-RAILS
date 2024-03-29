@@ -3,7 +3,12 @@ class FinalDeliveryController < ApplicationController
 
     def index
         # @projects = Rails.application.secrets.active_projects
-        @states = State.active_sl.select(:id, :name)
+        # @states = State.active_sl.select(:id, :name)
+
+        @sl_states = State.active_sl.exclude_geom.select(:id, :name)
+        @nri_states = State.active_nri.exclude_geom.select(:id, :name)
+        @projects = ["NRI", "SL"]
+
         if params[:psn_id]
             @psn = PackingSlip.find(params[:psn_id])
         end
@@ -23,9 +28,14 @@ class FinalDeliveryController < ApplicationController
                 state: false,
                 message: "No State specified"
             }
+        elsif params[:project].blank?
+            render json: {
+                state: false,
+                message: "No Project specified"
+            }
         else
 
-            response = FinalDelivery.sl_validate_files params, current_user
+            response = FinalDelivery.nrisl_validate_files params, current_user
 
             p "asdfasdfasdfasdf"
             pp response
@@ -52,7 +62,6 @@ class FinalDeliveryController < ApplicationController
             # end
         end
 
-
     end
 
     def execute
@@ -67,6 +76,11 @@ class FinalDeliveryController < ApplicationController
             return render json: {
                 state: false,
                 message: "Unable to process request due to missing input directory"
+            }
+        elsif final_delivery_params[:project].blank?
+            return render json: {
+                state: false,
+                message: "Missing Project"
             }
         elsif final_delivery_params[:delivery_type].blank?
             return render json: {
@@ -100,7 +114,7 @@ class FinalDeliveryController < ApplicationController
             }
         else
 
-            response = FinalDelivery.sl_prepare final_delivery_params, current_user
+            response = FinalDelivery.nrisl_prepare final_delivery_params, current_user
     
             return render json: {
                 state: response[:pass],
@@ -155,7 +169,7 @@ class FinalDeliveryController < ApplicationController
     protected
 
     def final_delivery_params
-        params.permit(:input_directory, :count, :ship_date, :delivery_type, :coverage, :packing_slip_name, :state_id, counties: [])
+        params.permit(:input_directory, :project, :count, :ship_date, :delivery_type, :coverage, :packing_slip_name, :state_id, counties: [])
     end
 
     # def naip_params

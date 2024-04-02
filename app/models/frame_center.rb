@@ -235,9 +235,13 @@ class FrameCenter < ApplicationRecord
                     zero: 0
                 }
 
+                total = 0
                 wrong_utm = 0
                 skip_lines = 0
+                free_shot = 0
 
+                p "FILE OPEN"
+                p "^*^*^*^*^*^*^*^*^*^*^"
                 File.open(file, "r", row_sep: :auto) do |f|
                     f.each_line.with_index do |line, index|
 
@@ -251,10 +255,9 @@ class FrameCenter < ApplicationRecord
                             next
                         end
 
-
                         # next if line.tr("\t\r\n","")[0, ]
 
-                        # next if index + 1 < 45
+                        next if index + 1 < 45
 
                         arr = line.tr("\t\r\n","").split(' ')
 
@@ -265,10 +268,11 @@ class FrameCenter < ApplicationRecord
 
                         if arr.size >= 10 || arr.size <= 11
 
+                            total += 1
+
                             # if arr.size != 11
                             #     raise Exception, "Row malformation found in txt file, please check the file for errors"
                             # end
-
 
                             obj = {
                                 project: project,
@@ -313,18 +317,18 @@ class FrameCenter < ApplicationRecord
                                 #     AND photo_indices.flight_date = '#{params[:flight_date]}' AND photo_indices.flown_by_id = '#{company.id}' #{project == "NAIP" ? " AND project_state_id=#{state.id} " : ""}
                                 #     AND ST_Equals(photo_indices.geom::geometry, ST_SetSRID(ST_Point(#{longitude}, #{latitude}),4326))")
 
-                                # p "photo_indices.project = '#{project}' AND photo_indices.camera_id = '#{camera.id}' AND ROUND(photo_indices.gpstime, 0) = '#{gpstime.to_f.round(0)}' AND photo_indices.utm_id = '#{utm_zone.id}' 
-                                # AND photo_indices.flight_date = '#{params[:flight_date]}' AND photo_indices.flown_by_id = '#{company.id}' #{project == "NAIP" ? " AND project_state_id=#{state.id} " : ""}
-                                # AND ROUND(photo_indices.latitude, 1) = #{latitude.round(1)} AND ROUND(photo_indices.longitude, 1) = '#{longitude.round(1)}'"
+                                p "photo_indices.project = '#{project}' AND photo_indices.camera_id = '#{camera.id}' AND FLOOR(photo_indices.gpstime) = '#{gpstime.floor}'
+                                AND photo_indices.flight_date = '#{params[:flight_date]}' AND photo_indices.flown_by_id = '#{company.id}' #{project == "NAIP" ? " AND project_state_id=#{state.id} " : ""}
+                                AND FLOOR(photo_indices.latitude) = #{latitude.floor} AND FLOOR(photo_indices.longitude) = '#{longitude.floor}'"
 
-                                photo_index = PhotoIndex.where("photo_indices.project = '#{project}' AND photo_indices.camera_id = '#{camera.id}' AND ROUND(photo_indices.gpstime, 0) = '#{gpstime.round(0)}'
+                                photo_index = PhotoIndex.where("photo_indices.project = '#{project}' AND photo_indices.camera_id = '#{camera.id}' AND FLOOR(photo_indices.gpstime) = '#{gpstime.floor}'
                                     AND photo_indices.flight_date = '#{params[:flight_date]}' AND photo_indices.flown_by_id = '#{company.id}' #{project == "NAIP" ? " AND project_state_id=#{state.id} " : ""}
-                                    AND ROUND(photo_indices.latitude, 1) = #{latitude.round(1)} AND ROUND(photo_indices.longitude, 1) = '#{longitude.round(1)}'")
+                                    AND FLOOR(photo_indices.latitude) = #{latitude.floor} AND FLOOR(photo_indices.longitude) = '#{longitude.floor}'")
 
                                 p "GPSTime: #{gpstime.to_f}"
-                                p "GPSTime Rounded: #{gpstime.to_f.round(0)}"
-                                p "Latitude: #{latitude.round(1)}"
-                                p "longitude: #{longitude.round(1)}"
+                                p "GPSTime Rounded: #{gpstime.to_f.floor}"
+                                p "Latitude: #{latitude.floor}"
+                                p "longitude: #{longitude.floor}"
                                 p "COUNT: #{photo_index.count}"
 
                                 # Check if the photo index is equal to zero or greater than one and if so then abort and rollback
@@ -333,21 +337,31 @@ class FrameCenter < ApplicationRecord
                                 elsif photo_index.count > 1
                                     raise Exception, "More than one Photo Index found for Line #{index + 1}"
                                 else
-                                    p "Strip Frame: #{photo_index.first.strip_frame}"
 
-                                    obj[:strip] = photo_index.first.strip
-                                    obj[:strip_frame] = photo_index.first.strip_frame
-                                    obj[:x] =  arr[2]
-                                    obj[:y] =  arr[3]
-                                    obj[:z] =  arr[4]
-                                    obj[:omega] =  arr[5]
-                                    obj[:phi] =  arr[6]
-                                    obj[:kappa] =  arr[7]
-                                    obj[:gpstime] = arr[1]
-                                    obj[:latitude] = latitude
-                                    obj[:longitude] = longitude
-                                    obj[:flight_date] = flight_date_time
-                                    obj[:geom] = RGeo::Geographic.spherical_factory(srid: 4326).point(longitude, latitude)
+                                    pp photo_index.first
+
+                                    # Check if the Photo Index is a free shot and if so then add to global total and skip it
+                                    if photo_index.first.free_shot
+                                        free_shot += 1
+                                        next
+                                    else
+                                        
+                                        p "Strip Frame: #{photo_index.first.strip_frame}"
+
+                                        obj[:strip] = photo_index.first.strip
+                                        obj[:strip_frame] = photo_index.first.strip_frame
+                                        obj[:x] =  arr[2]
+                                        obj[:y] =  arr[3]
+                                        obj[:z] =  arr[4]
+                                        obj[:omega] =  arr[5]
+                                        obj[:phi] =  arr[6]
+                                        obj[:kappa] =  arr[7]
+                                        obj[:gpstime] = arr[1]
+                                        obj[:latitude] = latitude
+                                        obj[:longitude] = longitude
+                                        obj[:flight_date] = flight_date_time
+                                        obj[:geom] = RGeo::Geographic.spherical_factory(srid: 4326).point(longitude, latitude)
+                                    end
                                 end
 
                             elsif arr.size == 11
@@ -542,7 +556,7 @@ class FrameCenter < ApplicationRecord
                 #     raise Exception, "No Frame Centers were created, check to make sure valid project is selected."
                 # end
 
-                if upload.frame_centers.count > 0 || upload.rejected_frame_centers.count > 0
+                if total > 0
 
                     upload.number_uploaded = upload.frame_centers.count + upload.rejected_frame_centers.count
                     upload.save
@@ -629,7 +643,7 @@ class FrameCenter < ApplicationRecord
                     message = "Imported #{upload.frame_centers.count} valid Frame Centers"
 
                     if sun_angle_rejections > 0 || rejected_footprints > 0 || duplicate > 0 || skipped > 0
-                        message = "Iterated #{upload.frame_centers.count + upload.rejected_frame_centers.count} total Frame Centers (#{upload.frame_centers.count} were valid imports"
+                        message = "Iterated #{total} total Frame Centers (#{upload.frame_centers.count} were valid imports"
                     end
 
                     # build the error message
@@ -637,6 +651,15 @@ class FrameCenter < ApplicationRecord
                     duplicate_message = ""
                     rejected_footprints_message = ""
                     skipped_message = ""
+                    free_shot_message = ""
+
+                    p "---------"
+                    p "sun_angle_rejections: #{sun_angle_rejections.to_s}"
+                    p "rejected_footprints: #{rejected_footprints.to_s}"
+                    p "duplicate: #{duplicate.to_s}"
+                    p "skipped: #{skipped.to_s}"
+                    p "free_shot: #{free_shot.to_s}"
+                    p "---------"
 
                     # check sun angle rejection count
                     sun_angle_rejection_message = ", #{sun_angle_rejections.to_s} were rejected due to not meeting the minimum sun angle" if sun_angle_rejections > 0 
@@ -650,8 +673,11 @@ class FrameCenter < ApplicationRecord
                     # check the skipped counts
                     skipped_message = ", #{skipped.to_s} were skipped due to no matching Footprint" if skipped > 0
 
+                    # check the free shot counts
+                    free_shot_message = ", #{free_shot.to_s} were skipped due because they were Free Shots" if free_shot > 0
+
                     # assemble the final message
-                    message = message + sun_angle_rejection_message + rejected_footprints_message + duplicate_message + skipped_message + " for #{project} from \"#{params[:file].original_filename}\"."
+                    message = message + sun_angle_rejection_message + rejected_footprints_message + duplicate_message + skipped_message + free_shot_message + ") for #{project} from \"#{params[:file].original_filename}\"."
 
                     # ByPass Eo Splitter tool if no valid frame centers
                     if project == "NRI/SL" && upload.frame_centers.count > 0

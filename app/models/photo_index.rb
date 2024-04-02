@@ -220,8 +220,8 @@ class PhotoIndex < ApplicationRecord
                         # skip if it's the header line
                         next if line[0..2] == "UTC"
 
-                        # skip if the line is a free shot
-                        next if line.downcase.include? "free shot"
+                        # # skip if the line is a free shot
+                        # next if line.downcase.include? "free shot"
 
                         # skip the first 
                         # next if index+1 < 8
@@ -253,23 +253,24 @@ class PhotoIndex < ApplicationRecord
                             raise Exception, "Filename flight date does not match record flight date"
                         end
 
-                        strip = "#{"0" * (4 - arr[2].to_s.length)}#{arr[2]}"
-                        frame = "#{"0" * (4 - arr[3].to_s.length)}#{arr[3]}"
-                        strip_frame = "#{strip}_#{frame}"
+                        free_shot = arr[2] == "Free shot" ? true : false
+                        
+                        if free_shot
+                            strip = "FREE_SHOT"
+                            frame = arr[3]
+                            strip_frame = strip
+                        else
+                            strip = "#{"0" * (4 - arr[2].to_s.length)}#{arr[2]}"
+                            frame = "#{"0" * (4 - arr[3].to_s.length)}#{arr[3]}"
+                            strip_frame = "#{strip}_#{frame}"
+                        end
                         latitude = arr[6].to_f.round(6)
                         longitude = arr[5].to_f.round(6)
                         gpstime = arr[1]
 
-                        # Check for duplicate photo indexes
-                        if PhotoIndex.where(
-                                strip_frame: strip_frame, 
-                                latitude: latitude, 
-                                longitude: longitude, 
-                                flight_date: record_flight_date, 
-                                gpstime: gpstime,
-                                flown_by: company, 
-                                camera: camera
-                            ).count > 0
+                        # If Free Shot then check if it's a dup based on the gpstime, lat, and long
+
+                        if PhotoIndex.where(strip_frame: strip_frame, latitude: latitude, longitude: longitude, flight_date: record_flight_date, gpstime: gpstime,flown_by: company, camera: camera,).count > 0
                             p "Found duplicate strip frame: #{strip_frame}. Skipping"
                             next
                         end
@@ -290,7 +291,8 @@ class PhotoIndex < ApplicationRecord
                             geom: RGeo::Geographic.spherical_factory(srid: 4326).point(longitude, latitude),
                             camera: camera,
                             upload: upload,
-                            flown_by: company
+                            flown_by: company,
+                            free_shot: free_shot
                         )
 
                         pp record
@@ -313,7 +315,7 @@ class PhotoIndex < ApplicationRecord
                         record.sun_angle_error = false
                         if record.sun_angle < Rails.application.secrets.min_sun_angle
                             p "#{record.strip_frame} - Sun Angle below #{Rails.application.secrets.min_sun_angle}: #{record.sun_angle}"
-                            record.sun_angle_error = true
+                            record.sun_angle_error = true if !free_shot
                         end
 
                         # p "Strip Frame: #{record.strip_frame}"
@@ -354,7 +356,7 @@ class PhotoIndex < ApplicationRecord
                             # add the foorptint to the appropriate array
                             # valid_footprints << footprint if !record.sun_angle_error
                             # footprints_to_be_rejected << footprint if record.sun_angle_error
-                        else
+                        elsif !free_shot
 
                             # Check if the Strip Frame is in the Rejected Footprint
                             # rejected_footprint = RejectedFootprint.find_by(project: project, camera_id: camera.id, strip_frame: obj[:strip_frame], flight_date: params[:flight_date], flown_by_id: company.id)
@@ -410,8 +412,13 @@ class PhotoIndex < ApplicationRecord
                     end
                 end
 
+                p "_________"
+                p upload.photo_indices.count
+                p upload.photo_indices.approved.count
+                p "_________"
+
                 # check if there were any 
-                if upload.photo_indices.approved.size == 0
+                if upload.photo_indices.approved.count == 0
                     raise Exception, "No Footprints were associated with Photo Indices. Upload aborted."
                 end
 

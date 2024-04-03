@@ -317,9 +317,9 @@ class FrameCenter < ApplicationRecord
                                 #     AND photo_indices.flight_date = '#{params[:flight_date]}' AND photo_indices.flown_by_id = '#{company.id}' #{project == "NAIP" ? " AND project_state_id=#{state.id} " : ""}
                                 #     AND ST_Equals(photo_indices.geom::geometry, ST_SetSRID(ST_Point(#{longitude}, #{latitude}),4326))")
 
-                                p "photo_indices.project = '#{project}' AND photo_indices.camera_id = '#{camera.id}' AND FLOOR(photo_indices.gpstime) = '#{gpstime.floor}'
-                                AND photo_indices.flight_date = '#{params[:flight_date]}' AND photo_indices.flown_by_id = '#{company.id}' #{project == "NAIP" ? " AND project_state_id=#{state.id} " : ""}
-                                AND FLOOR(photo_indices.latitude) = #{latitude.floor} AND FLOOR(photo_indices.longitude) = '#{longitude.floor}'"
+                                # p "photo_indices.project = '#{project}' AND photo_indices.camera_id = '#{camera.id}' AND FLOOR(photo_indices.gpstime) = '#{gpstime.floor}'
+                                # AND photo_indices.flight_date = '#{params[:flight_date]}' AND photo_indices.flown_by_id = '#{company.id}' #{project == "NAIP" ? " AND project_state_id=#{state.id} " : ""}
+                                # AND FLOOR(photo_indices.latitude) = #{latitude.floor} AND FLOOR(photo_indices.longitude) = '#{longitude.floor}'"
 
                                 photo_index = PhotoIndex.where("photo_indices.project = '#{project}' AND photo_indices.camera_id = '#{camera.id}' AND FLOOR(photo_indices.gpstime) = '#{gpstime.floor}'
                                     AND photo_indices.flight_date = '#{params[:flight_date]}' AND photo_indices.flown_by_id = '#{company.id}' #{project == "NAIP" ? " AND project_state_id=#{state.id} " : ""}

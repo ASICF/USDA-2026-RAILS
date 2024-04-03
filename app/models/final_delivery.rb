@@ -451,8 +451,14 @@ class FinalDelivery < ApplicationRecord
                     # Copy the tfw file
                     FileUtils.cp("#{path}/#{filename_without_extension}.tfw", "#{county_path}/#{filename_without_extension}.tfw")
 
+                    if project === "SL"
+                        image_description = "'TIFFTAG_IMAGEDESCRIPTION=USDA-FSA-NRCS-Stewardship Lands-#{tile.state.name}-under FPAC-BC contract 47QTCA18D004Z'"
+                    elsif project === "NRI"
+                        image_description = "'TIFFTAG_IMAGEDESCRIPTION=USDA-FSA-NRCS-National Resource Inventory-#{tile.state.name}-under FPAC-BC contract 47QTCA18D004Z'"
+                    end
+
                     # Create the GeoTIFF Tags
-                    response_1 = system("python /usr/bin/gdal_edit.py -mo 'TIFFTAG_IMAGEDESCRIPTION=USDA-FSA-NRCS-Stewardship Lands-#{tile.state.name}-under FPAC-BC contract 47QTCA18D004Z' '#{county_path}/#{filename}'")
+                    response_1 = system("python /usr/bin/gdal_edit.py -mo #{image_description} '#{county_path}/#{filename}'")
                     # p response_1
 
                     response_2 = system("python /usr/bin/gdal_edit.py -mo 'TIFFTAG_DOCUMENTNAME=#{tile.easement.poly_id}' '#{county_path}/#{filename}'")

@@ -13,7 +13,7 @@ class Invoice
         state = State.find_by(id: state_id)
 
         if project == "SL" || project == "NRI"
-            response = Invoice.build project, date_from, date_to, state
+            response = Invoice.build_nrisl project, date_from, date_to, state
         elsif project == "NAIP"
             response = Invoice.build_naip date_from, date_to, state
         end
@@ -68,7 +68,7 @@ class Invoice
 
     end
 
-    def self.build project, date_from, date_to, state
+    def self.build_nrisl project, date_from, date_to, state
         # get the state and count with total easements shipped
         p "build #{project}"
 
@@ -80,8 +80,7 @@ class Invoice
             # get the state
             obj = {project: project, shipped_date: date_from..date_to}
             obj[:tiles] = {state_id: state.id} if !state.nil?
-        
-                
+
             # Get the packing slips that were shipped during period
             psn_ids = PackingSlip.includes(:tiles).select(:id).where(obj).pluck(:id)
 

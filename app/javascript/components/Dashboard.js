@@ -84,6 +84,9 @@ const Dashboard = ({
                 flown={sl.flown}
                 tile_shipped={sl.tile_shipped}
                 shipped={sl.shipped}
+                acres_count={sl.acres_count}
+                acres_flown={sl.acres_flown}
+                acres_percentage={sl.acres_percentage}
               />
             )}
             {nri && (
@@ -96,6 +99,9 @@ const Dashboard = ({
                 flown={nri.flown}
                 tile_shipped={nri.tile_shipped}
                 shipped={nri.shipped}
+                acres_count={nri.acres_count}
+                acres_flown={nri.acres_flown}
+                acres_percentage={nri.acres_percentage}
               />
             )}
             <Divider style={{ marginBottom: "0" }} />

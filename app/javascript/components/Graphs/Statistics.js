@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { Card, Grid, Statistic, Transition } from "semantic-ui-react";
+import {
+  Card,
+  Grid,
+  Statistic,
+  StatisticValue,
+  StatisticLabel,
+  StatisticGroup,
+  Transition,
+} from "semantic-ui-react";
 function Statistics({
   project,
   states,
@@ -9,6 +17,9 @@ function Statistics({
   flown,
   tile_shipped,
   shipped,
+  acres_count,
+  acres_flown,
+  acres_percentage,
 }) {
   const [visible, setVisible] = useState(false);
 
@@ -24,54 +35,64 @@ function Statistics({
           <Card.Header>{project} Statistics</Card.Header>
         </Card.Content>
         <Card.Content className="sl">
-          <Grid>
-            <Grid.Row columns={7}>
-              <Grid.Column>
-                <Statistic size="small">
-                  <Statistic.Value>{states}</Statistic.Value>
-                  <Statistic.Label className="sl-color">
-                    Active States
-                  </Statistic.Label>
-                </Statistic>
-              </Grid.Column>
-              <Grid.Column>
-                <Statistic size="small">
-                  <Statistic.Value>{counties}</Statistic.Value>
-                  <Statistic.Label>Counties</Statistic.Label>
-                </Statistic>
-              </Grid.Column>
-              <Grid.Column>
-                <Statistic size="small">
-                  <Statistic.Value>{tile_count}</Statistic.Value>
-                  <Statistic.Label>Total Tiles</Statistic.Label>
-                </Statistic>
-              </Grid.Column>
-              <Grid.Column>
-                <Statistic size="small">
-                  <Statistic.Value>{tile_flown}</Statistic.Value>
-                  <Statistic.Label>Tiles Flown</Statistic.Label>
-                </Statistic>
-              </Grid.Column>
-              <Grid.Column>
-                <Statistic size="small">
-                  <Statistic.Value>{flown}%</Statistic.Value>
-                  <Statistic.Label>Flown</Statistic.Label>
-                </Statistic>
-              </Grid.Column>
-              <Grid.Column>
-                <Statistic size="small">
-                  <Statistic.Value>{tile_shipped}</Statistic.Value>
-                  <Statistic.Label>Tiles Shipped</Statistic.Label>
-                </Statistic>
-              </Grid.Column>
-              <Grid.Column>
-                <Statistic size="small">
-                  <Statistic.Value>{shipped}%</Statistic.Value>
-                  <Statistic.Label>Shipped</Statistic.Label>
-                </Statistic>
-              </Grid.Column>
-            </Grid.Row>
-          </Grid>
+          <StatisticGroup widths="seven" size={"mini"}>
+            <Statistic>
+              <StatisticValue>{states}</StatisticValue>
+              <StatisticLabel className="sl-color">
+                Active States
+              </StatisticLabel>
+            </Statistic>
+
+            <Statistic>
+              <StatisticValue>{counties}</StatisticValue>
+              <StatisticLabel>Counties</StatisticLabel>
+            </Statistic>
+
+            <Statistic>
+              <StatisticValue>{tile_count}</StatisticValue>
+              <StatisticLabel>Total Tiles</StatisticLabel>
+            </Statistic>
+
+            <Statistic>
+              <StatisticValue>{tile_flown}</StatisticValue>
+              <StatisticLabel>Tiles Flown</StatisticLabel>
+            </Statistic>
+
+            <Statistic>
+              <StatisticValue>{flown}%</StatisticValue>
+              <StatisticLabel>Tiles Flown</StatisticLabel>
+            </Statistic>
+
+            <Statistic>
+              <StatisticValue>{tile_shipped}</StatisticValue>
+              <StatisticLabel>Tiles Shipped</StatisticLabel>
+            </Statistic>
+
+            <Statistic>
+              <StatisticValue>{shipped}%</StatisticValue>
+              <StatisticLabel>Shipped</StatisticLabel>
+            </Statistic>
+          </StatisticGroup>
+          <StatisticGroup
+            widths="three"
+            size={"mini"}
+            style={{ paddingTop: "2em" }}
+          >
+            <Statistic>
+              <StatisticValue>{acres_count}</StatisticValue>
+              <StatisticLabel>Total Acres</StatisticLabel>
+            </Statistic>
+
+            <Statistic>
+              <StatisticValue>{acres_flown}</StatisticValue>
+              <StatisticLabel>Acres Flown</StatisticLabel>
+            </Statistic>
+
+            <Statistic>
+              <StatisticValue>{acres_percentage}%</StatisticValue>
+              <StatisticLabel>Acres Flown</StatisticLabel>
+            </Statistic>
+          </StatisticGroup>
         </Card.Content>
       </Card>
     </Transition>

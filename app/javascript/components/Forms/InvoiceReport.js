@@ -504,8 +504,8 @@ export default function InvoiceReport({
               <Table.HeaderCell>USDA Unit Price</Table.HeaderCell>
               <Table.HeaderCell>Packing Slip</Table.HeaderCell>
               <Table.HeaderCell>Date Shipped</Table.HeaderCell>
-              <Table.HeaderCell>Acquisition Price</Table.HeaderCell>
-              <Table.HeaderCell>Orthos Price</Table.HeaderCell>
+              {/* <Table.HeaderCell>Acquisition Price</Table.HeaderCell>
+              <Table.HeaderCell>Orthos Price</Table.HeaderCell> */}
               <Table.HeaderCell>Total Price</Table.HeaderCell>
             </Table.Row>
           </Table.Header>
@@ -536,12 +536,12 @@ export default function InvoiceReport({
                     </Table.Cell>
                     <Table.Cell>{record.psn_name}</Table.Cell>
                     <Table.Cell>{record.date_shipped}</Table.Cell>
-                    <Table.Cell>
+                    {/* <Table.Cell>
                       <RenderValue value={record.acquisition_price} currency />
                     </Table.Cell>
                     <Table.Cell>
                       <RenderValue value={record.orthos_price} currency />
-                    </Table.Cell>
+                    </Table.Cell> */}
                     <Table.Cell>
                       <RenderValue value={record.total_price} currency />
                     </Table.Cell>
@@ -561,7 +561,7 @@ export default function InvoiceReport({
                     <b>{total_size.toFixed(6)}</b>
                   </Table.Cell>
                   <Table.Cell colSpan={3}></Table.Cell>
-                  <Table.Cell>
+                  {/* <Table.Cell>
                     <b>
                       <RenderValue value={acquisition_price} currency />
                     </b>
@@ -570,7 +570,7 @@ export default function InvoiceReport({
                     <b>
                       <RenderValue value={orthos_price} currency />
                     </b>
-                  </Table.Cell>
+                  </Table.Cell> */}
                   <Table.Cell>
                     <b>
                       <RenderValue value={total_price} currency />

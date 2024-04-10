@@ -23,7 +23,8 @@ class Invoice
             CSV.generate(headers: true) do |csv|
 
                 if project == "SL" || project == "NRI"
-                    csv << ["State", "County", "FIPS", "Easements", "Acres", "USDA Unit Price", "Packing Slip", "Date Shipped", "Acquisition Price", "Orthos Price", "Total Price"]
+                    # csv << ["State", "County", "FIPS", "Easements", "Acres", "USDA Unit Price", "Packing Slip", "Date Shipped", "Acquisition Price", "Orthos Price", "Total Price"]
+                    csv << ["State", "County", "FIPS", "Easements", "Acres", "USDA Unit Price", "Packing Slip", "Date Shipped", "Total Price"]
                 else
                     csv << ["State", "FIPS", "DOQQs", "Square Miles", "File Name", "Date Shipped"]
                 end
@@ -43,9 +44,9 @@ class Invoice
                                 # record[:sub_unit_price],
                                 record[:psn_name],
                                 record[:date_shipped],
-                                record[:acquisition_price],
-                                record[:orthos_price],
-                                record[:total_price],
+                                # record[:acquisition_price],
+                                # record[:orthos_price],
+                                record[:total_price].round(2),
                             ]
                         else
                             csv << [

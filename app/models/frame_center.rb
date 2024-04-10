@@ -321,7 +321,7 @@ class FrameCenter < ApplicationRecord
                                 # AND photo_indices.flight_date = '#{params[:flight_date]}' AND photo_indices.flown_by_id = '#{company.id}' #{project == "NAIP" ? " AND project_state_id=#{state.id} " : ""}
                                 # AND FLOOR(photo_indices.latitude) = #{latitude.floor} AND FLOOR(photo_indices.longitude) = '#{longitude.floor}'"
 
-                                photo_index = PhotoIndex.where("photo_indices.project = '#{project}' AND photo_indices.camera_id = '#{camera.id}' AND FLOOR(photo_indices.gpstime) = '#{gpstime.floor}'
+                                photo_index = PhotoIndex.where("photo_indices.project = '#{project}' AND photo_indices.camera_id = '#{camera.id}' AND (FLOOR(photo_indices.gpstime) = '#{gpstime.floor}' OR CEILING(photo_indices.gpstime) = '#{gpstime.ceil}')
                                     AND photo_indices.flight_date = '#{params[:flight_date]}' AND photo_indices.flown_by_id = '#{company.id}' #{project == "NAIP" ? " AND project_state_id=#{state.id} " : ""}
                                     AND FLOOR(photo_indices.latitude) = #{latitude.floor} AND FLOOR(photo_indices.longitude) = '#{longitude.floor}'")
 

@@ -335,6 +335,13 @@ class PhotoIndex < ApplicationRecord
 
                         if footprint
 
+                            # check if the footprint already has a strip frame
+                            if footprint.photo_index.present?
+                                record.destroy
+                                skipped += 1
+                                next
+                            end
+
                             p "FOOTPRINT FOUND: #{footprint.id}"
 
                             # update the project state

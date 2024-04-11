@@ -33,6 +33,9 @@ function Reports({ setSelected, role }) {
       <Menu.Item as="a" href="/easements_with_multiple_coverages">
         Easements with Multiple Coverages
       </Menu.Item>
+      <Menu.Item as="a" href="/photo_index_tracker">
+        Photo Index Tracker
+      </Menu.Item>
       <Menu.Item as="a" href="/eo_tracker">
         EO Tracker
       </Menu.Item>

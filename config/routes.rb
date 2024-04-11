@@ -138,6 +138,12 @@ Rails.application.routes.draw do
   post '/eo_tracker/generate', to: 'eo_tracker#generate_shapefile', as: :eo_tracker_generate_shapefile
   get '/eo_tracker/download/:history_id', to: 'eo_tracker#download', as: :download_eo_tracker_footprints
 
+  # => Photo Index Tracker
+  get '/photo_index_tracker', to: 'photo_index_tracker#index', as: :photo_index_tracker
+  post '/query_photo_index_tracker', to: 'photo_index_tracker#query', as: :query_photo_index_tracker
+  # post '/eo_tracker/generate', to: 'eo_tracker#generate_shapefile', as: :eo_tracker_generate_shapefile
+  # get '/eo_tracker/download/:history_id', to: 'eo_tracker#download', as: :download_eo_tracker_footprints
+
   # => Total Delivery
   get '/total_delivery', to: 'total_delivery#index', as: :total_delivery
   post 'total_delivery/query', to: 'total_delivery#query', as: :total_delivery_query

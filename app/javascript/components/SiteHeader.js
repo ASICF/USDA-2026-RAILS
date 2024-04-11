@@ -296,6 +296,13 @@ const SiteHeader = (props) => {
                   </Dropdown.Item>
                   <Dropdown.Item
                     as="a"
+                    href={`/photo_index_tracker`}
+                    data-turbolinks="false"
+                  >
+                    Photo Index Tracker
+                  </Dropdown.Item>
+                  <Dropdown.Item
+                    as="a"
                     href={`/eo_tracker`}
                     data-turbolinks="false"
                   >

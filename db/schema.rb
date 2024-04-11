@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2024_04_02_151355) do
+ActiveRecord::Schema.define(version: 2024_04_11_014359) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -353,6 +353,7 @@ ActiveRecord::Schema.define(version: 2024_04_02_151355) do
     t.bigint "flown_by_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.boolean "has_pi", default: false, null: false
     t.index ["camera_id"], name: "index_footprints_on_camera_id"
     t.index ["county_id"], name: "index_footprints_on_county_id"
     t.index ["flown_by_id"], name: "index_footprints_on_flown_by_id"
@@ -649,6 +650,7 @@ ActiveRecord::Schema.define(version: 2024_04_02_151355) do
     t.bigint "flown_by_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.boolean "has_pi", default: false, null: false
     t.index ["camera_id"], name: "index_rejected_footprints_on_camera_id"
     t.index ["county_id"], name: "index_rejected_footprints_on_county_id"
     t.index ["flown_by_id"], name: "index_rejected_footprints_on_flown_by_id"

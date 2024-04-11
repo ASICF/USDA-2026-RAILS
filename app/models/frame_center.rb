@@ -248,10 +248,10 @@ class FrameCenter < ApplicationRecord
                         p "#{index} - #{line.tr("\t\r\n","")}"
 
                         if index == 0 && line[0..9] == "**********"
-                            p "SKIP"
                             skip_lines = 45
                             next
                         elsif index + 1 < skip_lines
+                            p "SKIP"
                             next
                         end
 

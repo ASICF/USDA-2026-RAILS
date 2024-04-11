@@ -45,6 +45,8 @@ class Footprint < ApplicationRecord
     scope :uploaded, -> { where.not(provisional_upload_date: nil) }
     scope :has_flight_date_time, -> { where.not(flight_date_time: nil) }
     scope :needs_flight_date_time, -> { where(flight_date_time: nil) }
+    scope :has_pi, -> { where(has_pi: true) }
+    scope :needs_pi, -> { where(has_pi: false) }
 
     def self.prepare_import params, user
 
@@ -611,7 +613,7 @@ class Footprint < ApplicationRecord
 
     end
 
-    def self.eo_shapefile_export upload, footprints, user 
+    def self.eo_shapefile_export upload, footprints, user
 
         # set the path variable in case of failure
         path = nil
@@ -680,6 +682,96 @@ class Footprint < ApplicationRecord
             history = History.new
             history.message = "Generated Shapefile of #{footprints.count} that need Frame Centers for Upload: #{upload.id}"
             history.action_type = "EO Tracker Shapefile Export"
+            history.url = "#{path}/zipped/#{file_name}.zip"
+            history.creator = user
+            history.save
+
+            return {
+                state: true,
+                history_id: history.id
+            }
+          
+        rescue StandardError => e
+            FileUtils.rm_rf(path) if File.directory?(path)
+            return {
+                state: false,
+                message: "Error: #{e.message}"
+            }
+
+        end
+
+    end
+
+
+    def self.pi_shapefile_export upload, footprints, user
+
+        # set the path variable in case of failure
+        path = nil
+
+        begin
+
+            # Get the folder name by converting the current time to seconds
+            folder = Time.now.to_i
+
+            path = "#{Rails.root}/assets/pi_tracker/#{folder}"
+
+            # Create a folder if it doesn't exist
+            FileUtils.mkdir_p("#{path}") unless File.directory?(path)
+            FileUtils.mkdir_p("#{path}/json")
+            FileUtils.mkdir_p("#{path}/shapefile")
+            FileUtils.mkdir_p("#{path}/zipped")
+
+            # Set the formated date to a string to be reused
+            time_string = Time.now.strftime("%y%m%d")
+
+            # shapefiles = []
+
+            factory = RGeo::GeoJSON::EntityFactory.instance
+
+            # Set the file name
+            file_name = "photo_index_tracker_footprints_that_need_photo_indices_upload_id_#{upload.id}"
+
+            features = Array.new
+
+            # Get State
+            footprints.each do |record|
+
+                obj = {
+                    StripFrame: record.strip_frame,
+                    FlightDate: record.flight_date.strftime("%F"),
+                    Plane: record.plane_name,
+                    Camera: record.camera_name,
+                    FlownBy: record.flown_by_alias,
+                    State: record.state_name,
+                    County: record.county_name,
+                    UTM: record.utm_zone,
+                }
+
+                features << factory.feature(record.geom, record.id, obj)
+
+            end
+
+            # Creates a text file and saves it to the report directory
+            File.open("#{path}/json/#{file_name}.json", "w+") do |f|
+                f.puts(RGeo::GeoJSON.encode(factory.feature_collection(features)).to_json)
+            end
+
+            # Convert GeoJSON to Shapefile with ogr2ogr
+            `ogr2ogr -f "ESRI Shapefile" -fieldTypeToString Date,Time #{path}/shapefile/#{file_name}.shp "#{path}/json/#{file_name}.json"`
+
+            # shapefiles << file_name
+
+            # Zip the files
+            Zip::File.open("#{path}/zipped/#{file_name}.zip", Zip::File::CREATE) do |zipfile|
+                [".shp", ".shx", ".dbf", ".prj"].each do |ext|
+                    zipfile.add("#{file_name}#{ext}", File.join("#{path}/shapefile/", "#{file_name}#{ext}"))
+                end
+            end
+
+            # Create a new History record
+            history = History.new
+            history.message = "Generated Shapefile of #{footprints.count} that need Photo Indices for Upload: #{upload.id}"
+            history.action_type = "Photo Index Tracker Shapefile Export"
             history.url = "#{path}/zipped/#{file_name}.zip"
             history.creator = user
             history.save

@@ -56,4 +56,64 @@ class PhotoIndexTrackerController < ApplicationController
       strip_frames: strip_frames
     }
   end
+
+  def generate_shapefile
+    p params
+
+    if params[:strip_frames].blank?
+      return render json: {
+          state: false,
+          message: "No Strip Frames arguements in request"
+      }
+    elsif params[:upload_id].blank?
+        return render json: {
+            state: false,
+            message: "No Upload arguement in request"
+        }
+    else
+
+      # find the upload
+      upload = Upload.find_by(id: params[:upload_id])
+
+      # return if upload is nil
+      if upload.nil?
+        return render json: {
+            state: false,
+            message: "Upload #{params[:upload_id]} does not exist"
+        }
+      end
+
+      # get the footprints
+      footprints = upload.footprints.where(strip_frame: params[:strip_frames])
+
+      # check if there are footprints
+      if footprints.size == 0
+        return render json: {
+            state: false,
+            message: "Upload does not have any Footprints that are associated and need a Frame Center"
+        }
+      end
+
+      # generate the shapefile
+      response = Footprint.pi_shapefile_export upload, footprints, current_user
+
+      return render json: response
+    end
+  end
+
+  def download
+
+    history = History.find(params[:history_id])
+
+    if history.nil?
+        raise exception
+    end
+
+    send_file(
+        history.url,
+        filename: File.basename(history.url),
+        type: "application/zip"
+    )
+
+  end
 end

@@ -57,9 +57,9 @@ export default function PhotoIndexTracker({ uploads, token }) {
     return (
       <MessageBox
         status={"Success"}
-        title={"No delayed EO files found"}
+        title={"No delayed Photo Index files found"}
         message={
-          "Any Footprints that have been uploaded and have not received any EO files will appear on this list. No Footprints currently meet this requirement."
+          "Any Footprints that have been uploaded and have not received any Photo Index files will appear on this list. No Footprints currently meet this requirement."
         }
       />
     );
@@ -166,7 +166,7 @@ export default function PhotoIndexTracker({ uploads, token }) {
                   })
                 }
               >
-                Missing EOs
+                Missing PIs
               </Table.HeaderCell>
               <Table.HeaderCell
                 sorted={column === "footprints_with_pis" ? direction : null}
@@ -177,7 +177,7 @@ export default function PhotoIndexTracker({ uploads, token }) {
                   })
                 }
               >
-                Have EOs
+                Have PIs
               </Table.HeaderCell>
               <Table.HeaderCell
                 sorted={column === "total_footprints" ? direction : null}
@@ -276,14 +276,14 @@ export default function PhotoIndexTracker({ uploads, token }) {
   )}%0D%0A
   Camera: ${upload.camera}%0D%0A
   Plane: ${upload.plane}%0D%0A%0D%0A
-  The following sites are still awaiting the matching EO file.%0D%0A`;
+  The following sites are still awaiting the matching Photo Index file.%0D%0A`;
 
       records.forEach((item) => {
         html += `- ${item.poly_id} (${item.project})%0D%0A`;
       });
 
       window.open(
-        `mailto:?subject=Missing%20EO%20Files%20for%20Flight%20Date%20${moment(
+        `mailto:?subject=Missing%20Photo%20Index%20Files%20for%20Flight%20Date%20${moment(
           upload.upload_created_at,
           "YYYY MM-DD"
         ).format("MM/DD/YYYY")}&body=${html}`,
@@ -412,7 +412,7 @@ export default function PhotoIndexTracker({ uploads, token }) {
             {records && records.length > 0 && (
               <Fragment>
                 <p>
-                  The following Easements are still awaiting the matching EO
+                  The following Easements are still awaiting the matching Photo Index
                   file.
                 </p>
                 <ul>

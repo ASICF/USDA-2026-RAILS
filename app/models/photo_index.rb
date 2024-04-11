@@ -360,6 +360,9 @@ class PhotoIndex < ApplicationRecord
                             record.footprint = footprint
                             record.save!
 
+                            # update the footprint to indiciate it has been associated
+                            footprint.update(has_pi: true)
+                                
                             # add the foorptint to the appropriate array
                             # valid_footprints << footprint if !record.sun_angle_error
                             # footprints_to_be_rejected << footprint if record.sun_angle_error

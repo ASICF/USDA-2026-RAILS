@@ -499,8 +499,10 @@ export default function InvoiceReport({
               <Table.HeaderCell>State</Table.HeaderCell>
               <Table.HeaderCell>County</Table.HeaderCell>
               <Table.HeaderCell>FIPS</Table.HeaderCell>
-              <Table.HeaderCell>Easements</Table.HeaderCell>
-              <Table.HeaderCell>Acres</Table.HeaderCell>
+              <Table.HeaderCell>Shipped Easements</Table.HeaderCell>
+              <Table.HeaderCell>Total Easements</Table.HeaderCell>
+              <Table.HeaderCell>Shipped Acres</Table.HeaderCell>
+              <Table.HeaderCell>Total Acres</Table.HeaderCell>
               <Table.HeaderCell>USDA Unit Price</Table.HeaderCell>
               <Table.HeaderCell>Packing Slip</Table.HeaderCell>
               <Table.HeaderCell>Date Shipped</Table.HeaderCell>
@@ -513,13 +515,17 @@ export default function InvoiceReport({
           <Table.Body>
             {Object.keys(results).map((keyName, keyIndex) => {
               var count = 0;
-              var total_size = 0;
+              var total_count = 0;
+              var acres = 0;
+              var total_acres = 0;
               var acquisition_price = 0;
               var orthos_price = 0;
               var total_price = 0;
               var list = results[keyName].map((record, index) => {
                 count += record.count;
-                total_size += record.acres;
+                total_count += record.total_count;
+                acres += record.acres;
+                total_acres += record.total_acres;
                 acquisition_price += record.acquisition_price;
                 orthos_price += record.orthos_price;
                 total_price += record.total_price;
@@ -530,7 +536,9 @@ export default function InvoiceReport({
                     <Table.Cell>{record.county_name}</Table.Cell>
                     <Table.Cell>{record.fips}</Table.Cell>
                     <Table.Cell>{record.count}</Table.Cell>
+                    <Table.Cell>{record.total_count}</Table.Cell>
                     <Table.Cell>{record.acres.toFixed(6)}</Table.Cell>
+                    <Table.Cell>{record.total_acres.toFixed(6)}</Table.Cell>
                     <Table.Cell>
                       $<RenderValue value={record.unit_price} />
                     </Table.Cell>
@@ -558,7 +566,13 @@ export default function InvoiceReport({
                     <b>{count}</b>
                   </Table.Cell>
                   <Table.Cell>
-                    <b>{total_size.toFixed(6)}</b>
+                    <b>{total_count}</b>
+                  </Table.Cell>
+                  <Table.Cell>
+                    <b>{acres.toFixed(6)}</b>
+                  </Table.Cell>
+                  <Table.Cell>
+                    <b>{total_acres.toFixed(6)}</b>
                   </Table.Cell>
                   <Table.Cell colSpan={3}></Table.Cell>
                   {/* <Table.Cell>

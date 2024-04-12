@@ -24,7 +24,7 @@ class Invoice
 
                 if project == "SL" || project == "NRI"
                     # csv << ["State", "County", "FIPS", "Easements", "Acres", "USDA Unit Price", "Packing Slip", "Date Shipped", "Acquisition Price", "Orthos Price", "Total Price"]
-                    csv << ["State", "County", "FIPS", "Easements", "Acres", "USDA Unit Price", "Packing Slip", "Date Shipped", "Total Price"]
+                    csv << ["State", "County", "FIPS", "Shipped Easements", "Total Easements", "Shipped Acres", "Total Acres", "USDA Unit Price", "Packing Slip", "Date Shipped", "Total Price"]
                 else
                     csv << ["State", "FIPS", "DOQQs", "Square Miles", "File Name", "Date Shipped"]
                 end
@@ -39,7 +39,9 @@ class Invoice
                                 record[:county_name],
                                 record[:fips],
                                 record[:count],
+                                record[:total_count],
                                 record[:acres],
+                                record[:total_acres],
                                 record[:unit_price],
                                 # record[:sub_unit_price],
                                 record[:psn_name],
@@ -125,7 +127,9 @@ class Invoice
                         county_name: tile.county_name,
                         fips: tile.county.full_fips,
                         count: 1,
+                        total_count: tile.county.tiles.where(project: project).count,
                         acres: tile.easements_acres.to_f,
+                        total_acres: tile.county.tiles.where(project: project).sum(:easements_acres).to_f,
                         unit_price: tile.flight_rate.cost.to_f + tile.production_rate.cost.to_f,
                         # sub_unit_price: sub_unit_price > 0 ? [sub_unit_price] : [],
                         psn_name: "#{packing_slip.name}.pdf",

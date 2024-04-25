@@ -7,6 +7,7 @@ import Breadcrumbs from "../Shared/Breadcrumb";
 import { Controller, useForm } from "react-hook-form";
 import MessageBox from "../Shared/MessageBox";
 import { tableSortReducer } from "../Shared/TableSort";
+import RenderValue from "../Shared/RenderValue";
 
 export default function ReadyToShip({ states, projects, priorities, token }) {
   const [results, setResults] = useState(false);
@@ -361,6 +362,14 @@ export default function ReadyToShip({ states, projects, priorities, token }) {
                 Days til Due
               </Table.HeaderCell>
               <Table.HeaderCell
+                sorted={column === "total_amount" ? direction : null}
+                onClick={() =>
+                  dispatch({ type: "CHANGE_SORT", column: "total_amount" })
+                }
+              >
+                Contract Totals
+              </Table.HeaderCell>
+              <Table.HeaderCell
                 sorted={column === "priority" ? direction : null}
                 onClick={() =>
                   dispatch({ type: "CHANGE_SORT", column: "priority" })
@@ -394,6 +403,10 @@ export default function ReadyToShip({ states, projects, priorities, token }) {
                   <Table.Cell>{record.county_flown_date_formatted}</Table.Cell>
                   <Table.Cell>{record.due_date_formatted}</Table.Cell>
                   <Table.Cell>{record.days_til_due}</Table.Cell>
+                  <Table.Cell>
+                    {/* ${record.total_amount} */}
+                    <RenderValue value={record.total_amount} currency />
+                  </Table.Cell>
                   {renderPriority(record.priority, priorities)}
                 </Table.Row>
               );

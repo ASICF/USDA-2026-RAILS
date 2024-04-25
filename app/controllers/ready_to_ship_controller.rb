@@ -82,7 +82,8 @@ class ReadyToShipController < ApplicationController
           at_done: tiles.at_started.count,
           ortho_processed: tiles.ortho_processed.count,
           dumped: tiles.dumped.count,
-          total_tiles: tiles.count
+          total_tiles: tiles.count,
+          total_amount: tiles.sum(:total_amount)
         }
 
       end

@@ -70,25 +70,35 @@ class Rejection
                         p "-----------------"
                         p line.strip
 
-                        # Try to split the line by space
-                        if line.strip.split(" ").size == 1
+                        # # Try to split the line by space
+                        # if line.strip.split(" ").size == 1
+                        #     p "- no message"
+                        #     poly_id = line.strip
+                        # elsif line.strip.split(" ").size == 2
+                        #     p "- two strings, one space"
+                        #     poly_id = line.strip.split(" ")[0].strip
+                        #     message = line.strip.split(" ")[1].strip.gsub('"', '').gsub("'", '')
+                        # elsif line.strip.split('"').size == 2
+                        #     p "- two strings wrapped by quotes"
+                        #     poly_id = line.strip.split('"')[0].strip
+                        #     message = line.strip.split('"')[1].strip.gsub('"', '')
+                        # elsif line.strip.split("'").size == 2
+                        #     p "- two strings wrapped by apostrophe"
+                        #     poly_id = line.strip.split("'")[0].strip
+                        #     message = line.strip.split("'")[1].strip.gsub("'", '')
+                        # elsif line.strip.split(" ").size > 1
+                        #     p " - Too many array items, ignore message"
+                        #     poly_id = line.strip.split(" ")[0].strip
+                        # end
+
+                        arr = line.strip.split(" ")
+
+                        if arr.size == 1
                             p "- no message"
                             poly_id = line.strip
-                        elsif line.strip.split(" ").size == 2
-                            p "- two strings, one space"
-                            poly_id = line.strip.split(" ")[0].strip
-                            message = line.strip.split(" ")[1].strip.gsub('"', '').gsub("'", '')
-                        elsif line.strip.split('"').size == 2
-                            p "- two strings wrapped by quotes"
-                            poly_id = line.strip.split('"')[0].strip
-                            message = line.strip.split('"')[1].strip.gsub('"', '')
-                        elsif line.strip.split("'").size == 2
-                            p "- two strings wrapped by apostrophe"
-                            poly_id = line.strip.split("'")[0].strip
-                            message = line.strip.split("'")[1].strip.gsub("'", '')
-                        elsif line.strip.split(" ").size > 1
-                            p " - Too many array items, ignore message"
-                            poly_id = line.strip.split(" ")[0].strip
+                        else
+                            poly_id = arr[0].strip
+                            message = arr.drop(1).join(" ").gsub('"', '').gsub("'", '')
                         end
 
                         p " - - - "

@@ -63,27 +63,62 @@ class Rejection
                     # Iterate each line
                     f.each_line do |line|
 
-                        p "ASDFASDFASDFASDF"
+                        # set the default polyid and message
+                        poly_id = nil
+                        message = "Manual Rejection"
+
+                        p "-----------------"
                         p line.strip
+
+                        # Try to split the line by space
+                        if line.strip.split(" ").size == 1
+                            p "- no message"
+                            poly_id = line.strip
+                        elsif line.strip.split(" ").size == 2
+                            p "- two strings, one space"
+                            poly_id = line.strip.split(" ")[0].strip
+                            message = line.strip.split(" ")[1].strip.gsub('"', '').gsub("'", '')
+                        elsif line.strip.split('"').size == 2
+                            p "- two strings wrapped by quotes"
+                            poly_id = line.strip.split('"')[0].strip
+                            message = line.strip.split('"')[1].strip.gsub('"', '')
+                        elsif line.strip.split("'").size == 2
+                            p "- two strings wrapped by apostrophe"
+                            poly_id = line.strip.split("'")[0].strip
+                            message = line.strip.split("'")[1].strip.gsub("'", '')
+                        elsif line.strip.split(" ").size > 1
+                            p " - Too many array items, ignore message"
+                            poly_id = line.strip.split(" ")[0].strip
+                        end
+
+                        p " - - - "
+                        p "poly_id: #{poly_id}"
+                        p "message: #{message}"
 
                         # Get the tile, only should be one
                         tile = Tile.flown.not_shipped.find_by(
-                            poly_id: line.strip, 
+                            poly_id: poly_id, 
                             flight_date: flight_date
                         )
 
+                        p "tile: #{tile}"
+                        p ""
+
                         # If present then push the Tile id to an array
                         if tile.present?
-                            poly_ids << tile.poly_id
+                            # poly_ids << tile.poly_id
+                            rejection_output, history = Rejection.reject_tiles [poly_id], flight_date, history, false, message
+                            # Set the count
+                            output[:count] += rejection_output[:count]
                         end
                     end
                 end
 
                 # Reject the tiles
-                rejection_output, history = Rejection.reject_tiles poly_ids, flight_date, history
+                # rejection_output, history = Rejection.reject_tiles poly_ids, flight_date, history
 
                 # Set the count
-                output[:count] = rejection_output[:count]
+                # output[:count] = rejection_output[:count]
 
                 p "+_+_+_+_+_"
                 p output

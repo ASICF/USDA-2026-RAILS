@@ -164,6 +164,13 @@ export default function Rejection({ token }) {
                   <List.Item>
                     Text file <b>must</b> consist of a Poly ID on separate lines
                   </List.Item>
+                  <List.Item>
+                    Users can add a reason to the text file but it must be wrapped in an apostrphes or quotes
+                    (e.g. "Clouds")
+                  </List.Item>
+                  <List.Item>
+                    If more than one 
+                  </List.Item>
                 </List>
               </Grid.Column>
               <Grid.Column>

@@ -654,6 +654,7 @@ class Footprint < ApplicationRecord
                     FlownBy: record.flown_by_alias,
                     State: record.state_name,
                     County: record.county_name,
+                    GPSTime: record.photo_index.present? ? record.photo_index.gpstime : 'NA',
                     UTM: record.utm_zone,
                 }
 

@@ -138,6 +138,15 @@ export default function EoTracker({ uploads, token }) {
               </Table.HeaderCell>
               <Table.HeaderCell
                 rowSpan="2"
+                sorted={column === "utms" ? direction : null}
+                onClick={() =>
+                  dispatch({ type: "CHANGE_SORT", column: "utms" })
+                }
+              >
+                UTM Zones
+              </Table.HeaderCell>
+              <Table.HeaderCell
+                rowSpan="2"
                 sorted={column === "camera" ? direction : null}
                 onClick={() =>
                   dispatch({ type: "CHANGE_SORT", column: "camera" })
@@ -214,6 +223,7 @@ export default function EoTracker({ uploads, token }) {
                     )}
                   </Table.Cell>
                   <Table.Cell>{record.plane}</Table.Cell>
+                  <Table.Cell>{record.utms}</Table.Cell>
                   <Table.Cell>{record.camera}</Table.Cell>
                   <Table.Cell>{record.footprints_that_need_eos}</Table.Cell>
                   <Table.Cell>{record.footprints_with_eos}</Table.Cell>
@@ -301,7 +311,7 @@ export default function EoTracker({ uploads, token }) {
         .post(`/eo_tracker/generate`, {
           authenticity_token: token,
           upload_id: upload.upload_id,
-          strip_frames: stripFrames,
+          strip_frames: stripFrames.map(item => item.strip_frame),
         })
         .then(({ data }) => {
           console.log("submit response", data);
@@ -417,7 +427,11 @@ export default function EoTracker({ uploads, token }) {
                 </p>
                 <ul>
                   {records.map((item, index) => {
-                    return <li key={index}>{item.poly_id} ({item.project})</li>;
+                    return (
+                      <li key={index}>
+                        {item.poly_id} ({item.project})
+                      </li>
+                    );
                   })}
                 </ul>
               </Fragment>
@@ -431,7 +445,17 @@ export default function EoTracker({ uploads, token }) {
                 </p>
                 <ul>
                   {stripFrames.map((item, index) => {
-                    return <li key={index}>{item}</li>;
+                    return (
+                      <>
+                        <li key={index}>
+                          {item.strip_frame}
+                        </li>
+                        <ul>
+                          <li>GPS TIme: {item.pi_time} </li>
+                          <li>UTM: {item.utm_zone}</li>
+                        </ul>
+                      </>
+                    );
                   })}
                 </ul>
               </Fragment>

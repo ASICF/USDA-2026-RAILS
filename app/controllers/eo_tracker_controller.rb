@@ -5,6 +5,7 @@ class EoTrackerController < ApplicationController
     Upload.includes(:footprints).where(upload_type: "Footprint", footprints: {flight_date_time: nil, associated: true}).order(id: :ASC).each do |upload|
 
       first_footprint = upload.footprints.first
+      utms = upload.footprints.order(:utm_zone).pluck(:utm_zone).uniq.join(", ")
 
       @uploads << {
         upload_id: upload.id,
@@ -18,6 +19,7 @@ class EoTrackerController < ApplicationController
         plane: first_footprint.plane_name,
         flight_date: first_footprint.flight_date,
         total_footprints: upload.footprints.count,
+        utms: utms,
         footprints_with_eos: upload.footprints.where(associated: true).where.not(flight_date_time: nil).count,
         footprints_that_need_eos: upload.footprints.where(associated: true, flight_date_time: nil).count
       }
@@ -41,12 +43,16 @@ class EoTrackerController < ApplicationController
     upload = Upload.includes(footprints: [:tiles]).find_by(id: params["upload_id"])
 
     # iterate the footprints and find tiles that meet the requirements
-    upload.footprints.includes(:tiles).where(associated: true, flight_date_time: nil).each do |fp|
+    upload.footprints.includes(:tiles, :photo_index).where(associated: true, flight_date_time: nil).each do |fp|
       # fp.tiles.flown.not_at_started.where("tiles.flight_date < ?", Time.now - 10.days).each do |tile|
       fp.tiles.flown.each do |tile|
         poly_ids |= [{poly_id: tile.poly_id, project: tile.project}]
       end
-      strip_frames |= [fp.strip_frame]
+      strip_frames |= [{
+          strip_frame: fp.strip_frame, 
+          pi_time: fp.photo_index.present? ? fp.photo_index.gpstime : "NA",
+          utm_zone: fp.utm_zone
+        }]
     end
 
     render json: {

@@ -190,7 +190,76 @@ class Footprint < ApplicationRecord
                         raise Exception, "Camera is not approved for SL Project"
                     end
 
+
+                    shp = Dir.glob("#{path}/original/*.shp")
+
+                    if shp.empty?
+                        raise Exception, "Could not find shapefile to upload"
+                    end
+
+                    # Call ogr2ogr to reproject the shapefile to 4326
+                    # => Footprints should be in 4326, might be overkill but don't want to have to add later
+                    `ogr2ogr -f "ESRI Shapefile" -t_srs EPSG:4326 #{path}/projected/footprints.shp #{shp.first} -dim 2`
+
+                    strip_frames = []
+                    dup_strip_frames = []
+
+                    # Iterate the shapefile and check for duplicates
+                    RGeo::Shapefile::Reader.open("#{path}/projected/footprints.shp") do |file|
+                        # puts "File contains #{file.num_records} records."
+                        # p file
+                        # p "--------------------"
+                        file.each do |record|
+
+                            # default the original strip frame variable to nil
+                            original_strip_frame = nil
+
+                            # Check the attributes for the Name field either proper case or capitialized
+                            if record.attributes["Name"]
+                                original_strip_frame = record.attributes["Name"]
+                            elsif record.attributes["NAME"]
+                                original_strip_frame = record.attributes["NAME"]
+                            else
+                                raise Exception, "No \"Name\" Column found for Strip Frame"
+                            end
+                        
+                            puts "Record number #{original_strip_frame}:"
+
+                            if strip_frames.include? original_strip_frame
+                                dup_strip_frames |= [original_strip_frame]
+                            else
+                                strip_frames << original_strip_frame
+                            end
+
+                        end
+
+                    end
+
+                    # if there are dups then send an email
+                    if dup_strip_frames.count > 0
+                        
+                        response = {
+                            pass: false,
+                            message: "Duplicates were found in the Footprint Import validation process. Please check your email to see a list of Strip Frames to resolve and try again."
+                        }
+
+                        html = "Duplicates found while validating the Footprint Import. Review and remove the following strip frames."
+                        html += "<hr />"
+                        html += '<ul>'
+                        dup_strip_frames.each do |sf|
+                            html += "<li>#{sf}</li>"
+                        end
+                        html += '</ul>'
+
+                        # Log and send email
+                        Mailbox.ship({
+                            users: MailGroup.find_by(name: "Footprints").users | [user],
+                            subject: "#{params[:project]} Footprint Import Duplicates Found",
+                            message: html
+                        })
+                    end
                 end
+
 
             rescue Exception => exception
                 Rails.logger.error "Footprint Import Prep Error: #{exception.message}"
@@ -256,7 +325,7 @@ class Footprint < ApplicationRecord
                     uploader: user
                 )
 
-                shp = Dir.glob("#{path}/original/*.shp")
+                shp = Dir.glob("#{path}/projected/footprints.shp")
 
                 if shp.empty?
                     raise Exception, "Could not find shapefile to upload"
@@ -283,7 +352,7 @@ class Footprint < ApplicationRecord
 
                 # Call ogr2ogr to reproject the shapefile to 4326
                 # => Footprints should be in 4326, might be overkill but don't want to have to add later
-                `ogr2ogr -f "ESRI Shapefile" -t_srs EPSG:4326 #{path}/projected/footprints.shp #{shp.first} -dim 2`
+                # `ogr2ogr -f "ESRI Shapefile" -t_srs EPSG:4326 #{path}/projected/footprints.shp #{shp.first} -dim 2`
 
                 RGeo::Shapefile::Reader.open("#{path}/projected/footprints.shp") do |file|
                     # puts "File contains #{file.num_records} records."

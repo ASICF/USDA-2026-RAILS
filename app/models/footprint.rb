@@ -190,16 +190,9 @@ class Footprint < ApplicationRecord
                         raise Exception, "Camera is not approved for SL Project"
                     end
 
-
-                    shp = Dir.glob("#{path}/original/*.shp")
-
-                    if shp.empty?
-                        raise Exception, "Could not find shapefile to upload"
-                    end
-
                     # Call ogr2ogr to reproject the shapefile to 4326
                     # => Footprints should be in 4326, might be overkill but don't want to have to add later
-                    `ogr2ogr -f "ESRI Shapefile" -t_srs EPSG:4326 #{path}/projected/footprints.shp #{shp.first} -dim 2`
+                    `ogr2ogr -f "ESRI Shapefile" -t_srs EPSG:4326 #{path}/projected/footprints.shp "#{path}/original/#{shapefile_filename}.shp" -dim 2`
 
                     strip_frames = []
                     dup_strip_frames = []

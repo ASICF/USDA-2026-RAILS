@@ -11,6 +11,7 @@ import RenderValue from "../Shared/RenderValue";
 
 export default function ReadyToShip({ states, projects, priorities, token }) {
   const [results, setResults] = useState(false);
+  const [totals, setTotals] = useState(false);
   const [message, setMessage] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -65,6 +66,7 @@ export default function ReadyToShip({ states, projects, priorities, token }) {
         if (data.state) {
           if (data.result.length > 0) {
             setResults(data.result);
+            setTotals(data.totals);
           }
           setLoading(false);
         } else {
@@ -404,7 +406,6 @@ export default function ReadyToShip({ states, projects, priorities, token }) {
                   <Table.Cell>{record.due_date_formatted}</Table.Cell>
                   <Table.Cell>{record.days_til_due}</Table.Cell>
                   <Table.Cell>
-                    {/* ${record.total_amount} */}
                     <RenderValue value={record.total_amount} currency />
                   </Table.Cell>
                   {renderPriority(record.priority, priorities)}
@@ -412,6 +413,24 @@ export default function ReadyToShip({ states, projects, priorities, token }) {
               );
             })}
           </Table.Body>
+          {totals && (
+            <Table.Footer>
+              <Table.Row style={{ fontWeight: "bold" }}>
+                <Table.Cell>{totals.state_count}</Table.Cell>
+                <Table.Cell>{totals.county_count}</Table.Cell>
+                <Table.Cell>{totals.remaining_count}</Table.Cell>
+                <Table.Cell>{totals.at_done_count}</Table.Cell>
+                <Table.Cell>{totals.ortho_proc_count}</Table.Cell>
+                <Table.Cell>{totals.dump_count}</Table.Cell>
+                <Table.Cell>{totals.county_tiles_count}</Table.Cell>
+                <Table.Cell colSpan="3"></Table.Cell>
+                <Table.Cell>
+                  <RenderValue value={totals.contract_total} currency />
+                </Table.Cell>
+                <Table.Cell></Table.Cell>
+              </Table.Row>
+            </Table.Footer>
+          )}
         </Table>
         <br />
         <br />

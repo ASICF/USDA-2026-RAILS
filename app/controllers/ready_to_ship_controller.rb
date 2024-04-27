@@ -31,6 +31,18 @@ class ReadyToShipController < ApplicationController
     else
 
       result = []
+      county_ids = []
+      state_ids =[]
+      totals = {
+        state_count: 0,
+        county_count: 0,
+        remaining_count: 0,
+        at_done_count: 0,
+        ortho_proc_count: 0,
+        dump_count: 0,
+        county_tiles_count: 0,
+        contract_total: 0,
+      }
       current_date = Date.today
       scoped_priority = [0,1,2,3].include?(params[:priority]) ? params[:priority].to_i : "ALL"
 
@@ -68,7 +80,7 @@ class ReadyToShipController < ApplicationController
         # => ALL allows all priorities to render
         next if scoped_priority != "ALL" && scoped_priority != priority
 
-        result << {
+        obj = {
           county_id: county.id,
           name: county.name,
           state: first.state_name,
@@ -83,13 +95,33 @@ class ReadyToShipController < ApplicationController
           ortho_processed: tiles.ortho_processed.count,
           dumped: tiles.dumped.count,
           total_tiles: tiles.count,
-          total_amount: tiles.sum(:total_amount)
+          total_amount: tiles.county_flown.not_shipped.sum(:total_amount)
         }
+
+        # Calculate totals
+        totals[:remaining_count] += obj[:num_tiles]
+        totals[:at_done_count] += obj[:at_done]
+        totals[:ortho_proc_count] += obj[:ortho_processed]
+        totals[:dump_count] += obj[:dumped]
+        totals[:county_tiles_count] += obj[:total_tiles]
+        totals[:contract_total] += obj[:total_amount]
+
+        # push county and state to array if not there already
+        county_ids |= [county.id]
+        state_ids |= [first.state_id]
+
+        result << obj
 
       end
 
+      # county the unique state and counties
+      totals[:county_count] += county_ids.size
+      totals[:state_count] += state_ids.size
+
+
       return render json: {
         result: result.sort{ |a, b| a[:days_til_due] <=> b[:days_til_due] },
+        totals: totals,
         state: true
       }
 

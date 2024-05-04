@@ -114,7 +114,7 @@ export default function FootprintImport({
     }
 
     setMessage({
-      status: "loading",
+      status: "Loading",
       title: "Processing Request",
       text: "Please do not leave or close page until request is finished",
     });

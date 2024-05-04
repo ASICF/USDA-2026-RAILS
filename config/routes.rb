@@ -1,4 +1,5 @@
 Rails.application.routes.draw do
+  get 'raw_tiff_compare/index'
   root 'pages#index'
 
   devise_for :users
@@ -128,6 +129,10 @@ Rails.application.routes.draw do
   # => Tile Dump Compare
   get 'tile_dump_compare/index', to: 'tile_dump_compare#index', as: :tile_dump_compare
   post 'tile_dump_compare/execute', to: 'tile_dump_compare#execute', as: :execute_tile_dump_compare
+
+  # => Raw Tiff Compare
+  get 'raw_tiff_compare', to: 'raw_tiff_compare#index', as: :raw_tiff_compare
+  post 'raw_tiff_compare/execute', to: 'raw_tiff_compare#execute', as: :execute_raw_tiff_compare
 
   # => Tiles WIP
   # get '/tiles_wip', to: 'tiles_wip#index', as: :tiles_wip

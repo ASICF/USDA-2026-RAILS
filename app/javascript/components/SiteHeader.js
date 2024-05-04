@@ -369,6 +369,13 @@ const SiteHeader = (props) => {
                   >
                     Tile Dump Compare
                   </Dropdown.Item>
+                  <Dropdown.Item
+                    as="a"
+                    href={`/raw_tiff_compare`}
+                    data-turbolinks="false"
+                  >
+                    Raw Tiff Compare
+                  </Dropdown.Item>
                 </Dropdown.Menu>
               </Dropdown>
               <Dropdown item text="Delivery">

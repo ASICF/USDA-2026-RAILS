@@ -1472,4 +1472,124 @@ class Footprint < ApplicationRecord
     #     # Tile.find_by(poly_id: "7316449800HF7A0014")
     #     # Tile.find_by(poly_id: "7316440100HDZA0000d")
     # end
+
+    def self.raw_tiff_compare params, user
+
+        output = {
+            pass: false,
+            message: nil,
+            count: 0,
+        }
+
+        project = params[:project]
+        flight_date = Date.parse(params[:flight_date])
+
+        # check if folder directory exists
+        path = Task.build params[:input_directory]
+
+        if !path
+            output[:message] = "Invalid Input Directory: #{params[:input_directory]}"
+            return output
+        end
+
+        result = []
+
+        # Iterate all the tiffs in the immediate directory, do not go recursive
+        Dir.glob("#{path}/*.tif").each do |file|
+            p file
+
+            filename = File.basename(file)
+            filename_without_extension = File.basename(file, '.tif')
+
+            obj = {
+                filename: filename_without_extension,
+                strip_frame: nil,
+                flight_date: flight_date,
+                state_abv: nil,
+                county_name: nil,
+                utm_zone: nil,
+                has_tiles: false,
+                rejected: false,
+                has_fp: false,
+                has_fc: false,
+                has_rfp: false,
+                has_rfc: false,
+                no_sun_angle: nil
+            }
+
+            match = false
+
+            # find the matching footprint
+            fp = Footprint.includes(:frame_center).find_by(strip_frame: filename_without_extension, flight_date: flight_date, project: project)
+
+            if fp.present?
+
+                match = true
+
+                fc = fp.frame_center
+
+                obj[:has_fp] = true
+                obj[:strip_frame] = fp.strip_frame
+                obj[:state_abv] = fp.state_abv
+                obj[:county_name] = fp.county_name
+                obj[:utm_zone] = fp.utm_zone
+                obj[:has_tiles] = fp.associated
+                obj[:has_fc] = fc.present? ? true : false
+                obj[:no_sun_angle] = !fc.sun_angle_error if fc.present?
+            else
+                # check rejected footprints
+                rfp = RejectedFootprint.includes(:rejected_frame_center).find_by(strip_frame: filename_without_extension, flight_date: flight_date, project: project)
+
+                if rfp.present?
+
+                    match = true
+
+                    rfc = rfp.rejected_frame_center
+
+                    obj[:has_rfp] = true
+                    obj[:rejected] = true
+                    obj[:has_tiles] = rfp.associated
+                    obj[:strip_frame] = rfp.strip_frame
+                    obj[:state_abv] = rfp.state_abv
+                    obj[:county_name] = rfp.county_name
+                    obj[:utm_zone] = rfp.utm_zone
+                    obj[:has_rfc] = rfc.present? ? true : false
+                    obj[:no_sun_angle] = !rfc.sun_angle_error if rfc.present?
+                end
+            end
+
+            if !match
+                obj = {
+                    filename: filename_without_extension,
+                    strip_frame: filename_without_extension,
+                    flight_date: flight_date,
+                    state_abv: nil,
+                    county_name: nil,
+                    utm_zone: nil,
+                    associated: nil,
+                    rejected: nil,
+                    has_fp: nil,
+                    has_fc: nil,
+                    has_rfp: nil,
+                    has_rfc: nil,
+                    no_sun_angle: nil
+                }
+            end
+
+            result << obj
+
+        end
+
+        output[:result] = result
+
+        if result.count > 0
+            output[:count] = result.count
+            output[:pass] = true
+        else
+            output[:message] = "No Tiffs found in #{params[:input_directory]}"
+        end
+
+        output
+
+    end
 end

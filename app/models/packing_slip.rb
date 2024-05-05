@@ -2,6 +2,7 @@ class PackingSlip < ApplicationRecord
     include Concerns::Archive
 
     # Associations
+    belongs_to :invoice
     has_many :tiles
     has_many :doqqs
     has_many :rejected_tiles
@@ -279,5 +280,12 @@ class PackingSlip < ApplicationRecord
     #     pp partial
 
     # end
+
+    def self.assign_state
+        PackingSlip.all.each do |ps|
+            tile = ps.tiles.first
+            ps.update(state_id: tile.state_id, state_abv: tile.state_abv)
+        end
+    end
 
 end

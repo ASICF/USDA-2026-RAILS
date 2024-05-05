@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2024_04_11_014359) do
+ActiveRecord::Schema.define(version: 2024_05_05_145615) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -468,6 +468,15 @@ ActiveRecord::Schema.define(version: 2024_04_11_014359) do
     t.index ["user_id"], name: "index_imagery_paths_on_user_id"
   end
 
+  create_table "invoices", force: :cascade do |t|
+    t.string "number", null: false
+    t.date "invoice_date", null: false
+    t.string "project", null: false
+    t.decimal "amount", precision: 18, scale: 9, default: "0.0"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
   create_table "jobs", force: :cascade do |t|
     t.datetime "started_at"
     t.datetime "finished_at"
@@ -527,10 +536,15 @@ ActiveRecord::Schema.define(version: 2024_04_11_014359) do
     t.date "invoiced_date"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "state_abv"
+    t.bigint "state_id"
+    t.bigint "invoice_id"
     t.index ["approved_date"], name: "index_packing_slips_on_approved_date"
+    t.index ["invoice_id"], name: "index_packing_slips_on_invoice_id"
     t.index ["invoiced_date"], name: "index_packing_slips_on_invoiced_date"
     t.index ["name", "project"], name: "index_packing_slips_on_name_and_project", unique: true
     t.index ["shipped_date"], name: "index_packing_slips_on_shipped_date"
+    t.index ["state_id"], name: "index_packing_slips_on_state_id"
   end
 
   create_table "photo_indices", force: :cascade do |t|

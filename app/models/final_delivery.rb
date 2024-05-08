@@ -1059,10 +1059,10 @@ class FinalDelivery < ApplicationRecord
     def self.pass_to_validation
 
         # input_directory, packing_slip, current_user
-        input_directory = "P:\\Vol_2\\_236567_SL\\03_FrameBase\\236567_MN\\Tiles_Dump\\Final_Delivery_20241207_MN"
-        # P:\Vol_2\_236567_SL\03_FrameBase\236567_MN\Tiles_Dump\Final_Delivery_20241207_MN
+        input_directory = "P:\\Vol_3\\24-6567_USDA_SL\\03_FrameBase\\IL\\Tiles_Dump\\Final_Delivery_20240507_IL"
+        # P:\Vol_2\_236567_SL\03_FrameBase\236567_MN\Tiles_Dump\Final_Delivery_20240507_IL
 
-        packing_slip = PackingSlip.find_by(name: "20241207_MN")
+        packing_slip = PackingSlip.find_by(name: "20240507_IL")
 
         current_user = User.admins.first
 
@@ -1081,13 +1081,13 @@ class FinalDelivery < ApplicationRecord
         # - Test run (Boolean)
 
         # Set the Split Folder
-        split_folder = "/vol2/_236567_SL/03_FrameBase/236567_MN/Tiles_Dump/Big_Tiles/"
+        split_folder = "/vol3/24-6567_USDA_SL/03_FrameBase/IL/Tiles_Dump/Big_Tiles/"
 
         # Set the Final Delivery Folder
-        final_delivery_folder = "/vol2/_236567_SL/03_FrameBase/236567_MN/Tiles_Dump/Final_Delivery_20241207_MN/"
+        final_delivery_folder = "/vol3/24-6567_USDA_SL/03_FrameBase/IL/Tiles_Dump/Final_Delivery_20240507_IL/"
 
         # Query the PackingSlip
-        packing_slip = PackingSlip.find_by(name: "20241207_MN")
+        packing_slip = PackingSlip.find_by(name: "20240507_IL")
 
         # Throw error if the packing slip is not found
         raise Exception, "Could not find matching Packing Slip in the app: #{packing_slip.name}" if packing_slip.nil?
@@ -1315,7 +1315,7 @@ class FinalDelivery < ApplicationRecord
 
         p "BUILD TILE INDEX"
 
-        geotag_path = "/vol2/_236567_SL/03_FrameBase/236567_MN/Tiles_Dump/Final_Delivery_20241207_MN/SL/"
+        geotag_path = "/vol3/24-6567_USDA_SL/03_FrameBase/IL/Tiles_Dump/Final_Delivery_20240507_IL/SL/"
 
         # Iterate 
         Dir.glob("#{geotag_path}/*").each do |folder|

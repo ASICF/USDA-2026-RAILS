@@ -35,6 +35,7 @@ export default function InvoiceReport({
   const [selectedMonth, setSelectedMonth] = useState(null);
   const [accordionState, setAccordionState] = useState(false);
   const [results, setResults] = useState(false);
+  const [totals, setTotals] = useState(false);
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -48,7 +49,13 @@ export default function InvoiceReport({
     formState: { errors },
   } = useForm();
 
-  console.log("InvoiceReport", { projects, months, state_totals, results });
+  console.log("InvoiceReport", {
+    projects,
+    months,
+    state_totals,
+    results,
+    totals,
+  });
 
   // Testing
   //   useEffect(() => {
@@ -104,6 +111,7 @@ export default function InvoiceReport({
     console.error("onSubmit", data);
     setSubmitted(true);
     setResults(null);
+    setTotals(null);
     setLoading(true);
 
     axios
@@ -121,6 +129,7 @@ export default function InvoiceReport({
         setSubmitted(false);
         if (response.data.state) {
           setProject(data.project);
+          setTotals(response.data.totals);
           setResults(response.data.result);
         } else {
           setMessage({
@@ -497,98 +506,190 @@ export default function InvoiceReport({
           <Table.Header>
             <Table.Row>
               <Table.HeaderCell>State</Table.HeaderCell>
-              <Table.HeaderCell>County</Table.HeaderCell>
               <Table.HeaderCell>FIPS</Table.HeaderCell>
+              <Table.HeaderCell>County</Table.HeaderCell>
               <Table.HeaderCell>Shipped Easements</Table.HeaderCell>
-              <Table.HeaderCell>Total Easements</Table.HeaderCell>
               <Table.HeaderCell>Shipped Acres</Table.HeaderCell>
-              <Table.HeaderCell>Total Acres</Table.HeaderCell>
-              <Table.HeaderCell>USDA Unit Price</Table.HeaderCell>
               <Table.HeaderCell>Packing Slip</Table.HeaderCell>
-              <Table.HeaderCell>Date Shipped</Table.HeaderCell>
-              {/* <Table.HeaderCell>Acquisition Price</Table.HeaderCell>
-              <Table.HeaderCell>Orthos Price</Table.HeaderCell> */}
-              <Table.HeaderCell>Total Price</Table.HeaderCell>
+              <Table.HeaderCell></Table.HeaderCell>
             </Table.Row>
           </Table.Header>
 
           <Table.Body>
             {Object.keys(results).map((keyName, keyIndex) => {
-              var count = 0;
-              var total_count = 0;
-              var acres = 0;
-              var total_acres = 0;
-              var acquisition_price = 0;
-              var orthos_price = 0;
-              var total_price = 0;
+              // var count = 0;
+              // var total_count = 0;
+              // var acres = 0;
+              // var total_acres = 0;
+              // var acquisition_price = 0;
+              // var orthos_price = 0;
+              // var total_price = 0;
               var list = results[keyName].map((record, index) => {
-                count += record.count;
-                total_count += record.total_count;
-                acres += record.acres;
-                total_acres += record.total_acres;
-                acquisition_price += record.acquisition_price;
-                orthos_price += record.orthos_price;
-                total_price += record.total_price;
+                //   count += record.count;
+                //   total_count += record.total_count;
+                //   acres += record.acres;
+                //   total_acres += record.total_acres;
+                //   acquisition_price += record.acquisition_price;
+                //   orthos_price += record.orthos_price;
+                //   total_price += record.total_price;
 
                 return (
                   <Table.Row key={`${keyIndex}_${index}`}>
                     <Table.Cell>{record.state_name}</Table.Cell>
-                    <Table.Cell>{record.county_name}</Table.Cell>
                     <Table.Cell>{record.fips}</Table.Cell>
+                    <Table.Cell>{record.county_name}</Table.Cell>
                     <Table.Cell>{record.count}</Table.Cell>
-                    <Table.Cell>{record.total_count}</Table.Cell>
                     <Table.Cell>{record.acres.toFixed(6)}</Table.Cell>
-                    <Table.Cell>{record.total_acres.toFixed(6)}</Table.Cell>
-                    <Table.Cell>
-                      $<RenderValue value={record.unit_price} />
-                    </Table.Cell>
                     <Table.Cell>{record.psn_name}</Table.Cell>
-                    <Table.Cell>{record.date_shipped}</Table.Cell>
-                    {/* <Table.Cell>
-                      <RenderValue value={record.acquisition_price} currency />
-                    </Table.Cell>
-                    <Table.Cell>
-                      <RenderValue value={record.orthos_price} currency />
-                    </Table.Cell> */}
-                    <Table.Cell>
-                      <RenderValue value={record.total_price} currency />
-                    </Table.Cell>
+                    <Table.Cell></Table.Cell>
                   </Table.Row>
                 );
               });
 
+              var state_total = totals[keyName];
+              console.warn({ state_total: state_total.total_delivery });
+
+              // Previously Delivered
               list.push(
-                <Table.Row key={`sumary_${keyIndex}`} className="light-gray">
-                  <Table.Cell colSpan={3}>
-                    <b>{`${keyName} Totals`}</b>
+                <Table.Row key={`sumary_${keyIndex}_pd`} className="light-gray">
+                  <Table.Cell>{keyName}</Table.Cell>
+                  <Table.Cell></Table.Cell>
+                  <Table.Cell>
+                    <b>Previously Delivered</b>
                   </Table.Cell>
                   <Table.Cell>
-                    <b>{count}</b>
+                    {state_total.previously_delivered.easements}
                   </Table.Cell>
                   <Table.Cell>
-                    <b>{total_count}</b>
+                    {state_total.previously_delivered.acres === 0
+                      ? "0.0"
+                      : parseFloat(
+                          state_total.previously_delivered.acres
+                        ).toFixed(6)}
                   </Table.Cell>
                   <Table.Cell>
-                    <b>{acres.toFixed(6)}</b>
+                    <b>Price Per Acre</b>
                   </Table.Cell>
                   <Table.Cell>
-                    <b>{total_acres.toFixed(6)}</b>
+                    <b>Total</b>
                   </Table.Cell>
-                  <Table.Cell colSpan={3}></Table.Cell>
-                  {/* <Table.Cell>
+                </Table.Row>
+              );
+
+              // Previously Billed
+              list.push(
+                <Table.Row key={`sumary_${keyIndex}_pb`} className="light-gray">
+                  <Table.Cell>{keyName}</Table.Cell>
+                  <Table.Cell></Table.Cell>
+                  <Table.Cell>
+                    <b>Previously Billed</b>
+                  </Table.Cell>
+                  <Table.Cell>
+                    {state_total.previously_billed.easements}
+                  </Table.Cell>
+                  <Table.Cell>
+                    {state_total.previously_billed.acres === 0
+                      ? "0.0"
+                      : parseFloat(state_total.previously_billed.acres).toFixed(
+                          6
+                        )}
+                  </Table.Cell>
+                  <Table.Cell>
                     <b>
-                      <RenderValue value={acquisition_price} currency />
+                      <RenderValue
+                        value={state_total.previously_delivered.ppa}
+                        currency
+                      />
                     </b>
                   </Table.Cell>
                   <Table.Cell>
                     <b>
-                      <RenderValue value={orthos_price} currency />
+                      <RenderValue
+                        value={state_total.previously_delivered.total}
+                        currency
+                      />
                     </b>
-                  </Table.Cell> */}
+                  </Table.Cell>
+                </Table.Row>
+              );
+
+              // Total Delivery
+              list.push(
+                <Table.Row key={`sumary_${keyIndex}_td`} className="light-gray">
+                  <Table.Cell>{keyName}</Table.Cell>
+                  <Table.Cell></Table.Cell>
                   <Table.Cell>
-                    <b>
-                      <RenderValue value={total_price} currency />
-                    </b>
+                    <b>Total Delivery</b>
+                  </Table.Cell>
+                  <Table.Cell>
+                    {state_total.total_delivery.easements}
+                  </Table.Cell>
+                  <Table.Cell>
+                    {state_total.total_delivery.acres === 0
+                      ? "0.0"
+                      : parseFloat(state_total.total_delivery.acres).toFixed(6)}
+                  </Table.Cell>
+                  <Table.Cell></Table.Cell>
+                  <Table.Cell></Table.Cell>
+                </Table.Row>
+              );
+
+              // Total billing
+              list.push(
+                <Table.Row
+                  key={`sumary_${keyIndex}_totb`}
+                  className="light-gray"
+                >
+                  <Table.Cell>{keyName}</Table.Cell>
+                  <Table.Cell></Table.Cell>
+                  <Table.Cell>
+                    <b>Total Billing</b>
+                  </Table.Cell>
+                  <Table.Cell>{state_total.total_billing.easements}</Table.Cell>
+                  <Table.Cell>
+                    {state_total.total_billing.acres === 0
+                      ? "0.0"
+                      : state_total.total_billing.acres}
+                  </Table.Cell>
+                  <Table.Cell>
+                    <RenderValue
+                      value={state_total.total_billing.ppa}
+                      currency
+                    />
+                  </Table.Cell>
+                  <Table.Cell>
+                    <RenderValue
+                      value={state_total.total_billing.total}
+                      currency
+                    />
+                  </Table.Cell>
+                </Table.Row>
+              );
+
+              // this billing
+              list.push(
+                <Table.Row
+                  key={`sumary_${keyIndex}_thisb`}
+                  className="light-gray"
+                >
+                  <Table.Cell>{keyName}</Table.Cell>
+                  <Table.Cell></Table.Cell>
+                  <Table.Cell>
+                    <b>This Billing</b>
+                  </Table.Cell>
+                  <Table.Cell>{state_total.this_billing.easements}</Table.Cell>
+                  <Table.Cell>{state_total.this_billing.acres}</Table.Cell>
+                  <Table.Cell>
+                    <RenderValue
+                      value={state_total.this_billing.ppa}
+                      currency
+                    />
+                  </Table.Cell>
+                  <Table.Cell>
+                    <RenderValue
+                      value={state_total.this_billing.total}
+                      currency
+                    />
                   </Table.Cell>
                 </Table.Row>
               );

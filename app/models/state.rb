@@ -14,6 +14,7 @@ class State < ApplicationRecord
     has_many :rejected_frame_centers
     has_many :contract_rates
     has_many :contract_awards
+    has_many :packing_slips
 
     # Scopes
     scope :active, -> { where(id: Easement.pluck(:state_id).uniq + Doqq.pluck(:state_id).uniq).order(:name) }

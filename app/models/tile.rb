@@ -2058,4 +2058,23 @@ class Tile < ApplicationRecord
 
     end
 
+    # def self.clear_psn
+
+    #     filenames = ["ortho_GA_15_5443101701L63_20240331", "ortho_VA_15_6633A71101667_20240325", "ortho_TN_15_66474102004SW_20240323", "ortho_WV_15_663D4710011BV_20240325"]
+
+    #     filenames.each do |filename|
+
+    #         tile = Tile.find_by(filename: filename)
+
+    #         tile.update(ship_date: nil)
+
+    #         tile.county.tiles.where.not(id: tile.id).update(
+    #             ortho_proc_date: nil,
+    #             ship_date: nil
+    #         )
+
+    #     end
+
+    # end
+
 end

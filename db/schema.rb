@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2024_05_05_145615) do
+ActiveRecord::Schema.define(version: 2024_05_07_004947) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -89,6 +89,7 @@ ActiveRecord::Schema.define(version: 2024_05_05_145615) do
     t.date "season_start"
     t.date "season_end"
     t.date "season_extension"
+    t.decimal "ppa", precision: 4, scale: 2, default: "0.0"
     t.index ["project"], name: "index_contract_awards_on_project"
     t.index ["project_no"], name: "index_contract_awards_on_project_no"
     t.index ["state_id"], name: "index_contract_awards_on_state_id"
@@ -472,6 +473,7 @@ ActiveRecord::Schema.define(version: 2024_05_05_145615) do
     t.string "number", null: false
     t.date "invoice_date", null: false
     t.string "project", null: false
+    t.integer "acres"
     t.decimal "amount", precision: 18, scale: 9, default: "0.0"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false

@@ -431,39 +431,23 @@ class Invoice < ApplicationRecord
         p "done"
 
     end
+    
+    def export_report
 
+        CSV.open("/media/sf_shared/2024/invoice_#{self.number}.csv", "wb") do |csv|
+            csv << ["state", "county", "fips", "total_numver_of_easements", "number_of_easements_delivered", "date_delivered", "nestid", "packing_slip"]
+
+            ps_ids = packing_slips.pluck(:id)
+
+            Tile.includes(:county).shipped.where(packing_slip_id: ps_ids).order(:state_abv, :county_name).each do |tile|
+                csv << [tile.state_abv, tile.county_name, tile.county.full_fips, tile.county.tiles.count, tile.county.tiles.shipped.count, tile.ship_date.strftime("%m/%d/%Y"), tile.poly_id, tile.packing_slip.name]
+            end
+        end
+
+    end
 
     def self.assign_psns
-
-        # invoice_15167 = ["20240425_IL", "20240425_LA", "20240425_MN", "20240425_OH"]
-
-        # invoice = Invoice.find_or_create_by!(
-        #     number: "all",
-        #     invoice_date: "2024-04-26",
-        #     project: "SL",
-        #     amount: 0.0
-        # )
-
-        # PackingSlip.where(name: invoice_15167).each do |psn|
-        #     psn.update(
-        #         invoice_id: invoice.id
-        #     )
-        # end
-
-        # invoice_15166 = ["20240404_WV", "20240405_TN", "20240405_KY", ]
-
-        # invoice = Invoice.find_or_create_by!(
-        #     number: "15166",
-        #     invoice_date: "2024-04-10",
-        #     project: "SL",
-        #     amount: 0.0
-        # )
-
-        # PackingSlip.where(name: invoice_15166).each do |psn|
-        #     psn.update(
-        #         invoice_id: invoice.id
-        #     )
-        # end
+        ActiveRecord::Base.connection.execute("TRUNCATE invoices RESTART IDENTITY")
 
         invoice_15165 = ["20240329_AL", "20240329_KY", "20240401_IN", "20240401_TN", "20240401_WV", "20240404_WV", "20240405_AL", "20240405_KY", "20240405_NC", "20240405_TN", "20240406_VA", "20240407_LA", "20240408_GA"]
 
@@ -483,6 +467,8 @@ class Invoice < ApplicationRecord
             )
         end
 
+        invoice.calculate_total
+
         invoice = Invoice.find_or_create_by!(
             number: "15167",
             invoice_date: "2024-04-26",
@@ -490,7 +476,7 @@ class Invoice < ApplicationRecord
             amount: 0.0
         )
 
-        PackingSlip.where(name: ["20240425_IL",
+        PackingSlip.where(name: [
             "20240425_IL",
             "20240425_LA",
             "20240425_MN",
@@ -502,6 +488,8 @@ class Invoice < ApplicationRecord
                 state_abv: tile.state_abv
             )
         end
+
+        invoice.calculate_total
 
     end
 

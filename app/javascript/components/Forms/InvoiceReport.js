@@ -167,7 +167,7 @@ export default function InvoiceReport({
   return (
     <div>
       <Breadcrumbs>
-        <Breadcrumb.Section>Inputs</Breadcrumb.Section>
+        <Breadcrumb.Section>Reports</Breadcrumb.Section>
         <Breadcrumb.Divider />
         <Breadcrumb.Section>Invoice</Breadcrumb.Section>
       </Breadcrumbs>

@@ -404,6 +404,13 @@ const SiteHeader = (props) => {
                   </Dropdown.Item>
                   <Dropdown.Item
                     as="a"
+                    href={`/invoice_nestid`}
+                    data-turbolinks="false"
+                  >
+                    Invoice NestID
+                  </Dropdown.Item>
+                  <Dropdown.Item
+                    as="a"
                     href={`/total_delivery`}
                     data-turbolinks="false"
                   >

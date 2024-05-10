@@ -1,0 +1,2 @@
+module InvoiceNestidReportHelper
+end

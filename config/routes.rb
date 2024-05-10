@@ -98,6 +98,11 @@ Rails.application.routes.draw do
   post 'invoice/query', to: 'invoices#query', as: :invoice_query
   get 'invoice/export', to: 'invoices#export', as: :invoice_report_export
 
+  # => Invoice Report
+  get 'invoice_nestid', to: 'invoice_nestid_report#index', as: :invoice_nestid_reports
+  post 'invoice_nestid/query', to: 'invoice_nestid_report#query', as: :invoice_nestid_query
+  get 'invoice_nestid/export', to: 'invoice_nestid_report#export', as: :invoice_nestid_report_export
+
   # => Export Metadata
   get 'vector_metadata', to: 'vector_metadata#index', as: :vector_metadata
   post 'query_vector_metadata', to: 'vector_metadata#query', as: :query_vector_metadata

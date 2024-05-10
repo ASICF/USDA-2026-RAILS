@@ -431,16 +431,54 @@ class Invoice < ApplicationRecord
         p "done"
 
     end
-    
-    def export_report
 
-        CSV.open("/media/sf_shared/2024/invoice_#{self.number}.csv", "wb") do |csv|
-            csv << ["state", "county", "fips", "total_numver_of_easements", "number_of_easements_delivered", "date_delivered", "nestid", "packing_slip"]
+    def nestid_report
+
+        result = []
+
+        ps_ids = packing_slips.pluck(:id)
+
+        Tile.includes(:county).shipped.where(packing_slip_id: ps_ids).order(:state_abv, :county_name).each do |tile|
+
+            result << {
+                state: tile.state_abv,
+                county: tile.county_name,
+                full_fips: tile.county.full_fips,
+                count: tile.county.tiles.count,
+                shipped_count: tile.county.tiles.shipped.count,
+                ship_date: tile.ship_date.strftime("%m/%d/%Y"),
+                poly_id: tile.poly_id
+            }
+        end
+
+        obj = {
+            state: false,
+            message: "Something went wrong",
+            result: []
+        }
+
+        if result.size > 0
+            obj = {
+                state: true,
+                message: "Successfully queried #{result.count} Easements for Invoice #{self.number}",
+                result: result
+            }
+        end
+
+        return obj
+
+    end
+    
+    def nestid_export
+
+        CSV.generate(headers: true) do |csv|
+
+            csv << ["state", "county", "fips", "total_numver_of_easements", "number_of_easements_delivered", "date_delivered", "nestid"]
 
             ps_ids = packing_slips.pluck(:id)
 
             Tile.includes(:county).shipped.where(packing_slip_id: ps_ids).order(:state_abv, :county_name).each do |tile|
-                csv << [tile.state_abv, tile.county_name, tile.county.full_fips, tile.county.tiles.count, tile.county.tiles.shipped.count, tile.ship_date.strftime("%m/%d/%Y"), tile.poly_id, tile.packing_slip.name]
+                csv << [tile.state_abv, tile.county_name, tile.county.full_fips, tile.county.tiles.count, tile.county.tiles.shipped.count, tile.ship_date.strftime("%m/%d/%Y"), tile.poly_id]
             end
         end
 

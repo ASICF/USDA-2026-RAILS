@@ -298,12 +298,15 @@ class FinalDelivery < ApplicationRecord
                 # Set the default final delivery folder to be preproduction
                 psn_folder_name = "Preproduction_Sample_#{Date.today.strftime("%F")}"
 
+                # get the state
+                state = State.find_by(id: params[:state_id])
+
                 # Check if production
                 # => If so then create a packing slip
                 if delivery_type == "Production"
 
                     # Build a new packing slip
-                    psn = PackingSlip.new(name: params[:packing_slip_name], shipped_date: Time.now, project: project)
+                    psn = PackingSlip.new(name: params[:packing_slip_name], shipped_date: Time.now, project: project, state: state)
 
                     # If the packing slip exists then abort
                     # => If not then create a new packing slip
@@ -330,9 +333,6 @@ class FinalDelivery < ApplicationRecord
 
                 # Get the filename
                 # file_name = File.basename(params[:content_file], '.txt')
-
-                # get the state
-                state = State.find_by(id: params[:state_id])
 
                 Tile.where(county_id: params[:counties], state_id: state.id, project: project).each do |tile|
 

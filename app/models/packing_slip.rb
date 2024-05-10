@@ -2,7 +2,7 @@ class PackingSlip < ApplicationRecord
     include Concerns::Archive
 
     # Associations
-    belongs_to :invoice
+    belongs_to :invoice, optional: true
     belongs_to :state
     has_many :tiles
     has_many :doqqs

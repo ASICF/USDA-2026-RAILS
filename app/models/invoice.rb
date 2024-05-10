@@ -473,7 +473,7 @@ class Invoice < ApplicationRecord
 
         CSV.generate(headers: true) do |csv|
 
-            csv << ["state", "county", "fips", "total_numver_of_easements", "number_of_easements_delivered", "date_delivered", "nestid"]
+            csv << ["state", "county", "fips", "total_number_of_easements", "number_of_easements_delivered", "date_delivered", "nestid"]
 
             ps_ids = packing_slips.pluck(:id)
 

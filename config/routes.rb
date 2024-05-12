@@ -262,6 +262,9 @@ Rails.application.routes.draw do
   # -------------------------------------------------------------------
   get 'uploads/:upload_id/download_original', to: 'export#download_upload_original', as: :download_upload_original
 
+  # Invoices
+  resources :invoices
+
   # Map
   # -------------------------------------------------------------------
   post '/map/:poly_id.geojson', to: 'maps#fetch'

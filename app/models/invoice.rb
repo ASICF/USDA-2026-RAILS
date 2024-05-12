@@ -2,9 +2,13 @@ class Invoice < ApplicationRecord
 
     # Validation
     validates :number, :invoice_date, :project, :amount, presence: true
+    validates :number, uniqueness: true
 
     # Associations
     has_many :packing_slips
+
+    # Callbacks
+    # after_create :calculate_total
 
     def self.build project, date_from, date_to, state_id, export=false
         # Invoice.build "SL", "2022-04-01", "2022-05-01"

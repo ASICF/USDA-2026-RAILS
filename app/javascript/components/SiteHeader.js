@@ -155,6 +155,9 @@ const SiteHeader = (props) => {
                 </Dropdown>
               )}
 
+              <Dropdown.Item as="a" href="/invoices" data-turbolinks="false">
+                Invoices
+              </Dropdown.Item>
               <Dropdown.Item as="a" href="/mail_groups" data-turbolinks="false">
                 Mail Groups
               </Dropdown.Item>
@@ -397,10 +400,17 @@ const SiteHeader = (props) => {
                   </Dropdown.Item>
                   <Dropdown.Item
                     as="a"
-                    href={`/invoice`}
+                    href={`/delivery_report`}
                     data-turbolinks="false"
                   >
-                    Invoice
+                    Delivery Report
+                  </Dropdown.Item>
+                  <Dropdown.Item
+                    as="a"
+                    href={`/invoices`}
+                    data-turbolinks="false"
+                  >
+                    Invoices
                   </Dropdown.Item>
                   <Dropdown.Item
                     as="a"

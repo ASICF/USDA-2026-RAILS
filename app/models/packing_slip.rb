@@ -18,6 +18,8 @@ class PackingSlip < ApplicationRecord
     # Scopes
     scope :sl, -> { where(project: "SL") }
     scope :naip, -> { where(project: "NAIP") }
+    scope :invoiced, -> { where.not(invoice_id: nil) }
+    scope :not_invoiced, -> { where(invoice_id: nil) }
 
     def completed
         tiles.count == tiles.usda_accepted.count
@@ -286,7 +288,8 @@ class PackingSlip < ApplicationRecord
         invoice = Invoice.last
         PackingSlip.all.each do |ps|
             tile = ps.tiles.first
-            ps.update!(state_id: tile.state_id, state_abv: tile.state_abv, invoice_id: invoice.id)
+            # ps.update!(state_id: tile.state_id, state_abv: tile.state_abv, invoice_id: invoice.id)
+            ps.update!(state_abv: tile.state_abv)
         end
     end
 

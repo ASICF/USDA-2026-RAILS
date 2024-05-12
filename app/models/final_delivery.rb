@@ -306,7 +306,7 @@ class FinalDelivery < ApplicationRecord
                 if delivery_type == "Production"
 
                     # Build a new packing slip
-                    psn = PackingSlip.new(name: params[:packing_slip_name], shipped_date: Time.now, project: project, state: state)
+                    psn = PackingSlip.new(name: params[:packing_slip_name], shipped_date: Time.now, project: project, state: state, state_abv: state.abv)
 
                     # If the packing slip exists then abort
                     # => If not then create a new packing slip

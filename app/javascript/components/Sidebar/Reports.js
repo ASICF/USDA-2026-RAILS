@@ -70,7 +70,10 @@ function Reports({ setSelected, role }) {
         Packing Slip Worksheets
       </Menu.Item>
       <Menu.Item as="a" href="/invoice">
-        Invoice
+        Delivery Report
+      </Menu.Item>
+      <Menu.Item as="a" href="/invoice_nestid">
+      Invoice NestID
       </Menu.Item>
       <Menu.Item as="a" href="/total_delivery">
         Total Delivery

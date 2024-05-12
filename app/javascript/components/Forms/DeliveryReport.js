@@ -115,7 +115,7 @@ export default function InvoiceReport({
     setLoading(true);
 
     axios
-      .post(`/invoice/query`, {
+      .post(`/delivery_report/query`, {
         authenticity_token: token,
         project: data.project,
         state_id: data.state_id,
@@ -154,7 +154,7 @@ export default function InvoiceReport({
 
   const onExport = (data) => {
     window.open(
-      `/invoice/export?${new URLSearchParams({
+      `/delivery_report/export?${new URLSearchParams({
         project: data.project,
         state_id: data.state_id,
         date_from: moment(data.date_from, "l").format("YYYY-MM-DD"),

@@ -1,0 +1,10 @@
+<% content_for :template, "large-screen" %>
+
+<%= react_component("Forms/DeliveryReport", {
+    projects: @projects, 
+    months: @months,
+    states: @states,
+    state_totals: @state_totals,
+    required_folder: Rails.application.secrets.esri_log_required,
+    token: form_authenticity_token
+}) %>

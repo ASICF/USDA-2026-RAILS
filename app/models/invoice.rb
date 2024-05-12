@@ -87,7 +87,8 @@ class Invoice < ApplicationRecord
         begin
 
             # get the state
-            obj = {project: project, shipped_date: date_from..date_to}
+            # => Exlcude Invoiced Packing Slips
+            obj = {project: project, shipped_date: date_from..date_to, invoice_id: nil}
             obj[:tiles] = {state_id: state.id} if !state.nil?
 
             # Get the packing slips that were shipped during period

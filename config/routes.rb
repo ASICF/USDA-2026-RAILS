@@ -94,9 +94,9 @@ Rails.application.routes.draw do
   post 'weekly_progress_reports/generate', to: 'weekly_progress_reports#generate', as: :generate_weekly_progress_reports
 
   # => Invoice Report
-  get 'invoice', to: 'invoices#index', as: :invoice_reports
-  post 'invoice/query', to: 'invoices#query', as: :invoice_query
-  get 'invoice/export', to: 'invoices#export', as: :invoice_report_export
+  get 'delivery_report', to: 'delivery_report#index', as: :delivery_report_reports
+  post 'delivery_report/query', to: 'delivery_report#query', as: :delivery_report_query
+  get 'delivery_report/export', to: 'delivery_report#export', as: :delivery_report_report_export
 
   # => Invoice Report
   get 'invoice_nestid', to: 'invoice_nestid_report#index', as: :invoice_nestid_reports

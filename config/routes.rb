@@ -263,7 +263,8 @@ Rails.application.routes.draw do
   get 'uploads/:upload_id/download_original', to: 'export#download_upload_original', as: :download_upload_original
 
   # Invoices
-  resources :invoices
+  resources :invoices, except: [:destroy]
+  post '/invoices/:id/destroy', to: 'invoices#destroy', as: :destroy_invoice_path
 
   # Map
   # -------------------------------------------------------------------

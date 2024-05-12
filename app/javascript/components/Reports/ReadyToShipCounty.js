@@ -13,7 +13,7 @@ function ReadyToShipCounty({ meta, tiles, message }) {
         <Breadcrumbs>
           <Breadcrumb.Section>Reports</Breadcrumb.Section>
           <Breadcrumb.Divider />
-          <Breadcrumb.Section link href="/ready_to_ship">
+          <Breadcrumb.Section href="/ready_to_ship">
             Ready to Ship
           </Breadcrumb.Section>
           {meta && meta.state_name && (
@@ -48,7 +48,7 @@ function ReadyToShipCounty({ meta, tiles, message }) {
       <Breadcrumbs>
         <Breadcrumb.Section>Reports</Breadcrumb.Section>
         <Breadcrumb.Divider />
-        <Breadcrumb.Section link href="/ready_to_ship">
+        <Breadcrumb.Section href="/ready_to_ship">
           Ready to Ship
         </Breadcrumb.Section>
         <Breadcrumb.Divider />

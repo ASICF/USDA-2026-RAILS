@@ -32,9 +32,11 @@ const Invoices = ({ invoices }) => {
 
   return (
     <div>
-      <Breadcrumbs style={{marginTop: "15px"}}>
-        <Breadcrumb.Section active>Invoices</Breadcrumb.Section>
-      </Breadcrumbs>
+      <div style={{ marginTop: "15px", display: "inline-block" }}>
+        <Breadcrumbs>
+          <Breadcrumb.Section active>Invoices</Breadcrumb.Section>
+        </Breadcrumbs>
+      </div>
 
       <Button floated="right" primary as="a" href="/invoices/new">
         Create new Invoice

@@ -685,3 +685,7 @@ body::-webkit-scrollbar-thumb {
   background: $dark_gray;
   
   }
+
+.messagebox {
+  display: flex !important;
+}

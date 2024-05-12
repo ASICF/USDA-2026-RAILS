@@ -24,7 +24,7 @@ export default function MessageBox({ status, title, message }) {
   if (status === "Success") {
     return (
       <Transition visible={visible} animation="pulse" duration={1000}>
-        <Message icon success>
+        <Message icon success className="messagebox">
           <Icon name="checkmark" />
           <Message.Content>
             <Message.Header>{title ? title : "Success"}</Message.Header>
@@ -38,7 +38,7 @@ export default function MessageBox({ status, title, message }) {
   if (status === "Error") {
     return (
       <Transition visible={visible} animation="shake" duration={1000}>
-        <Message icon error>
+        <Message icon error className="messagebox">
           <Icon name="remove" />
           <Message.Content>
             <Message.Header>{title ? title : "Error"}</Message.Header>
@@ -51,7 +51,7 @@ export default function MessageBox({ status, title, message }) {
   // Render Loading Message
   if (status === "Loading") {
     return (
-      <Message icon>
+      <Message icon className="messagebox">
         <Icon name="circle notched" loading />
         <Message.Content>
           <Message.Header>{title ? title : "Loading"}</Message.Header>
@@ -64,7 +64,7 @@ export default function MessageBox({ status, title, message }) {
   if (status === "Warning") {
     return (
       <Transition visible={visible} animation="glow" duration={1000}>
-        <Message icon warning>
+        <Message icon warning className="messagebox">
           <Icon name="warning" />
           <Message.Content>
             <Message.Header>{title ? title : "Warning"}</Message.Header>
@@ -77,7 +77,7 @@ export default function MessageBox({ status, title, message }) {
   // Render Info Message
   if (status === "Info") {
     return (
-      <Message icon info>
+      <Message icon info className="messagebox">
         <Icon name="info" />
         <Message.Content>
           <Message.Header>{title ? title : "Info"}</Message.Header>
@@ -88,7 +88,7 @@ export default function MessageBox({ status, title, message }) {
   }
   // render default
   return (
-    <Message>
+    <Message className="messagebox">
       <Message.Header>{title ? title : "Notice"}</Message.Header>
       {renderMesage()}
     </Message>

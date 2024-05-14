@@ -264,7 +264,8 @@ Rails.application.routes.draw do
 
   # Invoices
   resources :invoices, except: [:destroy]
-  post '/invoices/:id/destroy', to: 'invoices#destroy', as: :destroy_invoice_path
+  get 'invoices/:id/export', to: 'invoices#export', as: :invoice_export
+  post '/invoices/:id/destroy', to: 'invoices#destroy', as: :destroy_invoice
 
   # Map
   # -------------------------------------------------------------------

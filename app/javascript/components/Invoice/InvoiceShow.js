@@ -25,13 +25,25 @@ const InvoiceShow = ({ invoice, packing_slips }) => {
   });
   const { column, data: sorted_packing_slips, direction } = state;
 
+  const onNestIDExport = (data) => {
+    console.log({ data });
+    window.open(
+      `/invoice_nestid/export?${new URLSearchParams({
+        invoice_id: invoice.id,
+      }).toString()}`,
+      "_blank"
+    );
+  };
+
+  // const onDeliveryExport = () => {
+  //   window.open(`/invoice/${invoice.id}/export`, "_blank");
+  // };
+
   return (
     <div>
       <div style={{ marginTop: "15px", display: "inline-block" }}>
         <Breadcrumbs>
-          <Breadcrumb.Section href="/invoices">
-            Invoices
-          </Breadcrumb.Section>
+          <Breadcrumb.Section href="/invoices">Invoices</Breadcrumb.Section>
           <Breadcrumb.Divider />
           <Breadcrumb.Section active>{invoice.number}</Breadcrumb.Section>
         </Breadcrumbs>
@@ -44,6 +56,12 @@ const InvoiceShow = ({ invoice, packing_slips }) => {
       >
         Edit
       </Button>
+      <Button floated="right" onClick={() => onNestIDExport()}>
+        Export NestID Report
+      </Button>
+      {/* <Button floated="right" onClick={() => onDeliveryExport()}>
+        Export Delivery Report
+      </Button> */}
       <div style={{ clear: "both" }} />
       <Divider />
 

@@ -2077,4 +2077,19 @@ class Tile < ApplicationRecord
 
     # end
 
+    def self.test
+
+        BufferedTile.all.destroy_all
+
+        Tile.flown.where(state_id: Tile.flown.first.state_id).first(100).each do |tile|
+
+            # sql = "INSERT INTO buffered_tiles (poly_id, filename, geom) values ('#{tile.poly_id}', '#{tile.filename}', (SELECT ST_Buffer(ST_Transform(geom::geometry, 269#{tile.utm_zone[0...2]})::geography, 100, 'quad_segs=8')::geometry from tiles where id=#{tile.id}) )"
+            sql = "INSERT INTO buffered_tiles (poly_id, filename, state_abv, geom) values ('#{tile.poly_id}', '#{tile.filename}', '#{tile.state_abv}', (SELECT ST_Transform(ST_Buffer(ST_Transform(ST_SetSRID(geom::geography, 4326)::geometry, 26917), 100), 4326) FROM tiles where id=#{tile.id}) )"
+
+
+            ActiveRecord::Base.connection.execute(sql)
+        end
+
+    end
+
 end

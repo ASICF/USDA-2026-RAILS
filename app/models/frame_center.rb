@@ -848,6 +848,9 @@ class FrameCenter < ApplicationRecord
         # make the folder in the directory
         FileUtils.mkdir_p(output_path) unless File.directory?(output_path)
 
+        # delete all the buffered tiles for the import
+        BufferedTile.all.destroy_all
+
         # iterate the frame centers
         # FrameCenter.includes(footprint: [:tiles]).
         #     where(project: first.project, flight_date: first.flight_date.all_day, camera_id: first.camera_id, flown_by_id: first.flown_by_id)
@@ -866,6 +869,10 @@ class FrameCenter < ApplicationRecord
 
                 # get the easement of the tile
                 easement = tile.easement
+
+                # insert into buffered tiles
+                sql = "INSERT INTO buffered_tiles (poly_id, filename, geom) values ('#{tile.poly_id}', '#{tile.filename}', (SELECT ST_Transform(ST_Buffer(ST_Transform(ST_SetSRID(geom::geography, 4326)::geometry, 26917), 100), 4326) FROM tiles where id=#{tile.id}) )"
+                ActiveRecord::Base.connection.execute(sql)
 
                 # Create the state object if it doesn't exist
                 obj[:states][easement.state_abv] = {strip_frames: [], zone: [], text: "", rejected: ""} if obj[:states][easement.state_abv].nil?

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2024_05_07_004947) do
+ActiveRecord::Schema.define(version: 2024_05_13_230422) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -48,6 +48,13 @@ ActiveRecord::Schema.define(version: 2024_05_07_004947) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["creator_id"], name: "index_batch_processes_on_creator_id"
+  end
+
+  create_table "buffered_tiles", force: :cascade do |t|
+    t.string "poly_id"
+    t.string "filename"
+    t.string "state_abv"
+    t.geography "geom", limit: {:srid=>4326, :type=>"st_polygon", :geographic=>true}
   end
 
   create_table "cameras", force: :cascade do |t|

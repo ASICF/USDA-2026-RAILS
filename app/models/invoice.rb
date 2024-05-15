@@ -175,31 +175,25 @@ class Invoice < ApplicationRecord
 
                 if project == "SL" || project == "NRI"
                     # csv << ["State", "County", "FIPS", "Easements", "Acres", "USDA Unit Price", "Packing Slip", "Date Shipped", "Acquisition Price", "Orthos Price", "Total Price"]
-                    csv << ["State", "County", "FIPS", "Shipped Easements", "Total Easements", "Shipped Acres", "Total Acres", "USDA Unit Price", "Packing Slip", "Date Shipped", "Total Price"]
+                    csv << ["State", "FIPS", "County", "Shipped Easements", "Shipped Acres", "Packing Slip", ""]
                 else
                     csv << ["State", "FIPS", "DOQQs", "Square Miles", "File Name", "Date Shipped"]
                 end
 
                 response[:result].each do |key, array|
-                    puts "#{key}-----"
+                    p "#{key}-----"
+                    # p array
 
                     array.each do |record|
                         if project == "SL" || project == "NRI"
                             csv << [
                                 record[:state_name],
-                                record[:county_name],
                                 record[:fips],
+                                record[:county_name],
                                 record[:count],
-                                record[:total_count],
                                 record[:acres],
-                                record[:total_acres],
-                                record[:unit_price],
-                                # record[:sub_unit_price],
                                 record[:psn_name],
-                                record[:date_shipped],
-                                # record[:acquisition_price],
-                                # record[:orthos_price],
-                                record[:total_price].round(2),
+                                ""
                             ]
                         else
                             csv << [
@@ -212,6 +206,26 @@ class Invoice < ApplicationRecord
                             ]
                         end
                     end
+
+                    # add the totals
+                    totals = response[:totals][key.to_s]
+
+                    p "------"
+                    pp totals
+                    p "------"
+
+                    prev_delivery = totals[:previously_delivered]
+                    prev_billed = totals[:previously_billed]
+                    total_delivery = totals[:total_delivery]
+                    total_billing = totals[:total_billing]
+                    this_billing = totals[:this_billing]
+
+                    csv << [key, "", "Previously Delivered", prev_delivery[:easements], prev_delivery[:acres], "Price Per Acre", "Total"]
+                    csv << [key, "", "Previously Billed", prev_billed[:easements], prev_billed[:acres], prev_billed[:ppa], prev_billed[:total]]
+                    csv << [key, "", "Total Delivery", total_delivery[:easements], total_delivery[:acres], "", ""]
+                    csv << [key, "", "Total Billing", total_billing[:easements], total_billing[:acres], total_billing[:ppa], total_billing[:total]]
+                    csv << [key, "", "This Billing", this_billing[:easements], this_billing[:acres], this_billing[:ppa], this_billing[:total]]
+
                 end
 
             end               

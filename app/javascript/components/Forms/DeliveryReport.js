@@ -169,7 +169,7 @@ export default function InvoiceReport({
       <Breadcrumbs>
         <Breadcrumb.Section>Reports</Breadcrumb.Section>
         <Breadcrumb.Divider />
-        <Breadcrumb.Section>Invoice</Breadcrumb.Section>
+        <Breadcrumb.Section>Delivery Report</Breadcrumb.Section>
       </Breadcrumbs>
       <Divider />
       {renderMessage()}

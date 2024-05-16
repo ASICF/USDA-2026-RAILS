@@ -35,9 +35,9 @@ const InvoiceShow = ({ invoice, packing_slips }) => {
     );
   };
 
-  // const onDeliveryExport = () => {
-  //   window.open(`/invoice/${invoice.id}/export`, "_blank");
-  // };
+  const onDeliveryExport = () => {
+    window.open(`/invoices/${invoice.id}/export`, "_blank");
+  };
 
   return (
     <div>
@@ -59,9 +59,9 @@ const InvoiceShow = ({ invoice, packing_slips }) => {
       <Button floated="right" onClick={() => onNestIDExport()}>
         Export NestID Report
       </Button>
-      {/* <Button floated="right" onClick={() => onDeliveryExport()}>
+      <Button floated="right" onClick={() => onDeliveryExport()}>
         Export Delivery Report
-      </Button> */}
+      </Button>
       <div style={{ clear: "both" }} />
       <Divider />
 

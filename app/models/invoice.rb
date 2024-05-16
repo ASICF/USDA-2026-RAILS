@@ -10,146 +10,193 @@ class Invoice < ApplicationRecord
     # Callbacks
     # after_create :calculate_total
 
-    # def export
+    def export
+        result = {}
 
-    #     Tile.shipped.where(packing_slip_id: packing_slips.pluck(:id)).order([:state_name, :county_name]).each do |tile|
+        ps_ids = packing_slips.pluck(:id)
 
-    #         # Create the state
-    #         result[tile.state_name.to_sym] = [] if result[tile.state_name.to_sym].nil?
+        Tile.shipped.where(packing_slip_id: packing_slips.pluck(:id)).order([:state_name, :county_name]).each do |tile|
 
-    #         state_array = result[tile.state_name.to_sym]
+            # Create the state
+            result[tile.state_name.to_sym] = [] if result[tile.state_name.to_sym].nil?
 
-    #         # check if the value exists in the array
-    #         match = state_array.find {|a| a[:state_name] == tile.state_name && a[:county_name] == tile.county_name}
+            state_array = result[tile.state_name.to_sym]
 
-    #         # p match
+            # check if the value exists in the array
+            match = state_array.find {|a| a[:state_name] == tile.state_name && a[:county_name] == tile.county_name}
 
-    #         if match
+            # p match
 
-    #             # sub_unit_price = tile.flight_rate.sub_cost.to_f + tile.production_rate.sub_cost.to_f
+            if match
 
-    #             match[:count] += 1
-    #             match[:acres] += tile.easements_acres.to_f
-    #         else
-    #             packing_slip = tile.packing_slip
+                # sub_unit_price = tile.flight_rate.sub_cost.to_f + tile.production_rate.sub_cost.to_f
 
-    #             # sub_unit_price = tile.flight_rate.sub_cost.to_f + tile.production_rate.sub_cost.to_f
+                match[:count] += 1
+                match[:acres] += tile.easements_acres.to_f
+            else
+                packing_slip = tile.packing_slip
 
-    #             state_array << {
-    #                 state_name: tile.state_name,
-    #                 fips: tile.county.full_fips,
-    #                 county_name: tile.county_name,
-    #                 count: 1,
-    #                 acres: tile.easements_acres.to_f,
-    #                 psn_name: "#{packing_slip.name}.pdf",
-    #                 psn_id: packing_slip.id,
-    #                 unit_price: tile.easements_acres.round(2) * tile.contract_award.ppa,
-    #             }
-    #         end
+                # sub_unit_price = tile.flight_rate.sub_cost.to_f + tile.production_rate.sub_cost.to_f
 
-    #     end
+                state_array << {
+                    state_name: tile.state_name,
+                    fips: tile.county.full_fips,
+                    county_name: tile.county_name,
+                    count: 1,
+                    acres: tile.easements_acres.to_f,
+                    psn_name: "#{packing_slip.name}.pdf",
+                    psn_id: packing_slip.id,
+                    unit_price: tile.easements_acres.round(2) * tile.contract_award.ppa,
+                }
+            end
 
-    #     # Calculate the previous delivered
-    #     # state_obj = {packing_slips: {project: project}}
-    #     # state_obj[:id] = state.id if !state.nil?
+        end
 
-    #     state_obj ={tiles: {packing_slip_id: packing_slips.pluck}}
+        # Calculate the previous delivered
+        # state_obj = {packing_slips: {project: project}}
+        # state_obj[:id] = state.id if !state.nil?
 
-    #     totals = {}
+        state_obj ={tiles: {packing_slip_id: ps_ids}}
 
-    #     # get the states and find any packing slips that are not in the current psn_ids
-    #     State.includes(packing_slips: [:tiles]).where(state_obj).each do |state|
+        totals = {}
 
-    #         ppa = state.contract_awards.where(project: project).first.ppa
+        # get the states and find any packing slips that are not in the current psn_ids
+        State.includes(packing_slips: [:tiles]).where(state_obj).each do |state|
 
-    #         obj = {
-    #             previously_delivered: {
-    #                 easements: 0,
-    #                 acres: 0.0
-    #             },
-    #             previously_billed: {
-    #                 easements: 0,
-    #                 acres: 0.0,
-    #                 ppa: ppa,
-    #                 total: 0.0
-    #             },
-    #             total_delivery: {
-    #                 easements: 0,
-    #                 acres: 0.0
-    #             },
-    #             total_billing: {
-    #                 easements: 0,
-    #                 acres: 0.0,
-    #                 ppa: ppa,
-    #                 total: 0.0
-    #             },
-    #             this_billing: {
-    #                 easements: 0,
-    #                 acres: 0.0,
-    #                 ppa: ppa,
-    #                 total: 0.0
-    #             }
-    #         }
+            ppa = state.contract_awards.where(project: project).first.ppa
 
-    #         # Previously delivered
-    #         # => get the packing slips that were delivered for the state before the date_from variable
-    #         # ==> Total, Acres
-    #         state.packing_slips.where(project: project).where("shipped_date < ?", invoice_date).each do |ps|
-    #             obj[:previously_delivered][:easements] += ps.tiles.count
-    #             obj[:previously_delivered][:acres] += ps.tiles.sum(:easements_acres)
-    #         end
+            obj = {
+                previously_delivered: {
+                    easements: 0,
+                    acres: 0.0
+                },
+                previously_billed: {
+                    easements: 0,
+                    acres: 0.0,
+                    ppa: ppa,
+                    total: 0.0
+                },
+                total_delivery: {
+                    easements: 0,
+                    acres: 0.0
+                },
+                total_billing: {
+                    easements: 0,
+                    acres: 0.0,
+                    ppa: ppa,
+                    total: 0.0
+                },
+                this_billing: {
+                    easements: 0,
+                    acres: 0.0,
+                    ppa: ppa,
+                    total: 0.0
+                }
+            }
 
-    #         # Previously billed
-    #         # => get the packing slips that were delivered for the state before the date_from variable that have an invoice
-    #         # ==> Total, Acres, contract amount, total
-    #         invoice_ids = Invoice.where(packing_slips: {state_id: state.id}).where("invoice_date < ?", invoice_date)
-    #         state.packing_slips.includes(:tiles).where(invoice_id: invoice_ids).each do |ps|
-    #             obj[:previously_billed][:easements] += ps.tiles.count
-    #             obj[:previously_billed][:acres] += ps.tiles.sum(:easements_acres)
-    #         end
+            # Previously delivered
+            # => get the packing slips that were delivered for the state before the date_from variable
+            # ==> Total, Acres
+            state.packing_slips.where(project: project).where("shipped_date < ?", invoice_date).each do |ps|
+                obj[:previously_delivered][:easements] += ps.tiles.count
+                obj[:previously_delivered][:acres] += ps.tiles.sum(:easements_acres)
+            end
 
-    #         # calculate the total billed
-    #         obj[:previously_billed][:total] = obj[:previously_billed][:acres].round(0) * ppa
+            # Previously billed
+            # => get the packing slips that were delivered for the state before the date_from variable that have an invoice
+            # ==> Total, Acres, contract amount, total
+            invoice_ids = Invoice.where(packing_slips: {state_id: state.id}).where("invoice_date < ?", invoice_date)
+            state.packing_slips.includes(:tiles).where(invoice_id: invoice_ids).each do |ps|
+                obj[:previously_billed][:easements] += ps.tiles.count
+                obj[:previously_billed][:acres] += ps.tiles.sum(:easements_acres)
+            end
 
-
-    #         # Total Delivery
-    #         # => Sum of all tiles and acres
-    #         obj[:total_delivery][:easements] = state.tiles.shipped.count
-    #         obj[:total_delivery][:acres] = state.tiles.shipped.sum(:easements_acres)
-
-    #         # Total Billing
-    #         # invoices of the state
-    #         # => Rounded Acres, PPA, Total
-    #         tiles = state.tiles.shipped
-    #         obj[:total_billing][:easements] = tiles.count
-    #         obj[:total_billing][:acres] = tiles.sum(:easements_acres).round(0)
-    #         obj[:total_billing][:total] = obj[:total_billing][:acres] * ppa
-
-    #         # This Billing
-    #         # calcualte using the psn_ids
-
-    #         # check if the packing slip
-    #         # tiles = state.tiles.where.not(packing_slip_id: psn_ids)
-    #         tiles = state.tiles.shipped.where(packing_slip_id: psn_ids)
-    #         obj[:this_billing][:easements] = tiles.count
-    #         obj[:this_billing][:acres] = tiles.sum(:easements_acres).round(0)
-    #         obj[:this_billing][:total] = obj[:this_billing][:acres] * ppa
+            # calculate the total billed
+            obj[:previously_billed][:total] = obj[:previously_billed][:acres].round(0) * ppa
 
 
-    #         p " ------------- "
-    #         pp obj
-    #         p " ------------- "
+            # Total Delivery
+            # => Sum of all tiles and acres
+            obj[:total_delivery][:easements] = state.tiles.shipped.count
+            obj[:total_delivery][:acres] = state.tiles.shipped.sum(:easements_acres)
 
-    #         totals[state.name] = obj
+            # Total Billing
+            # invoices of the state
+            # => Rounded Acres, PPA, Total
+            tiles = state.tiles.shipped
+            obj[:total_billing][:easements] = tiles.count
+            obj[:total_billing][:acres] = tiles.sum(:easements_acres).round(0)
+            obj[:total_billing][:total] = obj[:total_billing][:acres] * ppa
 
-    #     end
+            # This Billing
+            # calcualte using the psn_ids
 
-    #     CSV.generate(headers: true) do |csv|
-    #         csv << ["State", "County", "FIPS", "Shipped Easements", "Total Easements", "Shipped Acres", "Total Acres", "USDA Unit Price", "Packing Slip", "Date Shipped", "Total Price"]
+            # check if the packing slip
+            tiles = state.tiles.shipped.where(packing_slip_id: ps_ids)
+            obj[:this_billing][:easements] = tiles.count
+            obj[:this_billing][:acres] = tiles.sum(:easements_acres).round(0)
+            obj[:this_billing][:total] = obj[:this_billing][:acres] * ppa
 
-    #     end
+            # p " ------------- "
+            # pp obj
+            # p " ------------- "
 
-    # end
+            totals[state.name] = obj
+
+        end
+
+        CSV.generate(headers: true) do |csv|
+            csv << ["State", "FIPS", "County", "Shipped Easements", "Shipped Acres", "Packing Slip", ""]
+
+            result.each do |key, array|
+                p "#{key}-----"
+                # p array
+
+                array.each do |record|
+                    if project == "SL" || project == "NRI"
+                        csv << [
+                            record[:state_name],
+                            record[:fips],
+                            record[:county_name],
+                            record[:count],
+                            record[:acres],
+                            record[:psn_name],
+                            ""
+                        ]
+                    else
+                        csv << [
+                            record[:state_name],
+                            record[:fips],
+                            record[:count],
+                            record[:acres],
+                            record[:psn_name],
+                            record[:date_shipped],
+                        ]
+                    end
+                end
+
+                # add the totals
+                # p "------"
+                # pp totals
+                # p "------"
+
+                prev_delivery = totals[key.to_s][:previously_delivered]
+                prev_billed = totals[key.to_s][:previously_billed]
+                total_delivery = totals[key.to_s][:total_delivery]
+                total_billing = totals[key.to_s][:total_billing]
+                this_billing = totals[key.to_s][:this_billing]
+
+                csv << [key, "", "Previously Delivered", prev_delivery[:easements], prev_delivery[:acres], "Price Per Acre", "Total"]
+                csv << [key, "", "Previously Billed", prev_billed[:easements], prev_billed[:acres], prev_billed[:ppa], prev_billed[:total]]
+                csv << [key, "", "Total Delivery", total_delivery[:easements], total_delivery[:acres], "", ""]
+                csv << [key, "", "Total Billing", total_billing[:easements], total_billing[:acres], total_billing[:ppa], total_billing[:total]]
+                csv << [key, "", "This Billing", this_billing[:easements], this_billing[:acres], this_billing[:ppa], this_billing[:total]]
+
+            end
+
+        end
+
+    end
 
     def self.build project, date_from, date_to, state_id, export=false
         # Invoice.build "SL", "2022-04-01", "2022-05-01"
@@ -181,7 +228,7 @@ class Invoice < ApplicationRecord
                 end
 
                 response[:result].each do |key, array|
-                    p "#{key}-----"
+                    # p "#{key}-----"
                     # p array
 
                     array.each do |record|
@@ -210,9 +257,9 @@ class Invoice < ApplicationRecord
                     # add the totals
                     totals = response[:totals][key.to_s]
 
-                    p "------"
-                    pp totals
-                    p "------"
+                    # p "------"
+                    # pp totals
+                    # p "------"
 
                     prev_delivery = totals[:previously_delivered]
                     prev_billed = totals[:previously_billed]

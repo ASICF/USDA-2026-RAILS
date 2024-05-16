@@ -147,7 +147,7 @@ class InvoicesController < ApplicationController
     def export
         invoice = Invoice.find(params[:id])
 
-        send_data invoice.export, filename: "Invoice Report #{invoice.project} (#{Time.now.in_time_zone("Central Time (US & Canada)").strftime('%Y-%m-%d_%H-%M-%S')}).csv" 
+        send_data invoice.export, filename: "Invoice #{invoice.number} Delivery Report #{invoice.project} (#{Time.now.in_time_zone("Central Time (US & Canada)").strftime('%Y-%m-%d_%H-%M-%S')}).csv" 
     end
 
     def destroy

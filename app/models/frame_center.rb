@@ -871,7 +871,7 @@ class FrameCenter < ApplicationRecord
                 easement = tile.easement
 
                 # insert into buffered tiles
-                sql = "INSERT INTO buffered_tiles (poly_id, filename, geom) values ('#{tile.poly_id}', '#{tile.filename}', (SELECT ST_Transform(ST_Buffer(ST_Transform(ST_SetSRID(geom::geography, 4326)::geometry, 26917), 100), 4326) FROM tiles where id=#{tile.id}) )"
+                sql = "INSERT INTO buffered_tiles (poly_id, filename, state_abv, geom) values ('#{tile.poly_id}', '#{tile.filename}', '#{tile.state_abv}', (SELECT ST_Transform(ST_Buffer(ST_Transform(ST_SetSRID(geom::geography, 4326)::geometry, 26917), 100), 4326) FROM tiles where id=#{tile.id}) )"
                 ActiveRecord::Base.connection.execute(sql)
 
                 # Create the state object if it doesn't exist
@@ -962,6 +962,8 @@ class FrameCenter < ApplicationRecord
                 # create file and 
                 # File.open("#{output_path}/#{state}/#{utm}/#{filename}", "w") {|file| file.puts obj[:text] }
                 File.open("#{output_path}/#{filename}", "w") {|file| file.puts obj[:text] }
+
+                BufferedTile.export state, output_path
 
             end
         end

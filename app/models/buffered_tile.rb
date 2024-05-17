@@ -2,6 +2,12 @@ class BufferedTile < ApplicationRecord
 
     def self.export state_abv="GA", output_path="/vol3/bernard_test/2024/SL/buff_tiles_test/"
 
+        p "++++++++++"
+        p "TACO"
+        p state_abv
+        p output_path
+        p "++++++++++"
+
         # Get the folder name by converting the current time to seconds
         folder = Time.now.to_i
 
@@ -12,7 +18,6 @@ class BufferedTile < ApplicationRecord
         FileUtils.mkdir_p("#{path}/json")
         FileUtils.mkdir_p("#{path}/shapefile")
         FileUtils.mkdir_p("#{path}/zipped")
-
 
         # Set the file name
         file_name = "buffered_tiles_#{state_abv}"
@@ -34,6 +39,8 @@ class BufferedTile < ApplicationRecord
 
         end
 
+        p "#{path}/json/#{file_name}.json"
+
         # Creates a text file and saves it to the report directory
         File.open("#{path}/json/#{file_name}.json", "w+") do |f|
             f.puts(RGeo::GeoJSON.encode(factory.feature_collection(features)).to_json)
@@ -42,15 +49,23 @@ class BufferedTile < ApplicationRecord
         # Convert GeoJSON to Shapefile with ogr2ogr
         `ogr2ogr -f "ESRI Shapefile" -fieldTypeToString Date,Time #{path}/shapefile/#{file_name}.shp "#{path}/json/#{file_name}.json"`
 
-        # Zip the files
-        Zip::File.open("#{path}/zipped/#{file_name}.zip", Zip::File::CREATE) do |zipfile|
-            [".shp", ".shx", ".dbf", ".prj"].each do |ext|
-                zipfile.add("#{file_name}#{ext}", File.join("#{path}/shapefile/", "#{file_name}#{ext}"))
-            end
+        [".shp", ".shx", ".dbf", ".prj"].each do |ext|
+            FileUtils.cp("#{path}/shapefile/#{file_name}#{ext}", "#{output_path}/#{file_name}#{ext}")
+
+            # p "#{path}/shapefile/#{file_name}#{ext}"
+            # p "#{output_path}/#{file_name}#{ext}"
+            # p "-----------------"
         end
 
+        # # Zip the files
+        # Zip::File.open("#{path}/zipped/#{file_name}.zip", Zip::File::CREATE) do |zipfile|
+        #     [".shp", ".shx", ".dbf", ".prj"].each do |ext|
+        #         zipfile.add("#{file_name}#{ext}", File.join("#{path}/shapefile/", "#{file_name}#{ext}"))
+        #     end
+        # end
+
         # save to output path
-        FileUtils.cp("#{path}/zipped/#{file_name}.zip", "#{output_path}/#{file_name}.zip")
+        # FileUtils.cp("#{path}/zipped/#{file_name}.zip", "#{output_path}/#{file_name}.zip")
 
     end
 

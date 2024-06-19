@@ -90,6 +90,7 @@ const InvoiceForm = ({
   const handleChange = (e, { name, value }) => {
     if (name === "project") {
       setProject(value);
+      setSelPackingSlips([])
     }
     setValue(name, value);
   };
@@ -217,7 +218,13 @@ const InvoiceForm = ({
   };
 
   const checkAll = (e, { checked }) => {
-    setSelPackingSlips(checked ? packing_slips.map((ps) => ps.id) : []);
+    setSelPackingSlips(
+      checked
+        ? packing_slips
+            .filter((ps) => ps.project === project)
+            .map((ps) => ps.id)
+        : []
+    );
   };
 
   return (

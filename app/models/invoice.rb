@@ -7,8 +7,8 @@ class Invoice < ApplicationRecord
     # Associations
     has_many :packing_slips
 
-    # Callbacks
-    # after_create :calculate_total
+    # Validations
+    validate :check_projects
 
     def export
 
@@ -622,6 +622,20 @@ class Invoice < ApplicationRecord
 
         invoice.calculate_total
 
+    end
+
+    private
+
+    def check_projects
+
+        p "---"
+        p packing_slips
+        p project
+        p "---"
+
+        if packing_slips.where.not(project: project).count > 0
+            errors.add(:title, "multiple Projects found in packing slips, must be NRI or SL")
+        end
     end
 
 end

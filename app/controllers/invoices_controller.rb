@@ -54,35 +54,46 @@ class InvoicesController < ApplicationController
             invoice_date: invoice_params[:invoice_date],
         })
 
-        p "====="
-        pp invoice
+        packing_slips = PackingSlip.not_invoiced.where(id: invoice_params[:packing_slips])
 
-        if invoice.save
-            # update packing slips
-            packing_slips = PackingSlip.not_invoiced.where(id: invoice_params[:packing_slips])
+        # check if the packing slips projects are not the same as the invoice
+        if packing_slips.where.not(project: invoice_params[:project]).count > 0
 
-            if packing_slips.update(invoice_id: invoice.id)
-
-                # build invoice claculation
-                invoice.calculate_total
-
-                render json: {
-                    state: true,
-                    message: "Successfully created Invoice and associated #{packing_slips.size} Packing Slips",
-                    invoice_id: invoice.id
-                }
-            else
-                invoice.destroy
-                render json: {
-                    state: false,
-                    message: "Could not update Packing Slips"
-                }
-            end
-        else
             render json: {
                 state: false,
-                message: invoice.errors.full_messages.to_sentence
+                message: "Selected Packing Slips contain more than one unique project"
             }
+        else
+                
+            p "====="
+            pp invoice
+
+            if invoice.save
+
+                # update packing slips
+                if packing_slips.update(invoice_id: invoice.id)
+
+                    # build invoice claculation
+                    invoice.calculate_total
+
+                    render json: {
+                        state: true,
+                        message: "Successfully created Invoice and associated #{packing_slips.size} Packing Slips",
+                        invoice_id: invoice.id
+                    }
+                else
+                    invoice.destroy
+                    render json: {
+                        state: false,
+                        message: "Could not update Packing Slips"
+                    }
+                end
+            else
+                render json: {
+                    state: false,
+                    message: invoice.errors.full_messages.to_sentence
+                }
+            end
         end
     end
 

@@ -396,8 +396,15 @@ class Footprint < ApplicationRecord
                                 arr[0] = "#{"0" * (4 - arr[0].length)}#{arr[0]}"
                             end
 
+                            # if the frame is greater than 5 digits then return the last 4 digits off 
+                            if arr[1].length > 4
+                                arr[1] = arr[1][-4..-1]
+                            end
+
                             # Buffer the second array with "0" to be 4 digits
-                            arr[1] = "#{"0" * (4 - arr[1].length)}#{arr[1]}"
+                            if arr[1].length < 4 
+                                arr[1] = "#{"0" * (4 - arr[1].length)}#{arr[1]}"
+                            end
 
                             # Join with an underscore
                             modified_strip_frame = arr.join("_")

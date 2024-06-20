@@ -261,7 +261,19 @@ class PhotoIndex < ApplicationRecord
                             strip_frame = strip
                         else
                             strip = "#{"0" * (4 - arr[2].to_s.length)}#{arr[2]}"
-                            frame = "#{"0" * (4 - arr[3].to_s.length)}#{arr[3]}"
+                            frame = arr[3]
+
+                            # if the frame is greater than 5 digits then return the last 4 digits off 
+                            if frame.length > 4
+                                frame = frame[-4..-1]
+                            end
+
+                            if frame.length < 4
+                                # Buffer the second array with "0" to be 4 digits
+                                frame = "#{"0" * (4 - frame.length)}#{frame}"
+                            end
+
+                            # frame = "#{"0" * (4 - arr[3].to_s.length)}#{arr[3]}"
                             strip_frame = "#{strip}_#{frame}"
                         end
                         latitude = arr[6].to_f.round(6)

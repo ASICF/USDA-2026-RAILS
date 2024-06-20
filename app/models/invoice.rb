@@ -8,7 +8,7 @@ class Invoice < ApplicationRecord
     has_many :packing_slips
 
     # Validations
-    validate :check_projects
+    # validate :check_projects
 
     def export
 
@@ -519,6 +519,11 @@ class Invoice < ApplicationRecord
             amount += obj[:this_billing][:total]
         end
 
+        # pp result
+        # p "-------"
+        # p amount
+        # p acres
+
         self.update(amount: amount, acres: acres)
 
         p "done"
@@ -626,16 +631,16 @@ class Invoice < ApplicationRecord
 
     private
 
-    def check_projects
+    # def check_projects
 
-        p "---"
-        p packing_slips
-        p project
-        p "---"
+    #     p "---"
+    #     p packing_slips
+    #     p project
+    #     p "---"
 
-        if packing_slips.where.not(project: project).count > 0
-            errors.add(:title, "multiple Projects found in packing slips, must be NRI or SL")
-        end
-    end
+    #     if packing_slips.where.not(project: project).count > 0
+    #         errors.add(:title, "multiple Projects found in packing slips, must be NRI or SL")
+    #     end
+    # end
 
 end

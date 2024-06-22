@@ -1071,19 +1071,42 @@ class FrameCenter < ApplicationRecord
                 p "==========="
                 p "footprint_ids: #{footprint_ids}"
                 p "==========="
-
+                
                 DissolvedFootprint.find_or_create_by(name: "frame_centers").update(geom: nil)
 
-                # Dissolve all the footprints 
-                sql = "UPDATE dissolved_footprints SET geom = (SELECT ST_Multi(st_union(ST_Multi(geom::geometry))) AS the_geom from footprints where ST_IsValid(geom::geometry)
-                    AND footprints.id IN (#{footprint_ids.uniq.join(", ")}) ) WHERE name='frame_centers'"
-                ActiveRecord::Base.connection.execute(sql)
+                # check if the footprints exist and if not then query the easements covered by the rejected footprints
+                if footprint_ids.size == 0
 
-                # select out easements that aren't contained within the dissolved layer
-                easements = Easement.flown.includes(:tiles).joins("INNER JOIN dissolved_footprints ON dissolved_footprints.name='frame_centers' 
-                    AND not st_contains(dissolved_footprints.geom::geometry, easements.geom::geometry)").where(
-                        project: project, flight_date: flight_date, tiles: {camera: camera, flown_by: flown_by}
-                    )
+                    p "--------------"
+                    p "No Footprints, dissolve rejected footprints instead"
+                    p "Rejected Footprint ID: #{history.rejected_footprints.pluck(:id).uniq.join(", ")}"
+                    p "--------------"
+
+                    # Dissolve all the rejected footprints 
+                    sql = "UPDATE dissolved_footprints SET geom = (SELECT ST_Multi(st_union(ST_Multi(geom::geometry))) AS the_geom from rejected_footprints where ST_IsValid(geom::geometry)
+                        AND rejected_footprints.id IN (#{history.rejected_footprints.pluck(:id).uniq.join(", ")}) ) WHERE name='frame_centers'"
+                    ActiveRecord::Base.connection.execute(sql)
+
+                    # select out easements that ARE contained within the dissolved layer
+                    easements = Easement.flown.includes(:tiles).joins("INNER JOIN dissolved_footprints ON dissolved_footprints.name='frame_centers' 
+                        AND st_contains(dissolved_footprints.geom::geometry, easements.geom::geometry)").where(
+                            project: project, flight_date: flight_date, tiles: {camera: camera, flown_by: flown_by}
+                        )
+
+                else
+
+                    # Dissolve all the footprints 
+                    sql = "UPDATE dissolved_footprints SET geom = (SELECT ST_Multi(st_union(ST_Multi(geom::geometry))) AS the_geom from footprints where ST_IsValid(geom::geometry)
+                        AND footprints.id IN (#{footprint_ids.uniq.join(", ")}) ) WHERE name='frame_centers'"
+                    ActiveRecord::Base.connection.execute(sql)
+
+                    # select out easements that ARE NOT contained within the dissolved layer
+                    easements = Easement.flown.includes(:tiles).joins("INNER JOIN dissolved_footprints ON dissolved_footprints.name='frame_centers' 
+                        AND not st_contains(dissolved_footprints.geom::geometry, easements.geom::geometry)").where(
+                            project: project, flight_date: flight_date, tiles: {camera: camera, flown_by: flown_by}
+                        )
+
+                end
 
                 p "-----------"
                 p "EASEMENTS: #{easements.count}"

@@ -437,6 +437,7 @@ class PhotoIndex < ApplicationRecord
                 p "_________"
                 p upload.photo_indices.count
                 p upload.photo_indices.approved.count
+                p upload.photo_indices.rejected.count
                 p "_________"
 
                 # check if there were any 
@@ -798,15 +799,22 @@ class PhotoIndex < ApplicationRecord
 
                 footprints.each do |footprint|
 
+                    p "Reject Footprint: #{footprint.strip_frame}"
+
                     # Check the footprint is SL only
                     if footprint.project == "NAIP"
-                        raise Exception, "Footprint: #{footprint.id} is marked as NAIP, not SL. Cannot reject" 
+                        raise Exception, "Footprint: #{footprint.id} is marked as NAIP, not NRI/SL. Cannot reject" 
                     end
 
                     frame_center = footprint.frame_center
 
                     # Reject the Footprint and return the new rejected_footprint
                     rejected_footprint = RejectedFootprint.reject footprint, message
+
+                    p "-----------"
+                    p "Rejected Footprint"
+                    p rejected_footprint
+                    p "-----------"
 
                     if !rejected_footprint
                         raise Exception, "Footprint: #{footprint.id} could not be rejected!"
@@ -869,16 +877,40 @@ class PhotoIndex < ApplicationRecord
 
                 DissolvedFootprint.find_or_create_by(name: "photo_indices").update(geom: nil)
 
-                # Dissolve all the footprints 
-                sql = "UPDATE dissolved_footprints SET geom = (SELECT ST_Multi(st_union(ST_Multi(geom::geometry))) AS the_geom from footprints where ST_IsValid(geom::geometry)
-                    AND footprints.id IN (#{footprint_ids.uniq.join(", ")}) ) WHERE name='photo_indices'"
-                ActiveRecord::Base.connection.execute(sql)
+                # check if the footprints exist and if not then query the easements covered by the rejected footprints
+                if footprint_ids.size == 0
 
-                # select out easements that aren't contained within the dissolved layer
-                easements = Easement.flown.includes(:tiles).joins("INNER JOIN dissolved_footprints ON dissolved_footprints.name='photo_indices' 
-                    AND not st_contains(dissolved_footprints.geom::geometry, easements.geom::geometry)").where(
-                        project: project, flight_date: flight_date, tiles: {camera: camera, flown_by: flown_by}
-                    )
+                    p "--------------"
+                    p "No Footprints, dissolve rejected footprints instead"
+                    p "Rejected Footprint ID: #{history.rejected_footprints.pluck(:id).uniq.join(", ")}"
+                    p "--------------"
+
+                    # Dissolve all the rejected footprints 
+                    sql = "UPDATE dissolved_footprints SET geom = (SELECT ST_Multi(st_union(ST_Multi(geom::geometry))) AS the_geom from rejected_footprints where ST_IsValid(geom::geometry)
+                        AND rejected_footprints.id IN (#{history.rejected_footprints.pluck(:id).uniq.join(", ")}) ) WHERE name='photo_indices'"
+                    ActiveRecord::Base.connection.execute(sql)
+
+                    # select out easements that ARE contained within the dissolved layer
+                    easements = Easement.flown.includes(:tiles).joins("INNER JOIN dissolved_footprints ON dissolved_footprints.name='photo_indices' 
+                        AND st_contains(dissolved_footprints.geom::geometry, easements.geom::geometry)").where(
+                            project: project, flight_date: flight_date, tiles: {camera: camera, flown_by: flown_by}
+                        )
+
+                else
+
+                    # Dissolve all the footprints 
+                    sql = "UPDATE dissolved_footprints SET geom = (SELECT ST_Multi(st_union(ST_Multi(geom::geometry))) AS the_geom from footprints where ST_IsValid(geom::geometry)
+                        AND footprints.id IN (#{footprint_ids.uniq.join(", ")}) ) WHERE name='photo_indices'"
+                    ActiveRecord::Base.connection.execute(sql)
+
+                    # select out easements that ARE NOT contained within the dissolved layer
+                    easements = Easement.flown.includes(:tiles).joins("INNER JOIN dissolved_footprints ON dissolved_footprints.name='photo_indices' 
+                        AND not st_contains(dissolved_footprints.geom::geometry, easements.geom::geometry)").where(
+                            project: project, flight_date: flight_date, tiles: {camera: camera, flown_by: flown_by}
+                        )
+
+
+                end
 
                 p "-----------"
                 p "EASEMENTS: #{easements.count}"

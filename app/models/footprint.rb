@@ -1644,4 +1644,27 @@ class Footprint < ApplicationRecord
 
         pp poly_ids
     end
+
+    def self.find_and_remove_invalid_associations
+        result = []
+
+        # iterate all flown tiles
+        Tile.flown.each do |tile|
+
+            # check if the associated tiles do not match the same flight date and if so then disassociate
+            tile.footprints.where.not(flight_date: tile.flight_date).each do |fp|
+
+                result << {fp: fp.id, fp_fd: fp.flight_date, tile: tile.id, tile_fd: tile.flight_date, state: tile.state_abv} 
+
+                fp.update(notes: "mismatch")
+                tile.update(notes: "mismatch")
+
+                # TileFootprint.find_by(tile_id: tile.id, footprint_id: fp.id).destroy
+            end
+
+        end
+
+        p result.size
+        pp result
+    end
 end

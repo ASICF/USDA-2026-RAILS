@@ -446,7 +446,7 @@ class FinalDelivery < ApplicationRecord
                     FinalDelivery.build_gtf gtf_file, filename_without_extension, tile.utm.zone, tile.poly_id
 
                     # Update the Tiff tags and copy to the county folder
-                    geotif_response = system("geotifcp -g '#{gtf_file}' '#{path}/#{filename}' '#{county_path}/#{filename}'")
+                    geotif_response = system("geotifcp -8 -g '#{gtf_file}' '#{path}/#{filename}' '#{county_path}/#{filename}'")
 
                     # Copy the tfw file
                     FileUtils.cp("#{path}/#{filename_without_extension}.tfw", "#{county_path}/#{filename_without_extension}.tfw")
@@ -1276,7 +1276,7 @@ class FinalDelivery < ApplicationRecord
             FinalDelivery.build_gtf gtf_file, filename_without_extension, tile.utm.zone, final_poly_id
 
             # Update the Tiff tags and copy to the county folder
-            geotif_response = system("geotifcp -g '#{gtf_file}' '#{original_path}/#{county_fips}/#{filename_without_extension}.tif' '#{to_move_path}/#{county_fips}/#{filename_without_extension}.tif'")
+            geotif_response = system("geotifcp -8 -g '#{gtf_file}' '#{original_path}/#{county_fips}/#{filename_without_extension}.tif' '#{to_move_path}/#{county_fips}/#{filename_without_extension}.tif'")
 
             FileUtils.cp("#{original_path}/#{county_fips}/#{filename_without_extension}.tfw", "#{to_move_path}/#{county_fips}/#{filename_without_extension}.tfw")
             FileUtils.cp("#{original_path}/#{county_fips}/#{filename_without_extension}.xml", "#{to_move_path}/#{county_fips}/#{filename_without_extension}.xml")

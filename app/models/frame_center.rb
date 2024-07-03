@@ -239,6 +239,7 @@ class FrameCenter < ApplicationRecord
                 wrong_utm = 0
                 skip_lines = 0
                 free_shot = 0
+                photo_index_skip = 0
 
                 p "FILE OPEN"
                 p "^*^*^*^*^*^*^*^*^*^*^"
@@ -305,6 +306,8 @@ class FrameCenter < ApplicationRecord
                             # check if the strip frame is set or not
                             if arr.size == 10
 
+                                p "PHOTO INDEX CHECK"
+
                                 gpstime = arr[1].to_f
                                 latitude = arr[8].to_f
                                 longitude = arr[9].to_f
@@ -325,15 +328,19 @@ class FrameCenter < ApplicationRecord
                                     AND photo_indices.flight_date = '#{params[:flight_date]}' AND photo_indices.flown_by_id = '#{company.id}' #{project == "NAIP" ? " AND project_state_id=#{state.id} " : ""}
                                     AND FLOOR(photo_indices.latitude) = #{latitude.floor} AND FLOOR(photo_indices.longitude) = '#{longitude.floor}'")
 
+                                p "====================="
                                 p "GPSTime: #{gpstime.to_f}"
                                 p "GPSTime Rounded: #{gpstime.to_f.floor}"
                                 p "Latitude: #{latitude.floor}"
                                 p "longitude: #{longitude.floor}"
                                 p "COUNT: #{photo_index.count}"
+                                p "====================="
 
                                 # Check if the photo index is equal to zero or greater than one and if so then abort and rollback
                                 if photo_index.count == 0
                                     raise Exception, "No Photo Index found that matched Line #{index + 1}"
+                                    # photo_index_skip += 1
+                                    # next
                                 elsif photo_index.count > 1
                                     raise Exception, "More than one Photo Index found for Line #{index + 1}"
                                 else
@@ -423,8 +430,6 @@ class FrameCenter < ApplicationRecord
                                 next
                                 # raise Exception, "Frame Center #{obj[:strip_frame]} is contained within Zone #{utm.zone}N outside of Zone #{utm_zone.zone}N as specified in the filename"
                             end
-
-                            p "Test"
 
                             # Create the record
                             fc = FrameCenter.new(obj)
@@ -556,7 +561,7 @@ class FrameCenter < ApplicationRecord
                 #     raise Exception, "No Frame Centers were created, check to make sure valid project is selected."
                 # end
 
-                if total > 0
+                if upload.frame_centers.count > 0
 
                     upload.number_uploaded = upload.frame_centers.count + upload.rejected_frame_centers.count
                     upload.save
@@ -652,6 +657,7 @@ class FrameCenter < ApplicationRecord
                     rejected_footprints_message = ""
                     skipped_message = ""
                     free_shot_message = ""
+                    skipped_photo_index_message = ""
 
                     p "---------"
                     p "sun_angle_rejections: #{sun_angle_rejections.to_s}"
@@ -659,6 +665,7 @@ class FrameCenter < ApplicationRecord
                     p "duplicate: #{duplicate.to_s}"
                     p "skipped: #{skipped.to_s}"
                     p "free_shot: #{free_shot.to_s}"
+                    p "skipped photo index: #{photo_index_skip.to_s}"
                     p "---------"
 
                     # check sun angle rejection count
@@ -676,8 +683,14 @@ class FrameCenter < ApplicationRecord
                     # check the free shot counts
                     free_shot_message = ", #{free_shot.to_s} were skipped due because they were Free Shots" if free_shot > 0
 
+                    # check the free shot counts
+                    skipped_photo_index_message = ", #{photo_index_skip.to_s} were skipped due because they could not match a Photo Index" if photo_index_skip > 0
+
+                    # group all the error messages
+                    error_message = sun_angle_rejection_message + rejected_footprints_message + duplicate_message + skipped_message + skipped_photo_index_message + free_shot_message
+
                     # assemble the final message
-                    message = message + sun_angle_rejection_message + rejected_footprints_message + duplicate_message + skipped_message + free_shot_message + ") for #{project} from \"#{params[:file].original_filename}\"."
+                    message = message + error_message + ") for #{project} from \"#{params[:file].original_filename}\"."
 
                     # ByPass Eo Splitter tool if no valid frame centers
                     if project == "NRI/SL" && upload.frame_centers.count > 0

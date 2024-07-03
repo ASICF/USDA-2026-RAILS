@@ -878,10 +878,10 @@ class Tile < ApplicationRecord
 
                     # Get the extents
                     # => Couldn't get RGEO working so going direct
-                    sql = "SELECT ST_XMin(ST_Transform(geom::geometry, 269#{tile.utm.zone})) as x_min, 
-                                  ST_XMax(ST_Transform(geom::geometry, 269#{tile.utm.zone})) as x_max, 
-                                  ST_YMin(ST_Transform(geom::geometry, 269#{tile.utm.zone})) as y_min, 
-                                  ST_YMax(ST_Transform(geom::geometry, 269#{tile.utm.zone})) as y_max FROM tiles where id = #{tile.id}"
+                    sql = "SELECT ST_XMin(ST_Transform(geom::geometry, 269#{tile.utm.zone.to_s.rjust(2, '0')})) as x_min, 
+                                  ST_XMax(ST_Transform(geom::geometry, 269#{tile.utm.zone.to_s.rjust(2, '0')})) as x_max, 
+                                  ST_YMin(ST_Transform(geom::geometry, 269#{tile.utm.zone.to_s.rjust(2, '0')})) as y_min, 
+                                  ST_YMax(ST_Transform(geom::geometry, 269#{tile.utm.zone.to_s.rjust(2, '0')})) as y_max FROM tiles where id = #{tile.id}"
 
                     result = ActiveRecord::Base.connection.execute(sql)
 

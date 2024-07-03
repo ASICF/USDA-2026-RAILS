@@ -151,7 +151,7 @@ class FinalDelivery < ApplicationRecord
                 end
 
                 # Check if the packing slip doesn't exist already
-                psn = PackingSlip.find_by(name: params[:packing_slip_name])
+                psn = PackingSlip.find_by(name: params[:packing_slip_name], project: project)
                 raise Exception, "Packing Slip already exists" if psn.present?
 
                 # Check the delivery type
@@ -1059,10 +1059,10 @@ class FinalDelivery < ApplicationRecord
     def self.pass_to_validation
 
         # input_directory, packing_slip, current_user
-        input_directory = "P:\\Vol_3\\24-6567_USDA_SL\\03_FrameBase\\PA\\Tiles_Dump\\Final_Delivery_20240620_PA"
-        # P:\Vol_3\24-6567_USDA_SL\03_FrameBase\PA\Tiles_Dump\Final_Delivery_20240620_PA
+        input_directory = "P:\\Vol_3\\24-6567_USDA_SL\\03_FrameBase\\WI\\Tiles_Dump\\Final_Delivery_20240702_WI"
+        # P:\Vol_3\24-6567_USDA_SL\03_FrameBase\WI\Tiles_Dump\Final_Delivery_20240702_WI
 
-        packing_slip = PackingSlip.find_by(name: "20240620_PA")
+        packing_slip = PackingSlip.find_by(name: "20240702_WI")
 
         current_user = User.admins.first
 
@@ -1081,13 +1081,13 @@ class FinalDelivery < ApplicationRecord
         # - Test run (Boolean)
 
         # Set the Split Folder
-        split_folder = "/vol3/24-6567_USDA_SL/03_FrameBase/PA/Tiles_Dump/Big_Tiles/"
+        split_folder = "/vol3/24-6567_USDA_SL/03_FrameBase/WI/Tiles_Dump/Big_Tiles/"
 
         # Set the Final Delivery Folder
-        final_delivery_folder = "/vol3/24-6567_USDA_SL/03_FrameBase/PA/Tiles_Dump/Final_Delivery_20240620_PA/"
+        final_delivery_folder = "/vol3/24-6567_USDA_SL/03_FrameBase/WI/Tiles_Dump/Final_Delivery_20240702_WI/"
 
         # Query the PackingSlip
-        packing_slip = PackingSlip.find_by(name: "20240620_PA")
+        packing_slip = PackingSlip.find_by(name: "20240702_WI")
 
         # Throw error if the packing slip is not found
         raise Exception, "Could not find matching Packing Slip in the app: #{packing_slip.name}" if packing_slip.nil?
@@ -1315,7 +1315,7 @@ class FinalDelivery < ApplicationRecord
 
         p "BUILD TILE INDEX"
 
-        geotag_path = "/vol3/24-6567_USDA_SL/03_FrameBase/PA/Tiles_Dump/Final_Delivery_20240620_PA/SL/"
+        geotag_path = "/vol3/24-6567_USDA_SL/03_FrameBase/WI/Tiles_Dump/Final_Delivery_20240702_WI/SL/"
 
         # Iterate 
         Dir.glob("#{geotag_path}/*").each do |folder|
@@ -1330,7 +1330,7 @@ class FinalDelivery < ApplicationRecord
 
             Dir.glob("#{geotag_path}/#{state_abv}/*").each do |county_folder|
 
-            # ["/vol2/226567_14_SL_NY/04_TilesDump/Final_Delivery_20221130_NY/SL/PA/36051/"].each do |county_folder|
+            # ["/vol2/226567_14_SL_NY/04_TilesDump/Final_Delivery_20221130_NY/SL/WI/36051/"].each do |county_folder|
 
                 county_fips = Pathname(county_folder).each_filename.to_a[-1]
 
@@ -1462,8 +1462,13 @@ class FinalDelivery < ApplicationRecord
         gtf_text = File.read(gtf_file)
 
         # Get the GT Citation Match and value to replace
-        gt_citation_match = 'GTCitationGeoKey (Ascii,33): "PCS Name = NAD_1983_UTM_Zone_'+utm.to_s+'N"'
+        gt_citation_string = 'PCS Name = NAD_1983_UTM_Zone_'+utm.to_s+'N'
+        gt_citation_match = 'GTCitationGeoKey (Ascii,'+(gt_citation_string.size + 1).to_s+'): "'+gt_citation_string+'"'
         gt_citation_replace = 'GTCitationGeoKey (Ascii,'+(filename.size + 1).to_s+'): "'+filename+'"'
+
+        p "====="
+        p gt_citation_match
+        p "====="
 
         # Match based on Zones
         if utm == 10                                      

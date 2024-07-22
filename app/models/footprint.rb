@@ -1603,40 +1603,36 @@ class Footprint < ApplicationRecord
 
     def self.find_and_update
 
-        # # 6/6 - 6/7
-        # strip_frames = ["0074_3203","0074_3204","0074_3205","0074_3206","0074_3207","0071_3200","0071_3201","0071_3202","0065_3196","0065_3197","0065_3198","0065_3199","0064_3188","0064_3189","0064_3190","0064_3191","0064_3192","0064_3193","0064_3194","0064_3195","0061_3175","0061_3176","0061_3177","0061_3178","0057_3159","0057_3160","0057_3161","0057_3162","0058_3163","0058_3164","0058_3165","0058_3166","0058_3167","0058_3168","0058_3169","0058_3170","0063_3183","0063_3184","0063_3185","0063_3186","0063_3187","0062_3179","0062_3180","0062_3181","0062_3182","0060_3171","0060_3172","0060_3173","0060_3174"]
-        # old_date = "2024-06-06"
-        # new_date = "2024-06-07"
-        # alter_poly_ids = ["15001_120401B", "15001_130402B", "15001_130403B", "15001_140401B", "15001_140402B", "15001_140402R", "15001_140403R", "15001_140404B", "15001_150304R", "15001_160303O"]
-
-        # 6/15 - 6/16
-        strip_frames = ["0237_3558", "0237_3559", "0237_3560", "0237_3561", "0237_3562", "0237_3563", "0237_3564", "0237_3565"]
-        old_date = "2024-06-15"
-        new_date = "2024-06-16"
-        alter_poly_ids = ["15009_060501Y", "15009_060502Y"]
-
-        ######## # 6/19 - 6/20
-        ######## strip_frames = ["0188_3653","0188_3654","0188_3655","0188_3656","0189_3649","0189_3650","0189_3651","0189_3652","0176_3657","0176_3658","0176_3659","0176_3660","0174_3665","0174_3666","0174_3667","0174_3668","0172_3645","0172_3646","0172_3647","0172_3648","0164_3669","0164_3670","0164_3671","0164_3672","0177_3661","0177_3662","0177_3663","0177_3664"]
-        ######## old_date = "2024-06-19"
-        ######## new_date = "2024-06-20"
-        ######## # alter_poly_ids = ["15009_060501Y", "15009_060502Y"]
+        # 7/1 - 7/2
+        strip_frames = ["0299_8806", "0299_8807", "0299_8808", "0299_8809"]
+        old_date = "2024-07-01"
+        new_date = "2024-07-02"
+        alter_poly_ids = ["6693270000FT9"]
+        state_id = 24
+        company_id = 1
+        new_county_flight_date = "2024-07-02"
 
         # ==================
 
         poly_ids = []
 
         # Find the matching footprints
-        footprints = Footprint.where(flight_date: old_date, flown_by_id: 5, strip_frame: strip_frames, state_id: 30)
+        footprints = Footprint.where(flight_date: old_date, flown_by_id: company_id, strip_frame: strip_frames, state_id: state_id)
 
         p "Footprint Count: #{footprints.count}"
 
         # Dissolve the footprints
         # DissolvedFootprint.footprints footprints.pluck(:id), "NRI/SL"
 
-        Tile.where(poly_id: alter_poly_ids, flight_date: old_date, flown_by_id: 5, state_id: 30).each do |tile|
+        Tile.where(poly_id: alter_poly_ids, flight_date: old_date, flown_by_id: company_id, state_id: state_id).each do |tile|
             poly_ids << tile.poly_id
             tile.update(flight_date: new_date, report_date: nil, associate_date: nil)
             tile.easement.update(flight_date: new_date)
+
+            # if the county flight date matches the old flight date then update it
+            if new_county_flight_date
+                tile.update(county_flown_date: new_county_flight_date)
+            end
         end
 
         # update the footprints

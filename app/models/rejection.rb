@@ -106,7 +106,7 @@ class Rejection
                         p "message: #{message}"
 
                         # Get the tile, only should be one
-                        tile = Tile.flown.not_shipped.find_by(
+                        tile = Tile.flown.find_by(
                             poly_id: poly_id, 
                             flight_date: flight_date
                         )

@@ -85,7 +85,7 @@ export default function StatusChart({ project, month_range, states }) {
     setMessage(null);
 
     const obj = {
-      project: "SL",
+      project: project,
       state_id: stateId,
       month: month,
     };
@@ -119,7 +119,7 @@ export default function StatusChart({ project, month_range, states }) {
     <Card className="ui fluid card">
       <Card.Content>
         <Card.Header>
-          SL Production Status Tracking for{" "}
+          {project} Production Status Tracking for{" "}
           <Dropdown
             name="state_id"
             className="status_chart_dropdown"

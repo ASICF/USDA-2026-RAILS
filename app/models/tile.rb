@@ -2077,4 +2077,12 @@ class Tile < ApplicationRecord
 
     # end
 
+
+    def self.update_invoice_date
+        PackingSlip.invoiced.each do |ps|
+            p ps.name
+            ps.tiles.update(invoiced_date: ps.invoice.invoice_date)
+        end
+    end
+
 end

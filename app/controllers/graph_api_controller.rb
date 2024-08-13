@@ -18,6 +18,43 @@ class GraphApiController < ApplicationController
         }
     end
 
+    def milestones
+
+        project = params[:project]
+        if project.nil?
+            project = "SL"
+        end
+
+        total_tiles = Tile.where(project: project).count.to_f
+
+        render json: {
+            status: true,
+            label: ["Total Invoiced", "Total Shipped", "Total Dumped", "Total Counties Flown", "Total Flown"],
+            datasets: {
+                "Total Invoiced":  {
+                    data: (Tile.invoiced.where(project: project).count / total_tiles) * 100,
+                    background: "rgba(67, 111, 158, .8)"
+                },
+                "Total Shipped":  {
+                    data: (Tile.shipped.where(project: project).count / total_tiles) * 100,
+                    background: "rgba(168, 194, 86, .8)"
+                },
+                "Total Dumped":  {
+                    data: (Tile.dumped.where(project: project).count / total_tiles) * 100,
+                    background: "rgba(230, 218, 67, .8)"
+                },
+                "Total Counties Flown":  {
+                    data: (Tile.county_flown.where(project: project).count / total_tiles) * 100,
+                    background: "rgba(195, 96, 59, .8)"
+                },
+                "Total Flown":  {
+                    data: (Tile.flown.where(project: project).count / total_tiles) * 100,
+                    background: "rgba(147, 67, 62, .8)"
+                }
+            }
+        }
+    end
+
     def production_status_data
         render json: build_status_data()
     end
@@ -49,7 +86,9 @@ class GraphApiController < ApplicationController
 
     def build_status_data
 
-        if params[:project] == "SL"
+        if params[:project] == "SL" || params[:project] == "NRI"
+
+            project = params[:project]
 
             shipped = {}
             tile_dumped = {}
@@ -58,7 +97,7 @@ class GraphApiController < ApplicationController
             at_done = {}
             flown = {}
 
-            return {status: false} if Tile.flown.count == 0
+            return {status: false} if Tile.flown.where(project: project).count == 0
 
             dates = []
 
@@ -72,22 +111,35 @@ class GraphApiController < ApplicationController
         
             if params[:state_id] != "all"
                 obj[:state_id] = params[:state_id]
+                obj[:project] = params[:project]
                 flown_obj[:state_id] = params[:state_id]
+                flown_obj[:project] = project
                 shipped_obj[:state_id] = params[:state_id]
+                shipped_obj[:project] = params[:project]
                 at_started_obj[:state_id] = params[:state_id]
+                at_started_obj[:project] = params[:project]
                 at_done_obj[:state_id] = params[:state_id]
+                at_done_obj[:project] = params[:project]
                 ortho_proc_obj[:state_id] = params[:state_id]
+                ortho_proc_obj[:project] = params[:project]
                 dumped_obj[:state_id] = params[:state_id]
+                dumped_obj[:project] = params[:project]
             end
             if params[:month] != "all" && params[:year].present?
                 date = "#{params[:year]}-#{params[:month]}-1"
 
                 flown_obj[:flight_date] = Date.strptime(date, "%Y-%m-%d").all_month
+                flown_obj[:project] = project
                 shipped_obj[:ship_date] = Date.strptime(date, "%Y-%m-%d").all_month
+                shipped_obj[:project] = project
                 at_started_obj[:at_start_date] = Date.strptime(date, "%Y-%m-%d").all_month
+                at_started_obj[:project] = project
                 at_done_obj[:at_done_date] = Date.strptime(date, "%Y-%m-%d").all_month
+                at_done_obj[:project] = project
                 ortho_proc_obj[:ortho_proc_date] = Date.strptime(date, "%Y-%m-%d").all_month
+                ortho_proc_obj[:project] = project
                 dumped_obj[:dump_date] = Date.strptime(date, "%Y-%m-%d").all_month
+                dumped_obj[:project] = project
             end
             
             dates << Tile.flown.where(flown_obj).order(:flight_date).last.flight_date if Tile.flown.where(flown_obj).count > 0
@@ -107,7 +159,7 @@ class GraphApiController < ApplicationController
                 project_start_date = flown_obj[:flight_date].first
                 project_end_date = flown_obj[:flight_date].last
             else
-                project_start_date = Tile.flown.order(:flight_date).first.flight_date.beginning_of_month
+                project_start_date = Tile.flown.where(project: project).order(:flight_date).first.flight_date.beginning_of_month
                 project_end_date = dates.last.end_of_month
             end
             

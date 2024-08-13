@@ -9,6 +9,7 @@ Rails.application.routes.draw do
 
   # Graph APIs
   get '/production_status_data', to: 'graph_api#production_status_data'
+  get '/milestones', to: 'graph_api#milestones'
   get '/history_activity', to: 'graph_api#history_activity'
   get '/widgets', to: 'graph_api#widgets'
 

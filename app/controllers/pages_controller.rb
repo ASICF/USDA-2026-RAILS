@@ -27,7 +27,8 @@ class PagesController < ApplicationController
         end_date = Tile.flown.order(:flight_date).last.flight_date
       end
       @month_range = get_months_between_dates(start_date, end_date)
-      @states = State.select(:id, :name).active_sl.order(:name)
+      @sl_states = State.select(:id, :name).active_sl.order(:name)
+      @nri_states = State.select(:id, :name).active_nri.order(:name)
     else
       @month_range = []
       @states = []

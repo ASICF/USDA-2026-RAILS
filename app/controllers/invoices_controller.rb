@@ -73,6 +73,9 @@ class InvoicesController < ApplicationController
                 # update packing slips
                 if packing_slips.update(invoice_id: invoice.id)
 
+                    # update the tiles invoice date
+                    Tile.where(packing_slip_id: packing_slips.pluck(:id)).update(invoiced_date: invoice.invoice_date)
+
                     # build invoice claculation
                     invoice.calculate_total
 
@@ -133,6 +136,12 @@ class InvoicesController < ApplicationController
 
             if packing_slips.update(invoice_id: invoice.id)
 
+                # update the tiles invoice date
+                Tile.where(packing_slip_id: packing_slips.pluck(:id)).update(invoiced_date: invoice.invoice_date)
+
+                # clear any existing tiles invoiced date if removed from invoice
+                PackingSlip.not_invoiced.each {|ps| ps.tiles.update(invoiced_date: nil)}
+
                 # build invoice claculation
                 invoice.calculate_total
 
@@ -169,6 +178,9 @@ class InvoicesController < ApplicationController
 
         # dissassoicate the packing slips
         invoice.packing_slips.update(invoice_id: nil)
+
+        # clear any existing tiles invoiced date if removed from invoice
+        PackingSlip.not_invoiced.each {|ps| ps.tiles.update(invoiced_date: nil)}
 
         # delete the invoice
         invoice.destroy

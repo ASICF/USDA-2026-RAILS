@@ -6,12 +6,14 @@ import Statistics from "./Graphs/Statistics";
 import Heatmap from "./Graphs/Heatmap";
 import Activity from "./Graphs/RecentActivity";
 import AtAGlance from "./Graphs/Widgets/AtAGlance";
+import MileStones from "./Graphs/MileStones";
 
 // All the props as in the controller
 const Dashboard = ({
   currentUser,
   monthRange,
-  states,
+  sl_states,
+  nri_states,
   sl,
   nri,
   recentActivities,
@@ -26,7 +28,8 @@ const Dashboard = ({
   console.log("DASHBOARD", {
     currentUser,
     monthRange,
-    states,
+    sl_states,
+    nri_states,
     sl,
     nri,
     recentActivities,
@@ -107,23 +110,54 @@ const Dashboard = ({
             <Divider style={{ marginBottom: "0" }} />
           </Grid.Column>
         </Grid.Row>
-        <Grid.Column mobile={16} tablet={16} computer={10}>
-          {/* Get Widgets which contains the other Widgets and GET req */}
-          <AtAGlance />
-          {/* Status Chart */}
-          <StatusChart
-            project={"SL"}
-            month_range={monthRange}
-            states={states}
-          />
-        </Grid.Column>
 
-        {/* Heatmap */}
-        <Grid.Column mobile={16} tablet={16} computer={6}>
-          <Heatmap />
-          {/* Recent Activity */}
-          <Activity recentActivities={recentActivities} />
-        </Grid.Column>
+        <Grid.Row>
+          <Grid.Column mobile={16} tablet={16} computer={10}>
+            <AtAGlance />
+          </Grid.Column>
+
+          <Grid.Column mobile={16} tablet={16} computer={6}>
+            <Heatmap />
+          </Grid.Column>
+        </Grid.Row>
+
+        <Grid.Row>
+          <Grid.Column mobile={16} tablet={16} computer={16}>
+            {/* Get Widgets which contains the other Widgets and GET req */}
+
+            <Grid stackable>
+              <Grid.Row>
+                <Grid.Column mobile={16} tablet={16} computer={8}>
+                  <MileStones project="SL" />
+                </Grid.Column>
+                <Grid.Column mobile={16} tablet={16} computer={8}>
+                  <MileStones project="NRI" />
+                </Grid.Column>
+              </Grid.Row>
+            </Grid>
+          </Grid.Column>
+        </Grid.Row>
+
+        <Grid.Row>
+          <Grid.Column mobile={16} tablet={16} computer={10}>
+            {/* Status Chart */}
+            <StatusChart
+              project={"SL"}
+              month_range={monthRange}
+              states={sl_states}
+            />
+            <StatusChart
+              project={"NRI"}
+              month_range={monthRange}
+              states={nri_states}
+            />
+          </Grid.Column>
+
+          <Grid.Column mobile={16} tablet={16} computer={6}>
+            {/* Recent Activity */}
+            <Activity recentActivities={recentActivities} />
+          </Grid.Column>
+        </Grid.Row>
       </Grid>
     </div>
   );

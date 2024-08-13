@@ -1,6 +1,7 @@
 <% content_for :template, "large-screen" %>
 <%= react_component("Dashboard", {
-   states: @states,
+   sl_states: @sl_states,
+   nri_states: @nri_states,
    state_count: State.active_sl.count,
    currentUser: @current_user,
    monthRange: @month_range,

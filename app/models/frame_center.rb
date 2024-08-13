@@ -1407,4 +1407,42 @@ class FrameCenter < ApplicationRecord
         p "done, matched #{rejected.count} frame centers to rejected tiles and found #{none.count} existing footprints"
     end
 
+    def self.remove_eo_import
+
+        # history_ids = [2338, 2341, 2342, 2344, 2356, 2357, 2361, 2366, 2367, 2432, 2435, 2436, 2489, 2491, 2496, 2497, 2498, 2503, 2504]
+
+        # accept an array of upload ids
+        upload_ids = [1352, 1355, 1356, 1358, 1369, 1370, 1374, 1378, 1379, 1410, 1413, 1414, 1439, 1441, 1443, 1444, 1445, 1450, 1451]
+
+        # check for rejected footprints
+        # Upload.where(id: upload_ids, upload_type: "FrameCenter").each do |upload|
+        #     p "UPLOAD: #{upload.id}"
+        #     p upload.rejected_footprints.count
+        # end
+
+        # return
+
+        Upload.where(id: upload_ids, upload_type: "FrameCenter").each do |upload|
+            p "UPLOAD: #{upload.id}"
+
+            # update the footprints
+            upload.history.footprints.update(flight_date_time: nil)
+
+            # update the tiles
+            upload.history.tiles.at_done.update(at_start_date: nil, at_done_date: nil)
+
+            # destory the frame centers
+            upload.frame_centers.destroy
+
+            # destroy the history
+            upload.history.destroy
+
+            # destory the upload
+            upload.destroy
+            
+        end
+
+
+    end
+
 end

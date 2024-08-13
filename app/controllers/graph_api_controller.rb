@@ -25,30 +25,30 @@ class GraphApiController < ApplicationController
             project = "SL"
         end
 
-        total_tiles = Tile.where(project: project).count.to_f
+        total_acres = Tile.where(project: project).sum(:easements_acres).to_f
 
         render json: {
             status: true,
             label: ["Total Invoiced", "Total Shipped", "Total Dumped", "Total Counties Flown", "Total Flown"],
             datasets: {
                 "Total Invoiced":  {
-                    data: (Tile.invoiced.where(project: project).count / total_tiles) * 100,
+                    data: ((Tile.invoiced.where(project: project).sum(:easements_acres) / total_acres) * 100).to_f,
                     background: "rgba(67, 111, 158, .8)"
                 },
                 "Total Shipped":  {
-                    data: (Tile.shipped.where(project: project).count / total_tiles) * 100,
+                    data: ((Tile.shipped.where(project: project).sum(:easements_acres) / total_acres) * 100).to_f,
                     background: "rgba(168, 194, 86, .8)"
                 },
                 "Total Dumped":  {
-                    data: (Tile.dumped.where(project: project).count / total_tiles) * 100,
+                    data: ((Tile.dumped.where(project: project).sum(:easements_acres) / total_acres) * 100).to_f,
                     background: "rgba(230, 218, 67, .8)"
                 },
                 "Total Counties Flown":  {
-                    data: (Tile.county_flown.where(project: project).count / total_tiles) * 100,
+                    data: ((Tile.county_flown.where(project: project).sum(:easements_acres) / total_acres) * 100).to_f,
                     background: "rgba(195, 96, 59, .8)"
                 },
                 "Total Flown":  {
-                    data: (Tile.flown.where(project: project).count / total_tiles) * 100,
+                    data: ((Tile.flown.where(project: project).sum(:easements_acres) / total_acres) * 100).to_f,
                     background: "rgba(147, 67, 62, .8)"
                 }
             }

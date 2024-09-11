@@ -95,7 +95,7 @@ class ReadyToShipController < ApplicationController
           ortho_processed: tiles.ortho_processed.count,
           dumped: tiles.dumped.count,
           total_tiles: tiles.count,
-          total_amount: tiles.county_flown.not_shipped.sum(:total_amount)
+          total_amount: tiles.county_flown.not_shipped.sum(:total_amount).to_f
         }
 
         # Calculate totals

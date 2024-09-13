@@ -230,18 +230,26 @@ class Tile < ApplicationRecord
 
             completed_counties.each do |county|
 
-                first = county.tiles.where(project: project).first
-                count = county.tiles.flown.county_flown.not_shipped.where(project: project).count
+                county_due_dates = county.tiles.order(:county_due_date).pluck(:county_due_date).uniq
 
-                html += '<tr>'\
-                    "<td align='center'>#{project}</td>"\
-                    "<td align='center'>#{first.state_name}</td>"\
-                    "<td align='center'><a href='#{Rails.application.routes.url_helpers.county_ready_to_ship_url(county_id: county.id, only_path: false, host: Rails.application.secrets.host)}'>#{county.name}</a></td>"\
-                    "<td align='center'>#{first.county_flown_date.strftime("%m/%d/%Y")}</td>"\
-                    "<td align='center'>#{first.county_due_date.strftime("%m/%d/%Y")}</td>"\
-                    "<td align='center'>#{(first.county_due_date - Date.today).to_i}</td>"\
-                    "<td align='center'>#{count}</td>"\
-                '</tr>'
+                county_due_dates.each do |cdd|
+
+                    next if cdd.nil?
+
+                    first = county.tiles.where(county_due_date: cdd).first
+                    count = county.tiles.flown.county_flown.not_shipped.where(project: project).count
+
+                    html += '<tr>'\
+                        "<td align='center'>#{project}</td>"\
+                        "<td align='center'>#{first.state_name}</td>"\
+                        "<td align='center'><a href='#{Rails.application.routes.url_helpers.county_ready_to_ship_url(county_id: county.id, only_path: false, host: Rails.application.secrets.host)}'>#{county.name}</a></td>"\
+                        "<td align='center'>#{first.county_flown_date.strftime("%m/%d/%Y")}</td>"\
+                        "<td align='center'>#{first.county_due_date.strftime("%m/%d/%Y")}</td>"\
+                        "<td align='center'>#{(first.county_due_date - Date.today).to_i}</td>"\
+                        "<td align='center'>#{count}</td>"\
+                    '</tr>'
+
+                end
             end
 
             html += "</table>"
@@ -1027,24 +1035,34 @@ class Tile < ApplicationRecord
         # Find the unique counties of all tiles that have been flown but county_flown_date is not set
         County.exclude_geom.includes(:tiles).where(id: Tile.flown.county_flown.not_shipped.order(:state_name, :county_name).pluck(:county_id).uniq).each do |county|
 
-            first = county.tiles.first
+            county_due_dates = county.tiles.order(:county_due_date).pluck(:county_due_date).uniq
 
-            # check if overdue
-            is_overdue = current_date >= first.county_due_date
+            county_due_dates.each do |cdd|
 
-            # Get the number of days
-            days_til_due = (first.county_due_date - current_date).to_i
+                next if cdd.nil?
 
-            # Check the days til due and assign to correct array
-            if is_overdue
-                overdue << county
-            elsif days_til_due <= 7
-                due_within_7_days << county
-            elsif days_til_due <= 14
-                due_within_14_days |= [county.state_id]
-            else
-                due_within_30_days |= [county.state_id]
+                first = county.tiles.where(county_due_date: cdd).first
+    
+                # check if overdue
+                is_overdue = current_date >= first.county_due_date
+    
+                # Get the number of days
+                days_til_due = (first.county_due_date - current_date).to_i
+    
+                # Check the days til due and assign to correct array
+                if is_overdue
+                    overdue << county
+                elsif days_til_due <= 7
+                    due_within_7_days << county
+                elsif days_til_due <= 14
+                    due_within_14_days |= [county.state_id]
+                else
+                    due_within_30_days |= [county.state_id]
+                end
+
+
             end
+
 
         end
 

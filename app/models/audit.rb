@@ -525,65 +525,65 @@ class Audit
             end
         end
 
-        # iterate all counties that tiles are marked as fully flown but not shipped
-        # => verify all the county_flown_dates are the same
-        county_errors = []
-        County.sl_tiles_flown_but_not_shipped.each do |county_id|
-            county = County.includes(:tiles).find_by(id: county_id)
+        # # iterate all counties that tiles are marked as fully flown but not shipped
+        # # => verify all the county_flown_dates are the same
+        # county_errors = []
+        # County.sl_tiles_flown_but_not_shipped.each do |county_id|
+        #     county = County.includes(:tiles).find_by(id: county_id)
 
-            review_desc = []
+        #     review_desc = []
 
-            # check that all the tiles have a county flown date set
-            if county.tiles.county_flown.count != county.tiles.count
-                review_desc << "County Tiles are not all fully marked as Flown"
-            end
+        #     # check that all the tiles have a county flown date set
+        #     if county.tiles.county_flown.count != county.tiles.count
+        #         review_desc << "County Tiles are not all fully marked as Flown"
+        #     end
 
-            # pull the unique county flown dates
-            county_flown_dates = county.tiles.county_flown.pluck(:county_flown_date).uniq
+        #     # pull the unique county flown dates
+        #     county_flown_dates = county.tiles.county_flown.pluck(:county_flown_date).uniq
 
-            # if there is more than one then there is something wrong
-            review_desc << "Multiple County Flown Dates found" if county_flown_dates.size > 1
+        #     # if there is more than one then there is something wrong
+        #     review_desc << "Multiple County Flown Dates found" if county_flown_dates.size > 1
 
-            # check that all the tiles have a county flown date set
-            if county.tiles.county_due_set.count != county.tiles.count
-                review_desc << "County Tiles are not all fully marked as Due"
-            end
+        #     # check that all the tiles have a county flown date set
+        #     if county.tiles.county_due_set.count != county.tiles.count
+        #         review_desc << "County Tiles are not all fully marked as Due"
+        #     end
 
-            # pull the unique county flown dates
-            county_due_dates = county.tiles.county_due_set.pluck(:county_due_date).uniq
+        #     # pull the unique county flown dates
+        #     county_due_dates = county.tiles.county_due_set.pluck(:county_due_date).uniq
 
-            # if there is more than one then there is something wrong
-            review_desc << "Multiple County Due Dates found" if county_due_dates.size > 1
+        #     # if there is more than one then there is something wrong
+        #     review_desc << "Multiple County Due Dates found" if county_due_dates.size > 1
 
-            if review_desc.size > 0
-                county_errors << "#{county.name}, #{county.state.name}: #{review_desc.join(", ")}"
-                county.tiles.each do |tile|
-                    tile_review_desc = tile.review_desc.nil? ? [] : [tile.review_desc]
-                    tile_review_desc = tile_review_desc + review_desc
-                    p tile_review_desc
-                    tile.update(review_desc: tile_review_desc.join(", "))
-                end
-            end
-        end
+        #     if review_desc.size > 0
+        #         county_errors << "#{county.name}, #{county.state.name}: #{review_desc.join(", ")}"
+        #         county.tiles.each do |tile|
+        #             tile_review_desc = tile.review_desc.nil? ? [] : [tile.review_desc]
+        #             tile_review_desc = tile_review_desc + review_desc
+        #             p tile_review_desc
+        #             tile.update(review_desc: tile_review_desc.join(", "))
+        #         end
+        #     end
+        # end
 
-        # if there is an error then iterate and send as mail
-        if county_errors.size > 0
+        # # if there is an error then iterate and send as mail
+        # if county_errors.size > 0
 
-            html = "<p>There are discrepencies with Tiles marked as fully flown and/or Due Dates.</p>"
-            html += '<ul class="ui list">'
-            county_errors.each do |record|
-                html += "<li>#{record}</li>"
-            end
-            html += '</ul>'
+        #     html = "<p>There are discrepencies with Tiles marked as fully flown and/or Due Dates.</p>"
+        #     html += '<ul class="ui list">'
+        #     county_errors.each do |record|
+        #         html += "<li>#{record}</li>"
+        #     end
+        #     html += '</ul>'
 
 
-            # Log and send email
-            Mailbox.ship({
-                users: MailGroup.find_by(name: "Audit").users,
-                subject: "Nightly Audit Error! Tile mismatch on County Fully Flown Dates and/or County Due Dates",
-                message: html
-            })
-        end
+        #     # Log and send email
+        #     Mailbox.ship({
+        #         users: MailGroup.find_by(name: "Audit").users,
+        #         subject: "Nightly Audit Error! Tile mismatch on County Fully Flown Dates and/or County Due Dates",
+        #         message: html
+        #     })
+        # end
 
         # iterate the Frame Centers
         FrameCenter.all.each do |fc|

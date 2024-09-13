@@ -1033,15 +1033,15 @@ class Tile < ApplicationRecord
         current_date = Date.today
 
         # Find the unique counties of all tiles that have been flown but county_flown_date is not set
-        County.exclude_geom.includes(:tiles).where(id: Tile.flown.county_flown.not_shipped.order(:state_name, :county_name).pluck(:county_id).uniq).each do |county|
+        County.exclude_geom.includes(:tiles).where(id: Tile.flown.county_flown.not_shipped.where(project: project).order(:state_name, :county_name).pluck(:county_id).uniq).each do |county|
 
-            county_due_dates = county.tiles.order(:county_due_date).pluck(:county_due_date).uniq
+            county_due_dates = county.tiles.where(project: project).order(:county_due_date).pluck(:county_due_date).uniq
 
             county_due_dates.each do |cdd|
 
                 next if cdd.nil?
 
-                first = county.tiles.where(county_due_date: cdd).first
+                first = county.tiles.where(county_due_date: cdd, project: project).first
     
                 # check if overdue
                 is_overdue = current_date >= first.county_due_date
@@ -1063,141 +1063,24 @@ class Tile < ApplicationRecord
 
             end
 
-
         end
 
-        # p "overdue #{overdue.count}"
-        # p "due_within_7_days #{due_within_7_days.count}"
-        # p "due_within_15_days #{due_within_14_days.count}"
-        # p "due_within_30_days #{due_within_30_days.count}"
-
-        style = '<style>#ready_to_ship_table {border-collapse: collapse;}#ready_to_ship_table th,#ready_to_ship_table td {padding: 2px 5px;border: 1px solid black;}</style>'
-        html = ""
-
-        # Render any counties that have tiles overdue
-        if overdue.size > 0
-            html += "<h4>Counties are Overdue</h4>"
-    
-            html += '<table id="ready_to_ship_table" width="100%">'\
-                '<tr>'\
-                    '<th align="center">Project</th>'\
-                    '<th align="center">State</th>'\
-                    '<th align="center">County</th>'\
-                    '<th align="center">Latest Flight Date</th>'\
-                    '<th align="center">Due Date</th>'\
-                    '<th align="center">Days Remaining</th>'\
-                    '<th align="center">Number of Tiles</th>'\
-                '</tr>'
-
-            overdue.each do |county|
-
-                first = county.tiles.where(project: project).first
-                count = county.tiles.flown.county_flown.not_shipped.where(project: project).count
-
-                html += '<tr>'\
-                    "<td align='center'>#{project}</td>"\
-                    "<td align='center'>#{first.state_name}</td>"\
-                    "<td align='center'><a href='#{Rails.application.routes.url_helpers.county_ready_to_ship_url(county_id: county.id, only_path: false, host: Rails.application.secrets.host)}'>#{county.name}</a></td>"\
-                    "<td align='center'>#{first.county_flown_date.strftime("%m/%d/%Y")}</td>"\
-                    "<td align='center'>#{first.county_due_date.strftime("%m/%d/%Y")}</td>"\
-                    "<td align='center'>#{(first.county_due_date - Date.today).to_i}</td>"\
-                    "<td align='center'>#{count}</td>"\
-                '</tr>'
-            end
-
-            html += "</table>"
-
+        html = "<ul>"
+        if overdue.length > 0
+            html += "<li>Counties Overdue: #{overdue.length}</li>"
         end
-
-        # if there were updated counties then send email notifying 
-        if due_within_7_days.size > 0
-
-            html += "<h4>Counties due within 7 days</h4>"
-            html += '<table id="ready_to_ship_table" width="100%">'\
-                '<tr>'\
-                    '<th align="center">Project</th>'\
-                    '<th align="center">State</th>'\
-                    '<th align="center">County</th>'\
-                    '<th align="center">Latest Flight Date</th>'\
-                    '<th align="center">Due Date</th>'\
-                    '<th align="center">Days Remaining</th>'\
-                    '<th align="center">Number of Tiles</th>'\
-                '</tr>'
-
-            due_within_7_days.each do |county|
-
-                first = county.tiles.where(project: project).first
-                count = county.tiles.flown.county_flown.not_shipped.where(project: project).count
-
-                html += '<tr>'\
-                    "<td align='center'>#{project}</td>"\
-                    "<td align='center'>#{first.state_name}</td>"\
-                    "<td align='center'><a href='#{Rails.application.routes.url_helpers.county_ready_to_ship_url(county_id: county.id, only_path: false, host: Rails.application.secrets.host)}'>#{county.name}</a></td>"\
-                    "<td align='center'>#{first.county_flown_date.strftime("%m/%d/%Y")}</td>"\
-                    "<td align='center'>#{first.county_due_date.strftime("%m/%d/%Y")}</td>"\
-                    "<td align='center'>#{(first.county_due_date - Date.today).to_i}</td>"\
-                    "<td align='center'>#{count}</td>"\
-                '</tr>'
-            end
-
-            html += "</table>"
+        if due_within_7_days.length > 0
+            html += "<li>Counties Due with 7 Days: #{due_within_7_days.length}</li>"
         end
-
-        # Render state totals if there are any tiles due within 7-14 days
-        if due_within_14_days.size > 0
-            html += "<h4>States with Counties due within 14 days</h4>"
-            html += '<table id="ready_to_ship_table" width="100%">'\
-                '<tr>'\
-                    '<th align="center">Project</th>'\
-                    '<th align="center">State</th>'\
-                    '<th align="center">Number of Tiles</th>'\
-                '</tr>'
-
-            State.exclude_geom.where(id: due_within_14_days).order(:name).each do |state|
-
-                count = state.tiles.flown.county_flown.not_shipped.where(project: project).where("county_due_date > '#{current_date + 7.days}' AND county_due_date <= '#{current_date + 15.days}'").count
-
-                html += '<tr>'\
-                    "<td align='center'>#{project}</td>"\
-                    "<td align='center'>#{state.name}</td>"\
-                    "<td align='center'>#{count}</td>"\
-                '</tr>'
-            end
-
-            html += "</table>"
-
+        if due_within_14_days.length > 0
+            html += "<li>Counties Due with 14 Days: #{due_within_14_days.length}</li>"
         end
-
-        # Render state totals if there are any tiles due within 15-30 days
-        if due_within_30_days.size > 0
-
-            html += "<h4>States with Counties due within 30 days</h4>"
-            html += '<table id="ready_to_ship_table" width="100%">'\
-                '<tr>'\
-                    '<th align="center">Project</th>'\
-                    '<th align="center">State</th>'\
-                    '<th align="center">Number of Tiles</th>'\
-                '</tr>'
-
-            State.exclude_geom.where(id: due_within_30_days).order(:name).each do |state|
-
-                count = state.tiles.flown.county_flown.not_shipped.where(project: project).where("county_due_date > '#{current_date + 15.days}' AND county_due_date <= '#{current_date + 30.days}'").count
-
-                html += '<tr>'\
-                    "<td align='center'>#{project}</td>"\
-                    "<td align='center'>#{state.name}</td>"\
-                    "<td align='center'>#{count}</td>"\
-                '</tr>'
-            end
-
-            html += "</table>"
-
+        if due_within_30_days.length > 0
+            html += "<li>Counties Due with 30 Days: #{due_within_30_days.length}</li>"
         end
+        html += "</ul>"
 
-        # check if there is data
-        if html.size > 0
-            html = style + html
-        else
+        if overdue.length == 0 && due_within_7_days.length == 0 && due_within_14_days.length == 0 && due_within_30_days.length == 0
             html = "<p>No Counties have Tiles that are marked as ready to ship</p>"
         end
 

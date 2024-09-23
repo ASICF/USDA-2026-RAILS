@@ -706,8 +706,46 @@ class FinalDelivery < ApplicationRecord
             # split the filename into an array
             filename_arr = filename_without_extension.split("_")
 
-            # get the poly_id without the extension if it was split
-            poly_id = filename_arr[3]
+            if project == "SL"
+                # get the poly_id without the extension if it was split
+                poly_id = filename_arr[3]
+            elsif project == "NRI"
+
+                nri_arr = filename_arr.map(&:clone)
+
+                # exclude the first index as long as its "ortho"
+                if nri_arr[0] === "ortho"
+                    nri_arr.shift
+                else
+                    file_errors << "Filename validation error, first index should be \"ortho\" instead is #{nri_arr[0]}"
+                end
+
+                # pop the last index which is the date
+                if nri_arr.last.to_date > Time.now - 1.year
+                    nri_arr.pop
+                else
+                    file_errors << "Filename validation error, last index should be a date value, instead its #{nri_arr.last}"
+                end
+
+                # pop the last that is the cell size
+                if nri_arr.last == "15"
+                    nri_arr.pop
+                else
+                    file_errors << "Filename validation error, second to last index should be a date value, instead its #{nri_arr.last}"
+                end
+
+                # check if there are more than 2 elements in the array
+                if nri_arr.length == 3
+                    modified_poly_id = nri_arr.pop
+                elsif nri_arr.length > 3
+                    file_errors << "Filename validation error, could not extract poly id from modified filename array, returned #{nri_arr.join("_")}"
+                end
+
+                # The rest should be the polyid
+                poly_id = nri_arr.join("_")
+
+                # ortho_15009_030401R_15_20240630
+            end
 
             # if filename_without_extension == "ortho_MA_15_7313209800H0ZA0007_A_20241004"
             #     poly_id = "7313209800H0ZA0007_A"
@@ -755,7 +793,11 @@ class FinalDelivery < ApplicationRecord
             psn_poly_ids = psn_poly_ids - [tile.poly_id]
 
             # If the file has been split then 
-            modified_poly_id = filename_arr.size == 6 ? "#{filename_arr[3]}_#{filename_arr[4]}" : filename_arr[3]
+            if project === "SL"
+                modified_poly_id = filename_arr.size == 6 ? "#{filename_arr[3]}_#{filename_arr[4]}" : filename_arr[3]
+            else
+                modified_poly_id = modified_poly_id ? modified_poly_id : poly_id
+            end
 
             file_errors << "No TIF Found" if !File.file?("#{file_path}/#{filename_without_extension}.tif")
             file_errors << "No TFW Found" if !File.file?("#{file_path}/#{filename_without_extension}.tfw")
@@ -1059,10 +1101,10 @@ class FinalDelivery < ApplicationRecord
     def self.pass_to_validation
 
         # input_directory, packing_slip, current_user
-        input_directory = "P:\\Vol_3\\24-6567_USDA_SL\\03_FrameBase\\ND\\Tiles_Dump\\Final_Delivery_20240910_ND"
-        # P:\Vol_3\24-6567_USDA_SL\03_FrameBase\ND\Tiles_Dump\Final_Delivery_20240910_ND
+        input_directory = "P:\\Vol_3\\24-6567_USDA_NRI\\03_FrameBase\\HI\\Tiles_Dump\\Final_Delivery_20240923_HI"
+        # P:\Vol_3\24-6567_USDA_NRI\03_FrameBase\HI\Tiles_Dump\Final_Delivery_20240923_HI
 
-        packing_slip = PackingSlip.find_by(name: "20240910_ND")
+        packing_slip = PackingSlip.find_by(name: "20240923_HI")
 
         current_user = User.admins.first
 
@@ -1081,13 +1123,13 @@ class FinalDelivery < ApplicationRecord
         # - Test run (Boolean)
 
         # Set the Split Folder
-        split_folder = "/vol3/24-6567_USDA_SL/03_FrameBase/ND/Tiles_Dump/Big_Tiles/"
+        split_folder = "/vol3/24-6567_USDA_SL/03_FrameBase/WA/Tiles_Dump/Big_Tiles/"
 
         # Set the Final Delivery Folder
-        final_delivery_folder = "/vol3/24-6567_USDA_SL/03_FrameBase/ND/Tiles_Dump/Final_Delivery_20240910_ND/"
+        final_delivery_folder = "/vol3/24-6567_USDA_SL/03_FrameBase/WA/Tiles_Dump/Final_Delivery_20240731_WA/"
 
         # Query the PackingSlip
-        packing_slip = PackingSlip.find_by(name: "20240910_ND")
+        packing_slip = PackingSlip.find_by(name: "20240731_WA")
 
         # Throw error if the packing slip is not found
         raise Exception, "Could not find matching Packing Slip in the app: #{packing_slip.name}" if packing_slip.nil?
@@ -1315,7 +1357,7 @@ class FinalDelivery < ApplicationRecord
 
         p "BUILD TILE INDEX"
 
-        geotag_path = "/vol3/24-6567_USDA_SL/03_FrameBase/ND/Tiles_Dump/Final_Delivery_20240910_ND/SL/"
+        geotag_path = "/vol3/24-6567_USDA_SL/03_FrameBase/WA/Tiles_Dump/Final_Delivery_20240731_WA/SL/"
 
         # Iterate 
         Dir.glob("#{geotag_path}/*").each do |folder|
@@ -1330,7 +1372,7 @@ class FinalDelivery < ApplicationRecord
 
             Dir.glob("#{geotag_path}/#{state_abv}/*").each do |county_folder|
 
-            # ["/vol2/226567_14_SL_NY/04_TilesDump/Final_Delivery_20221130_NY/SL/ND/36051/"].each do |county_folder|
+            # ["/vol2/226567_14_SL_NY/04_TilesDump/Final_Delivery_20221130_NY/SL/WA/36051/"].each do |county_folder|
 
                 county_fips = Pathname(county_folder).each_filename.to_a[-1]
 

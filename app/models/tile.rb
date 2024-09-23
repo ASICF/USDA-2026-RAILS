@@ -1986,4 +1986,28 @@ class Tile < ApplicationRecord
         end
     end
 
+    def self.associate_to_footprints
+
+        poly_id = "5452KY2001V17"
+        footprint_ids = [37414,37415,37416,37417]
+
+        # get the tile
+        tile = Tile.find_by(poly_id: poly_id)
+
+        # find the footprints
+        footprints = Footprint.where(id: footprint_ids)
+
+        # Update all the footprints to reflect the associated project
+        # footprints.update_all(sl: true, associated: true)
+
+        # Associate to the tiles
+        tile.footprints = []
+        tile.footprints = footprints
+
+        current_time = Time.now
+        tile.update(at_start_date: current_time, at_done_date: current_time)
+        tile.generate_median_flight_date_time
+
+    end
+
 end

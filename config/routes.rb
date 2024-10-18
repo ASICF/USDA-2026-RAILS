@@ -196,6 +196,12 @@ Rails.application.routes.draw do
 
   # Export
   # -------------------------------------------------------------------
+
+  # => EO Splitter
+  get 'eo_splitter', to: 'eo_splitter#index', as: :eo_splitter
+  post 'eo_splitter/query', to: 'eo_splitter#query', as: :query_eo_splitter
+  post 'eo_splitter/execute', to: 'eo_splitter#execute', as: :execute_eo_splitter
+
   # => County Status and Cut File
   get 'county_status_and_cut_file', to: 'county_status_and_cut_file#index', as: :county_status_and_cut_files
   get 'county_status_and_cut_file/:state_id', to: 'county_status_and_cut_file#show', as: :county_status_and_cut_file

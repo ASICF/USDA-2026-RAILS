@@ -450,6 +450,13 @@ const SiteHeader = (props) => {
               <Dropdown.Menu style={{ width: 225 }}>
                 <Dropdown.Item
                   as="a"
+                  href={`/eo_splitter`}
+                  data-turbolinks="false"
+                >
+                  EO Splitter
+                </Dropdown.Item>
+                <Dropdown.Item
+                  as="a"
                   href={`/county_status_and_cut_file`}
                   data-turbolinks="false"
                 >

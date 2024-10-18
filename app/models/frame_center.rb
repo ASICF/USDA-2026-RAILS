@@ -810,6 +810,30 @@ class FrameCenter < ApplicationRecord
 
     end
 
+    def self.rerun_eo_splitter upload
+
+        message = []
+
+        # check the frame centers and see if 
+        if upload.frame_centers.nri.count > 0
+            # pass the upload to the eo splitter
+            self.eo_splitter "NRI", upload, Rails.application.secrets.nri_eo_splitter_path
+            message << "NRI EOs were split to #{Rails.application.secrets.nri_eo_splitter_p_path}"
+        end
+
+        if upload.frame_centers.sl.count > 0
+            # pass the upload to the eo splitter
+            self.eo_splitter "SL", upload, Rails.application.secrets.sl_eo_splitter_path
+            message << "SL EOs were split to #{Rails.application.secrets.sl_eo_splitter_p_path}"
+        end
+
+        return {
+            pass: true,
+            message: message.join(", ")
+        }
+
+    end
+
     def self.eo_splitter project, upload, output_path=Rails.application.secrets.eo_splitter_path
         # Iterate the EOs and write to folders based on the state and utm zone
         p "eo_splitter #{output_path}"

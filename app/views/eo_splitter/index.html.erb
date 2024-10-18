@@ -1,0 +1,7 @@
+
+<%= react_component("Export/EoSplitter", {
+    token: form_authenticity_token,
+    projects: @projects,
+    nri_path: Rails.application.secrets.nri_eo_splitter_path,
+    sl_path: Rails.application.secrets.sl_eo_splitter_p_path
+}) %>

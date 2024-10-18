@@ -862,6 +862,31 @@ class Footprint < ApplicationRecord
 
     end
 
+    def self.fix_project_assoc
+        # iterates the footprints that do not have 
+        Footprint.where(nri: false, sl: false, associated: true).each do |fp|
+            # check the associated tile's project
+            nri = false;
+            sl = false;
+
+            # iterate and check the 
+            fp.tiles.each do |tile|
+                if tile.project === "SL"
+                    sl = true;
+                end
+                if tile.project === "NRI"
+                    nri = true;
+                end
+            end
+
+            # update footprint
+            fp.update(nri: nri, sl: sl)
+
+            # update frame center
+            fp.frame_center.update(nri: nri, sl: sl)
+        end
+    end
+
     private
 
     # Should only run after the dissolved footprint has been built

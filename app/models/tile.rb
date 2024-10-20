@@ -1727,8 +1727,14 @@ class Tile < ApplicationRecord
             history.message = "Updated Tile (#{tile.poly_id}) with Flight Date of #{first.flight_date.strftime("%m/%d/%Y")}"
             history.save
 
+            # Detect if the tile is SL or NRI to update footprints and frame centers
+            sl = tile.project === "SL"
+            nri = tile.project === "NRI"
+
             # check if the footprint Frame Centers are set
-            if FrameCenter.where(footprint: new_footprints).count > 0
+            fcs = FrameCenter.where(footprint: new_footprints)
+            if fcs.count > 0
+                fcs.update_all(sl: sl, nri: nri)
                 tile.update(at_start_date: first.frame_center.created_at, at_done_date: first.frame_center.created_at)
             end
 
@@ -1736,7 +1742,7 @@ class Tile < ApplicationRecord
             tile.footprints << new_footprints
 
             # update the associated footprints
-            new_footprints.update(associated: true)
+            new_footprints.update(associated: true, sl: sl, nri: nri)
 
             return true
         end

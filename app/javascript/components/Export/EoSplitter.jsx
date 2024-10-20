@@ -41,7 +41,7 @@ const EoSplitter = ({ token, projects }) => {
   } = useForm({
     defaultValues: {
       project: projects[0],
-      flight_date: "10/12/2024",
+      // flight_date: "10/12/2024",
     },
   });
 
@@ -208,7 +208,7 @@ const EoSplitter = ({ token, projects }) => {
                     closable
                     clearable
                     name={name}
-                    label={"Date From"}
+                    label={"Flight Date"}
                     required={true}
                     value={value || ""}
                     dateFormat="MM/DD/YYYY"

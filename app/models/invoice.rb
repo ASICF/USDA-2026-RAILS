@@ -55,7 +55,12 @@ class Invoice < ApplicationRecord
                 total_billing = totals[key.to_s][:total_billing]
                 this_billing = totals[key.to_s][:this_billing]
 
-                csv << [key, "", "Previously Delivered", prev_delivery[:easements], prev_delivery[:acres], "Price Per Acre", "Total"]
+                price_label = "Price Per Acre"
+                if self.project == "NRI"
+                    price_label = "Price Per Site"
+                end
+
+                csv << [key, "", "Previously Delivered", prev_delivery[:easements], prev_delivery[:acres], price_label, "Total"]
                 csv << [key, "", "Previously Billed", prev_billed[:easements], prev_billed[:acres], prev_billed[:ppa], prev_billed[:total]]
                 csv << [key, "", "Total Delivery", total_delivery[:easements], total_delivery[:acres], "", ""]
                 csv << [key, "", "Total Billing", total_billing[:easements], total_billing[:acres], total_billing[:ppa], total_billing[:total]]
@@ -206,6 +211,13 @@ class Invoice < ApplicationRecord
 
                     # sub_unit_price = tile.flight_rate.sub_cost.to_f + tile.production_rate.sub_cost.to_f
 
+                    unit_price = 0
+                    if tile.project == "SL"
+                        unit_price = tile.easements_acres.round(2) * tile.contract_award.ppa
+                    elsif tile.project == "NRI"
+                        unit_price = tile.contract_award.pps
+                    end
+
                     state_array << {
                         state_name: tile.state_name,
                         fips: tile.county.full_fips,
@@ -214,7 +226,7 @@ class Invoice < ApplicationRecord
                         acres: tile.easements_acres.to_f,
                         psn_name: "#{packing_slip.name}.pdf",
                         psn_id: packing_slip.id,
-                        unit_price: tile.easements_acres.round(2) * tile.contract_award.ppa,
+                        unit_price: unit_price,
 
                         # total_count: tile.county.tiles.where(project: project).count,
                         # total_acres: tile.county.tiles.where(project: project).sum(:easements_acres).to_f,
@@ -388,6 +400,13 @@ class Invoice < ApplicationRecord
 
                 # sub_unit_price = tile.flight_rate.sub_cost.to_f + tile.production_rate.sub_cost.to_f
 
+                unit_price = 0
+                if self.project == "SL"
+                    unit_price = tile.easements_acres.round(2) * tile.contract_award.ppa
+                elsif self.project == "NRI"
+                    unit_price = tile.contract_award.pps
+                end
+
                 state_array << {
                     state_name: tile.state_name,
                     fips: tile.county.full_fips,
@@ -396,7 +415,7 @@ class Invoice < ApplicationRecord
                     acres: tile.easements_acres.to_f,
                     psn_name: "#{packing_slip.name}.pdf",
                     psn_id: packing_slip.id,
-                    unit_price: tile.easements_acres.round(2) * tile.contract_award.ppa,
+                    unit_price: unit_price,
                 }
             end
 
@@ -406,14 +425,20 @@ class Invoice < ApplicationRecord
         # state_obj = {packing_slips: {project: project}}
         # state_obj[:id] = state.id if !state.nil?
 
-        state_obj ={tiles: {packing_slip_id: ps_ids}}
+        state_obj = {tiles: {packing_slip_id: ps_ids}}
 
         totals = {}
 
         # get the states and find any packing slips that are not in the current psn_ids
         State.includes(packing_slips: [:tiles]).where(state_obj).each do |state|
 
-            ppa = state.contract_awards.where(project: project).first.ppa
+            ca = state.contract_awards.where(project: project).first
+
+            if self.project == "SL"
+                ppa = ca.ppa
+            elsif self.project == "NRI"
+                ppa = ca.pps
+            end
 
             obj = {
                 previously_delivered: {
@@ -466,8 +491,11 @@ class Invoice < ApplicationRecord
             end
 
             # calculate the total billed
-            obj[:previously_billed][:total] = obj[:previously_billed][:acres] * ppa
-
+            if self.project == "SL"
+                obj[:previously_billed][:total] = obj[:previously_billed][:acres] * ppa
+            elsif self.project == "NRI"
+                obj[:previously_billed][:total] = obj[:previously_billed][:easements] * ppa
+            end
 
             # Total Delivery
             # => Sum of all tiles and acres
@@ -480,7 +508,12 @@ class Invoice < ApplicationRecord
             tiles = state.tiles.shipped
             obj[:total_billing][:easements] = tiles.count
             obj[:total_billing][:acres] = tiles.sum(:easements_acres).round(0)
-            obj[:total_billing][:total] = obj[:total_billing][:acres] * ppa
+
+            if self.project == "SL"
+                obj[:total_billing][:total] = obj[:total_billing][:acres] * ppa
+            elsif self.project == "NRI"
+                obj[:total_billing][:total] = obj[:total_billing][:easements] * ppa
+            end
 
             # This Billing
             # calcualte using the psn_ids
@@ -493,6 +526,13 @@ class Invoice < ApplicationRecord
 
             obj[:this_billing][:acres] = obj[:total_billing][:acres] - obj[:previously_billed][:acres]
             obj[:this_billing][:total] = obj[:this_billing][:acres] * ppa
+
+            if self.project == "SL"
+                obj[:this_billing][:total] = obj[:this_billing][:acres] * ppa
+            elsif self.project == "NRI"
+                obj[:this_billing][:total] = obj[:this_billing][:easements] * ppa
+            end
+
 
             # p " ------------- "
             # pp obj

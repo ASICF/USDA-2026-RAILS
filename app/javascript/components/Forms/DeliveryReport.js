@@ -568,7 +568,7 @@ export default function InvoiceReport({
                         ).toFixed(6)}
                   </Table.Cell>
                   <Table.Cell>
-                    <b>Price Per Acre</b>
+                    <b>Price Per {data.project === "NRI" ? "Site" : "Acre"}</b>
                   </Table.Cell>
                   <Table.Cell>
                     <b>Total</b>

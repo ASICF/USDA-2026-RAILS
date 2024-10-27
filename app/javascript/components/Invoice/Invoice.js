@@ -54,6 +54,14 @@ const Invoices = ({ invoices }) => {
               Number
             </Table.HeaderCell>
             <Table.HeaderCell
+              sorted={column === "project" ? direction : null}
+              onClick={() =>
+                dispatch({ type: "CHANGE_SORT", column: "project" })
+              }
+            >
+              Project
+            </Table.HeaderCell>
+            <Table.HeaderCell
               sorted={column === "easement_count" ? direction : null}
               onClick={() =>
                 dispatch({ type: "CHANGE_SORT", column: "easement_count" })
@@ -97,6 +105,7 @@ const Invoices = ({ invoices }) => {
                 }}
               >
                 <Table.Cell>{invoice.number}</Table.Cell>
+                <Table.Cell>{invoice.project}</Table.Cell>
                 <Table.Cell>
                   {moment(invoice.invoice_date).format("l")}
                 </Table.Cell>

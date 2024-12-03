@@ -36,6 +36,7 @@ class Footprint < ApplicationRecord
 
     # Scopes
     scope :associated, -> { where(associated: true) }
+    scope :not_associated, -> { where(associated: false) }
     scope :exclude_geom, -> { select( Footprint.attribute_names - ['geom'] ) }
     scope :sl, -> { where(sl: true) }
     scope :nri, -> { where(nri: true) }

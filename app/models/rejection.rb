@@ -20,7 +20,7 @@ class Rejection
                 path = "#{Rails.root}/assets/rejections/#{folder}"
 
                 # Create a folder if it doesn't exist
-                FileUtils.mkdir_p("#{path}/projected") unless File.directory?(path)
+                # FileUtils.mkdir_p("#{path}/projected") unless File.directory?(path)
 
                 # Used to make sure the required files are found
                 txt = false
@@ -187,6 +187,231 @@ class Rejection
 
     end
 
+    def self.reject_footprints params, user
+        # create an Error array to hold any messages
+        output = {
+            pass: false,
+            errors: [],
+            count: 0,
+            skipped: [],
+            invalid_date:[],
+            not_found: []
+        }
+
+        # Start a Transaction Block
+        ActiveRecord::Base.transaction do
+            begin
+
+                # Get the folder name by converting the current time to seconds
+                folder = Time.now.to_i
+
+                path = "#{Rails.root}/assets/footprint_rejections/#{folder}"
+
+                # Create a folder if it doesn't exist
+                FileUtils.mkdir_p(path) unless File.directory?(path)
+
+                # Used to make sure the required files are found
+                txt = false
+
+                # Should only accept text file
+                if File.extname(params[:file].original_filename) != ".txt" 
+                    raise Exception, "Only Text files are supported"
+                end
+
+                # Move the file
+                FileUtils.mv params[:file].tempfile, "#{path}/#{params[:file].original_filename}"
+
+                # Create upload instance to track the easements created
+                upload = Upload.create(
+                    folder_path: "#{path}/#{params[:file].original_filename}",
+                    upload_type: "Rejected Tile",
+                    uploader: user
+                )
+
+                # Get the first text file
+                txt = Dir.glob("#{path}/#{params[:file].original_filename}").first
+
+                if txt.empty?
+                    output[:errors] << "Could not find text file to upload"
+                    FileUtils.rm_rf(path)
+                    return output, upload
+                end
+
+                # Create a new History record
+                history = History.new
+                history.action_type = "Rejected Footprint"
+                history.creator = user
+                history.save
+
+                flight_date = params[:flight_date]
+                strip_frames = []
+
+                # Open the file
+                File.open(txt, "r") do |f|
+                    # Iterate each line
+                    f.each_line do |line|
+
+                        # set the default polyid and message
+                        strip_frame = nil
+                        message = "Manual Rejection"
+
+                        p "-----------------"
+                        p line.strip
+ 
+                        arr = line.strip.split(" ")
+                        p arr
+
+                        if arr.size == 1
+                            p "- no message"
+                            strip_frame = line.strip
+                        else
+                            strip_frame = arr[0].strip
+                            message = arr.drop(1).join(" ").gsub('"', '').gsub("'", '')
+                        end
+
+                        p " - - - "
+                        p "strip_frame: #{strip_frame}"
+                        p "message: #{message}"
+                        p "flight_date: #{flight_date}"
+
+                        # Get the tile, only should be one
+                        footprint = Footprint.not_associated.find_by(
+                            strip_frame: strip_frame, 
+                            flight_date: flight_date
+                        )
+
+                        p "footprint: #{footprint}"
+                        p ""
+
+                        # If present then push the Tile id to an array
+                        if footprint.present?
+
+                            # get the frame center before deleting the footprint
+                            framecenter = footprint.frame_center
+
+                            # Reject the Footprint
+                            rejected_footprint = RejectedFootprint.reject footprint, message
+
+                            if !rejected_footprint
+                                # raise "Footprint could not be rejected!"
+                                # raise ActiveRecord::Rollback
+                                raise Exception, "Footprint could not be rejected!"
+                            end
+
+                            # Reject the associated Frame Center of the footprint
+                            if framecenter
+
+                                # Find the rejected frame center
+                                rejected_frame_center = RejectedFrameCenter.reject framecenter, message
+
+                                # 
+                                if !rejected_frame_center
+                                    raise Exception, "Frame Center #{fc.id} could not be rejected!"
+                                end
+
+                                # Add the rejected frame centers to history
+                                history.rejected_frame_centers << rejected_frame_center
+                            end
+
+                            # Add rejected footprints to history
+                            history.rejected_footprints << rejected_footprint
+                            
+                            # Set the count
+                            output[:count] += 1
+                        else
+
+                            # get the footprint ignoring the association and flight date
+                            invalid_footprint = Footprint.find_by(
+                                strip_frame: strip_frame, 
+                            )
+
+                            # Check if the footprint exists and if it 
+                            if invalid_footprint.present?
+
+                                if invalid_footprint.associated
+                                    output[:skipped] << invalid_footprint
+                                else
+                                    output[:invalid_date] << invalid_footprint
+                                end
+                            else
+                                output[:not_found] << strip_frame
+                            end
+                        end
+                    end
+                end
+
+                # Reject the tiles
+                # rejection_output, history = Rejection.reject_tiles poly_ids, flight_date, history
+
+                # Set the count
+                # output[:count] = rejection_output[:count]
+
+                p "+_+_+_+_+_"
+                p output
+                p upload
+                p history
+                p "+_+_+_+_+_"
+
+                # Perform spatial query on the UTM geometry
+                if output[:errors].count == 0 && output[:count] > 0
+                    output[:pass] = true
+
+                    history.update(message: "Manually Rejected #{history.rejected_footprints.count} Footprints and #{history.rejected_frame_centers.count} Frame Centers")
+                    output[:message] = history.message
+
+                    # Add the number of files uploaded
+                    upload.number_uploaded = output[:count]
+                    upload.save
+
+                    # add records to polymorphic association
+                    history.uploads << upload
+
+                    skippped_message = ""
+                    if output[:skipped].count > 0
+                        skippped_message = "The following Footprints have been skipped because they have associations with Tiles:<br/><ul>#{output[:skipped].map {|rf| "<li><b>#{rf.strip_frame}</b> - <i>(Flight Date: #{rf.flight_date.strftime("%m/%d/%Y")}, Flown By: #{rf.flown_by_name})</i></li>"}.join("")}</ul>"
+                    end
+
+                    invalid_date_message = ""
+                    if output[:invalid_date].count > 0
+                        skippped_message = "The following Footprints have been skipped because they have a different flight date than specified:<br/><ul>#{output[:skipped].map {|rf| "<li><b>#{rf.strip_frame}</b> - <i>(Flight Date: #{rf.flight_date.strftime("%m/%d/%Y")}, Flown By: #{rf.flown_by_name}.join(""))</i></li>"}}</ul>"
+                    end
+
+                    not_found_message = ""
+                    if output[:not_found].count > 0
+                        not_found_message = "The following Footprints have been skipped due to not existing:<br/><ul>#{output[:not_found].map {|strip_frame| "<li><b>#{strip_frame}</b></li>"}.join("")}</ul>"
+                    end
+
+                    # Log and send email
+                    Mailbox.ship({
+                        users: MailGroup.find_by(name: "Rejection").users,
+                        subject: "Footprints have been rejected",
+                        message: "The following Footprints have been rejected:<br/><ul>#{history.rejected_footprints.map {|rf| "<li><b>#{rf.strip_frame}</b> - <i>(Flight Date: #{rf.flight_date.strftime("%m/%d/%Y")}, Flown By: #{rf.flown_by_name})</i></li>"}.join("")}</ul>#{skippped_message}#{invalid_date_message}#{not_found_message}"
+                    })
+                elsif output[:skipped].count > 0
+                    raise Exception, "No Footprints were rejected due to no orphan footprints found. Text file contained Footprints that are either associated to existing tiles or do not exist."
+                else
+                    raise Exception, "Error Occurred when attempting to Reject Tiles. Process Aborted."
+                end
+
+            rescue Exception => exception
+                Rails.logger.error "Rejection Import Error: #{exception.message}"
+                output[:pass] = false
+                output[:errors] = [exception.message]
+
+                # Delete the Upload and History
+                upload.destroy if upload.present?
+                history.destroy if history.present?
+
+                # Delete the files
+                FileUtils.rm_rf("#{path}/") if path
+
+                raise ActiveRecord::Rollback
+            end
+        end
+
+        # Return output to controller
+        output
+    end
 
     def self.reject_tiles poly_ids, flight_date, history, skip_coverage=false, message="Manual Rejection"
 

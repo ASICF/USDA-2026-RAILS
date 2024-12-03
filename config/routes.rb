@@ -71,6 +71,8 @@ Rails.application.routes.draw do
   # => Rejections
   get '/rejections/new', to: 'rejections#new', as: :new_rejections
   post '/rejections/upload', to: 'rejections#upload', as: :upload_rejections
+  get '/rejections/footprints', to: 'rejections#footprints', as: :footprint_rejections
+  post '/rejections/footprint_upload', to: 'rejections#footprint_upload', as: :footprint_upload_rejections
 
   # USDA Approve
   get '/usda_approve', to: 'usda_approve#index', as: :usda_approve

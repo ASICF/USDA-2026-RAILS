@@ -10,7 +10,7 @@ import {
   Breadcrumb,
   Icon,
   List,
-  ButtonContent
+  ButtonContent,
 } from "semantic-ui-react";
 import _ from "lodash";
 
@@ -24,7 +24,7 @@ import MessageBox from "../Shared/MessageBox";
 import moment from "moment";
 import axios from "axios";
 
-export default function Rejection({ token }) {
+export default function FootprintRejection({ token }) {
   const [message, setMessage] = useState(null);
   const [accordionState, setAccordionState] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -60,7 +60,7 @@ export default function Rejection({ token }) {
   const onSubmit = (data) => {
     console.error("onSubmit", data);
     setSubmitted(true);
-    setLoading(true)
+    setLoading(true);
     const form = new FormData();
 
     form.append("authenticity_token", token);
@@ -68,10 +68,6 @@ export default function Rejection({ token }) {
       "rejection[flight_date]",
       moment(data.flight_date, "l").format("YYYY-MM-DD")
     );
-    // form.append(
-    //   "rejection[reject_date]",
-    //   moment(data.flight_date, "l").format("YYYY-MM-DD")
-    // );
     form.append("rejection[file]", data.file[0]);
 
     setMessage({
@@ -85,7 +81,7 @@ export default function Rejection({ token }) {
     };
 
     axios
-      .post(`/rejections/upload`, form, {
+      .post(`/rejections/footprint_upload`, form, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
@@ -113,8 +109,8 @@ export default function Rejection({ token }) {
         });
         window.onbeforeunload = null;
       });
-      setSubmitted(false);
-    setLoading(false)
+    setSubmitted(false);
+    setLoading(false);
   };
 
   return (
@@ -122,7 +118,7 @@ export default function Rejection({ token }) {
       <Breadcrumbs>
         <Breadcrumb.Section>Inputs</Breadcrumb.Section>
         <Breadcrumb.Divider />
-        <Breadcrumb.Section>Rejections</Breadcrumb.Section>
+        <Breadcrumb.Section>Footprint Rejections</Breadcrumb.Section>
         <Breadcrumb.Divider />
         <Breadcrumb.Section active>Import</Breadcrumb.Section>
       </Breadcrumbs>
@@ -149,8 +145,8 @@ export default function Rejection({ token }) {
         <Accordion.Content active={accordionState}>
           <Header as="h4">Summary</Header>
           <p>
-            Rejects Tiles that match the PolyID and it's associated Footprints
-            and Frame Centers
+            Rejects Footprints that match the Strip Frame and it's Flight Date
+            that does not have an associated tile.
           </p>
           <Divider />
           <Grid divided="vertically">
@@ -162,11 +158,13 @@ export default function Rejection({ token }) {
                     A <b>single</b> <b>.txt</b> file
                   </List.Item>
                   <List.Item>
-                    Text file <b>must</b> consist of a Poly ID on separate lines. If the user would like to include a rejection reason then add a comma and then the message. (.e.g. <i>7343100600HM3A0001, Clouds and Shadows</i>)
+                    Text file <b>must</b> consist of a Strip Frame on separate
+                    lines
                   </List.Item>
                   <List.Item>
-                    Users can add a reason to the text file but it must be wrapped in an apostrphes or quotes
-                    (e.g. "Clouds")
+                    Users can add a rejection message by separating the strip
+                    frame with a space{" "}
+                    <i>(e.g. 1234_5678 Clouds and shadows)</i>
                   </List.Item>
                 </List>
               </Grid.Column>
@@ -174,27 +172,14 @@ export default function Rejection({ token }) {
                 <Header as="h5">Process</Header>
                 <List bulleted>
                   <List.Item>
-                    The txt file will be iterated and the Easement will be found
-                    with the Poly ID and it's <b>Flight Date</b> will be reset
-                    to null
+                    The txt file will be iterated and the Footprint will be
+                    found with the <b>Strip Frame</b> and it's{" "}
+                    <b>Flight Date</b> will be removed if it has no assoicated
+                    Tile
                   </List.Item>
                   <List.Item>
-                    The Associated Tile will be cloned to the{" "}
-                    <b>Rejected Tile</b> and record will be reset back to "Ready
-                    to Fly" state
-                  </List.Item>
-                  <List.Item>
-                    The associated Footprints to the Tile will be iterated and
-                    each Footprint will then check it's associations to the
-                    other Tile. If the Footprint has no other association it is
-                    cloned to the <b>Rejected Footprint</b> and the original
-                    record will be deleted. If it has other associated Tiles it
-                    is not destroyed.
-                  </List.Item>
-                  <List.Item>
-                    The Rejected Footprint's associated Frame Center will be
-                    cloned to the <b>Rejected Frame Centers</b> and the original
-                    will be destroyed
+                    If the Footprint has an associated Tile then it will{" "}
+                    <b>not be rejected</b>
                   </List.Item>
                 </List>
               </Grid.Column>
@@ -262,7 +247,7 @@ export default function Rejection({ token }) {
             error={errors.hasOwnProperty("file")}
             style={{ margin: "0" }}
           >
-            <label>Poly IDs (.txt)</label>
+            <label>Strip Frames (.txt)</label>
             <input
               {...register("file", { required: "Required" })}
               name="file"
@@ -274,73 +259,12 @@ export default function Rejection({ token }) {
               </Label>
             )}
           </Form.Field>
-
-          {/* <Form.Field error={errors.hasOwnProperty("reject_date")}>
-            <div className="calendar-input">
-              <Controller
-                name={"reject_date"}
-                control={control}
-                rules={{
-                  required: "Required",
-                }}
-                render={({ field: { name, value } }) => (
-                  <DateInput
-                    closable
-                    clearable
-                    name={name}
-                    label={"Reject Date"}
-                    required={true}
-                    value={value || ""}
-                    dateFormat="MM/DD/YYYY"
-                    iconPosition="left"
-                    onChange={handleChange}
-                    autoComplete="off"
-                  />
-                )}
-              />
-            </div>
-            {errors[`reject_date`] && (
-              <Label pointing prompt>
-                {errors[`reject_date`].message}
-              </Label>
-            )}
-          </Form.Field> */}
         </Form.Group>
-
-        {/* <Form.Field error={errors.hasOwnProperty("file")}>
-          <Controller
-            name={"file"}
-            control={control}
-            defaultValue={""}
-            rules={{
-              required: "Required",
-            }}
-            render={({ field: { name, value, defaultValue } }) => {
-              console.error("file render", { name, value, defaultValue });
-              return (
-                <input
-                  type="file"
-                  name={name}
-                  value={value.filename}
-                  ref={fileRef}
-                  onChange={(event) => {
-                    return fileChange(event.target.files);
-                  }}
-                />
-              );
-            }}
-          />
-          {errors[`file`] && (
-            <Label pointing prompt>
-              {errors[`file`].message}
-            </Label>
-          )}
-        </Form.Field> */}
 
         <Divider />
 
         <Button
-        animated
+          animated
           primary
           floated="right"
           type="button"
@@ -348,21 +272,21 @@ export default function Rejection({ token }) {
           disabled={submitted}
           onClick={handleSubmit(onSubmit)}
         >
-           <ButtonContent visible>Submit</ButtonContent>
+          <ButtonContent visible>Submit</ButtonContent>
           <ButtonContent hidden>
-          <Icon name='arrow right' />
+            <Icon name="arrow right" />
           </ButtonContent>
         </Button>
         <Button
-        animated
+          animated
           secondary
           floated="right"
           type="button"
           onClick={() => resetForm()}
         >
-            <ButtonContent visible>Reset</ButtonContent>
+          <ButtonContent visible>Reset</ButtonContent>
           <ButtonContent hidden>
-          <Icon name="undo" />
+            <Icon name="undo" />
           </ButtonContent>
         </Button>
         <div style={{ clear: "both" }} />

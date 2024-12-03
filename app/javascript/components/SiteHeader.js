@@ -249,6 +249,13 @@ const SiteHeader = (props) => {
                     >
                       Unreject Tile
                     </Dropdown.Item>
+                    <Dropdown.Item
+                      as="a"
+                      href={`/rejections/footprints`}
+                      data-turbolinks="false"
+                    >
+                      Footprint Rejections
+                    </Dropdown.Item>
                     {/* <Dropdown.Item
                       as="a"
                       href={`/usda_approve`}

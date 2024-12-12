@@ -488,7 +488,7 @@ function SelectedVectorMetadata({
       setValue("upload_date", moment().format("MM/DD/YYYY"));
       // setValue(
       //   "input_directory",
-      //   "P:\\Vol_3\\226567_04_SL_GA\\03_FrameBase\\Ortho_Raw"
+      //   "P:\\Vol_1\\226567_04_SL_GA\\03_FrameBase\\Ortho_Raw"
       // );
     }
 
@@ -591,7 +591,7 @@ function SelectedVectorMetadata({
               render={({ field: { name, onBlur, onChange, value } }) => (
                 <Form.Input
                   fluid
-                  label={"Path to Root Folder of Images (Within P:\\Vol_3)"}
+                  label={"Path to Root Folder of Images (Within P:\\Vol_1)"}
                   autoComplete="off"
                   name={name}
                   required={true}

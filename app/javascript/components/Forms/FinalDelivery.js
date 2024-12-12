@@ -197,7 +197,7 @@ function ValidateFormSL({
           <span>
             This is the first step of Final Delivery that will verify your Text
             File and Supplied Path. Input directory must be nested under{" "}
-            <b> P:\Vol_2</b> or <b> P:\Vol_3</b>.
+            <b>P:\Vol_1</b>.
           </span>
         }
       />

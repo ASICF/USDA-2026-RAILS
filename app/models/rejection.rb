@@ -20,7 +20,7 @@ class Rejection
                 path = "#{Rails.root}/assets/rejections/#{folder}"
 
                 # Create a folder if it doesn't exist
-                # FileUtils.mkdir_p("#{path}/projected") unless File.directory?(path)
+                FileUtils.mkdir_p("#{path}/projected") unless File.directory?(path)
 
                 # Used to make sure the required files are found
                 txt = false

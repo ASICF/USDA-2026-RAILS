@@ -1,14 +1,146 @@
 class FinalDeliverySplits
 
-    def self.preprocessing
-        # Check the user supplied path
-        # => Check if the Big Tiles folder exists
-        # => Create the Big Tiles folder if it doesn't exist
-        # => If no Big Tile then just cancel the process
+    def self.preprocessing input_directory='P:\Vol_1\Bernard_Test', packing_slip=PackingSlip.find(144)
 
-        # check the Big Tiles folder to see if there are any matches in the Final Delivery
-        # Checks all the files required are found
+        output = {
+            count: 0,
+            pass: false,
+            errors: []
+        }
+        unmatched_tiles = []
+        verified_splits = []
+
+        # get the packing slip project and state
+        project = packing_slip.project
+        state = packing_slip.state
+        psn = packing_slip.name
+
+        # convert the path to unix pathing
+        unix_path = Task.build input_directory
+        split_folder = "#{unix_path}/Big_Tiles"
+        final_delivery_folder = "#{unix_path}/Final_Delivery_#{psn}"
+
+        # Check the user supplied path
+        # => Make sure it's all scoped under the project folder
+        # => Check if the Big Tiles folder exists
+
+        if !File.directory?(split_folder)
+
+            # => Create the Big Tiles folder if it doesn't exist
+            FileUtils.mkdir_p(split_folder)
+
+            # => If no Big Tile then just cancel the process
+            output[:message] = "No splits found in #{split_folder}"
+            output[:pass] = false
+
+            return output
+        end
+
+        if !File.directory?(final_delivery_folder)
+
+            # => Create the Big Tiles folder if it doesn't exist
+            FileUtils.mkdir_p(split_folder)
+
+            # => If no Big Tile then just cancel the process
+            output[:message] = "No splits found in #{split_folder}"
+            output[:pass] = false
+
+            return output
+        end
+
+
+        # iterate the tiffs in the folder
+        Dir.glob("#{split_folder}/*.tif").each do |file|
+            # p file
+
+            filename = File.basename(file)
+            filename_without_extension = File.basename(file, '.tif')
+
+            # extract the 
+            parsed_poly_id = FinalDeliverySplits.extract_id filename_without_extension, project
+
+            # p "-------"
+            # p parsed_poly_id
+            
+            # find the tile based on the state, project, parsed poly id and packing slip
+            tile = state.tiles.find_by(poly_id: parsed_poly_id[:poly_id], project: project, packing_slip: packing_slip)
+
+            if tile.present?
+
+                # p "#{final_delivery_folder}/#{project}/#{tile.state_abv}/#{tile.county.full_fips}/Orthos/#{tile.filename}.tif"
+
+                # check if the tile is in the final delivery folder
+                if File.file?("#{final_delivery_folder}/#{project}/#{tile.state_abv}/#{tile.county.full_fips}/Orthos/#{tile.filename}.tif")
+
+                    # check the tif bands to make sure they are valid
+                    gdalinfo_response = `gdalinfo "#{file_path}/#{filename_without_extension}.tif"`
+
+                    if gdalinfo_response.include? "Band 4"  
+                        verified_splits << "#{split_folder}/#{filename}"
+                    else
+                        output[:errors] << "#{filename} Does Not have 4th Band"
+                    end
+                end
+
+                # check if the file exsts in the packing slip final delivery folder
+
+            else
+                # check if the tile exists in the app
+                tile = Tile.find_by(poly_id: parsed_poly_id[:poly_id])
+
+                if !tile.present? 
+
+                    # Add to the unmatched tiles that the filename was not found in the app
+                    # => Send email after validation process notifying user
+                    unmatched_tiles << filename
+                end
+            end
+
+        end
+
+        p " "
+        p "Verified Splits"
+        p "--------------"
+        pp verified_splits
+
+        p " "
+        p "Unmatched Tiles"
+        p "--------------"
+        p unmatched_tiles
+
         # Check the imagery for bands and projection
+    end
+
+    def self.extract_id filename="ortho_AL_15_7341010700H6BB000c_20240820", project="SL"
+        # takes a filename of a split and return the polyid
+
+        result = {
+            poly_id: nil,
+            split_poly_id: nil,
+        }
+
+        arr = filename.split("_")
+
+        if project === "SL"
+            # the first three indices should be "Ortho", state abv, and "15" so skip those
+            modified_arr = arr.drop(3)
+
+            # Remove the last index which is the date
+            modified_arr.pop(1)
+
+            # Result should be the poly_id and the split index (if it exists)
+            if modified_arr.length > 1
+                # return modified_arr.join("_")
+                result[:poly_id] = modified_arr[0]
+                result[:split_poly_id] = modified_arr.join("_")
+            else
+                # return modified_arr[0]
+                result[:poly_id] = modified_arr[0]
+                result[:split_poly_id] = modified_arr[0]
+            end
+        end
+
+        return result
     end
 
     def self.processing

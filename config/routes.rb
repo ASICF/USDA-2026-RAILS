@@ -1,5 +1,5 @@
 Rails.application.routes.draw do
-  get 'raw_tiff_compare/index'
+  # get 'raw_tiff_compare/index'
   root 'pages#index'
 
   devise_for :users
@@ -232,6 +232,10 @@ Rails.application.routes.draw do
   post 'final_delivery/generate_metadata_and_assign_psn/execute', to: 'final_delivery#execute', as: :execute_final_delivery
   post 'final_delivery/generate_metadata_and_assign_psn/naip', to: 'final_delivery#naip_execute', as: :naip_final_delivery
   get 'final_delivery/generate_metadata_and_assign_psn/naip_query', to: 'final_delivery#naip_query', as: :naip_final_delivery_query
+
+  # => Splits
+  get 'final_delivery/splits', to: 'final_delivery_split#index', as: :final_delivery_splits
+  post 'final_delivery/splits/execute', to: 'final_delivery_split#execute', as: :execute_final_delivery_splits_splits
 
   # => Export Metadata
   get 'export_provisional_vector_metadata', to: 'export_provisional_vector_metadata#index', as: :export_vector_metadata

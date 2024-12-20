@@ -73,21 +73,28 @@ class FinalDeliverySplits
                 if File.file?("#{final_delivery_folder}/#{project}/#{tile.state_abv}/#{tile.county.full_fips}/Orthos/#{tile.filename}.tif")
 
                     # check the tif bands to make sure they are valid
-                    gdalinfo_response = `gdalinfo "#{file_path}/#{filename_without_extension}.tif"`
+                    gdalinfo_response = `gdalinfo "#{split_folder}/#{filename_without_extension}.tif"`
 
-                    if gdalinfo_response.include? "Band 4"  
-                        verified_splits << "#{split_folder}/#{filename}"
+                    if gdalinfo_response.include? "Band 4"
+                        verified_splits << "#{split_folder}/#{filename_without_extension}"
                     else
                         output[:errors] << "#{filename} Does Not have 4th Band"
                     end
-                end
 
-                # check if the file exsts in the packing slip final delivery folder
+                    # check if the tiff is projected
+                    listgeo_response = `listgeo '#{split_folder}/#{filename}'`
+                    output[:errors] << "#{filename} does Not have GTCitationGeoKey. Check if the Tiff is projected." if !listgeo_response.include? "GTCitationGeoKey"
+                    output[:errors] << "#{filename} does Not have PCSCitationGeoKey. Check if the Tiff is projected." if !listgeo_response.include? "PCSCitationGeoKey"
+
+                else
+                    # filename does not exist within the county foulder
+                    output[:errors] << "#{filename} Does not exist within #{final_delivery_folder}/#{project}/#{tile.state_abv}/#{tile.county.full_fips}/Orthos"
+                end
 
             else
                 # check if the tile exists in the app
                 tile = Tile.find_by(poly_id: parsed_poly_id[:poly_id])
-
+ 
                 if !tile.present? 
 
                     # Add to the unmatched tiles that the filename was not found in the app
@@ -108,7 +115,19 @@ class FinalDeliverySplits
         p "--------------"
         p unmatched_tiles
 
-        # Check the imagery for bands and projection
+        if unmatched_tiles.length > 0
+            # Send email notifying user there are unmatched tiles in the split folder
+        end
+
+        # If the verified splits is not empty and there are no unmatched 
+        if verified_splits.length > 0 && output[:errors].length == 0
+            p "ALL GOOD DUDE"
+            # FinalDelivery.delay.nrisl_execute params, current_user, path
+        end
+
+        # return to client
+        output
+
     end
 
     def self.extract_id filename="ortho_AL_15_7341010700H6BB000c_20240820", project="SL"

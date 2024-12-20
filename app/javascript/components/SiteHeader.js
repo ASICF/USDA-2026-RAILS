@@ -492,6 +492,13 @@ const SiteHeader = (props) => {
                     >
                       Generate Metadata and Assign PSN
                     </Dropdown.Item>
+                    <Dropdown.Item
+                      as="a"
+                      href={`/final_delivery/splits`}
+                      data-turbolinks="false"
+                    >
+                      Process Splits
+                    </Dropdown.Item>
                   </Dropdown.Menu>
                 </Dropdown>
               </Dropdown.Menu>

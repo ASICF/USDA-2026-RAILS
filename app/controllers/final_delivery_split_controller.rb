@@ -24,7 +24,7 @@ class FinalDeliverySplitController < ApplicationController
 
       if packing_slip.present?
 
-        response = FinalDeliverySplits.preprocessing params[:input_directory], packing_slip
+        response = FinalDeliverySplits.preprocessing params[:input_directory], packing_slip, current_user
         pp response
 
         render json: response
@@ -39,3 +39,6 @@ class FinalDeliverySplitController < ApplicationController
     end
   end
 end
+
+# /vol1/Bernard_Test/Final_Delivery_20240926_AL
+# /vol1/Bernard_Test/Final_Delivery_20240906_AL/

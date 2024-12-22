@@ -88,7 +88,7 @@ export default function FinalDeliverySplit({ packing_slips, token }) {
           title="Important"
           message={
             <span>
-              This process expects the path to a Final Delivery Folder and it's
+              This process expects the path to a Tile Dump Folder and it's
               associated Packing Slip. All files are assumed under{" "}
               <b>P:\Vol_1</b>.
             </span>
@@ -104,7 +104,7 @@ export default function FinalDeliverySplit({ packing_slips, token }) {
             render={({ field: { name, onBlur, onChange, value } }) => (
               <Form.Input
                 fluid
-                label="Final Delivery Directory"
+                label="Tile Dump Directory"
                 autoComplete="off"
                 name={name}
                 required={true}

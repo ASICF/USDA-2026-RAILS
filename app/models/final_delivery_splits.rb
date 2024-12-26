@@ -218,6 +218,7 @@ class FinalDeliverySplits
         original_arr = []
         delete_arr = []
         move_arr = []
+        migration_arr = []
 
         # create the toDelete folder inside the updated folder path
         FileUtils.mkdir_p(to_delete_path) unless File.directory?(to_delete_path)
@@ -244,27 +245,6 @@ class FinalDeliverySplits
             p "-------"
             p parsed_poly_id
 
-            # arr = File.basename(file, '.tif').split("_")
-
-            # final_poly_id = arr[3]
-            # original_poly_id = arr[3]
-
-            # if arr.size == 6
-            #     final_poly_id = "#{arr[3]}_#{arr[4]}"
-            #     original_poly_id = arr[3]
-
-            #     if Tile.find_by(filename: filename_without_extension).present?
-            #         original_poly_id = "#{arr[3]}_#{arr[4]}"
-            #     end
-
-            # elsif arr.size == 7
-            #     final_poly_id = "#{arr[3]}_#{arr[4]}_#{arr[5]}"
-            #     original_poly_id = "#{arr[3]}_#{arr[4]}"
-            # end
-
-            # p "Filename: #{filename_without_extension}"
-            # p "original poly_id: #{original_poly_id}"
-
             # Find the tile in the packing slip
             tile = packing_slip.tiles.ortho_processed.dumped.shipped.find_by(poly_id: parsed_poly_id[:poly_id])
 
@@ -289,6 +269,8 @@ class FinalDeliverySplits
                 end
 
             end
+
+            delivery_path = nil
 
             if delivery_files.size > 0
 
@@ -400,38 +382,32 @@ class FinalDeliverySplits
 
             move_arr << {filename: filename_without_extension, from: "#{original_path}/#{county_fips}/", to: "#{to_move_path}/#{county_fips}/"}
 
-            # # copy the metadata file to the folder and rename it
-            # FileUtils.cp("#{to_delete_path}/#{county_fips}/#{tile.filename}.xml", "#{to_move_path}/#{county_fips}/#{filename_without_extension}.xml")
+            # iterate the delete arr and extract the final delivery county folder name
+            match_delete = delete_arr.find {|delArr| delArr[:filename] === tile.filename}
 
-            # # Read the template file
-            # metadata_text = File.read("#{to_move_path}/#{county_fips}/#{filename_without_extension}.xml")
-
-            # # check if the metadata file is valid
-            # if metadata_text.scan(">#{parsed_poly_id[:poly_id]}<").count == 0
-            #     raise Exception, "#{"#{to_move_path}/#{county_fips}/#{filename_without_extension}.xml"}: Could not find matching poly_id #{parsed_poly_id[:poly_id]} in copied metadata"
-            # end
-
-            # # Update the variables
-            # metadata_text = metadata_text.gsub(parsed_poly_id[:poly_id], final_poly_id)
-
-            # # Write the text to the county folder as a new text file
-            # File.open("#{to_move_path}/#{county_fips}/#{filename_without_extension}.xml", "w") {|file| file.puts metadata_text }
-
-            # # cut and paste the file to a new folder
-            # FileUtils.mv("#{path}/#{filename_without_extension}.tif", "#{to_move_path}/#{county_fips}/")
-            # FileUtils.mv("#{path}/#{filename_without_extension}.tfw", "#{to_move_path}/#{county_fips}/")
+            migration_arr << {
+                filename: filename_without_extension,
+                from: "#{to_move_path}/#{county_fips}",
+                to: match_delete[:from]
+            }
 
         end
 
         p "----------"
+        p "original_arr"
         pp original_arr
+        p "delete_arr"
         pp delete_arr
+        p "move_arr"
         pp move_arr
+        p "migration_arr"
+        pp migration_arr
         p "----------"
 
+        FinalDeliverySplits.migration migration_arr
 
         # cleanup split_final_delivery_folder="", original_arr=[], delete_arr=[], move_arr=[], psn_folder_name="", to_delete_path="", original_path="", to_move_path=""
-        p FinalDeliverySplits.cleanup split_final_delivery_folder, original_arr, delete_arr, move_arr
+        # p FinalDeliverySplits.cleanup split_final_delivery_folder, original_arr, delete_arr, move_arr
 
         p "done"
 
@@ -453,8 +429,56 @@ class FinalDeliverySplits
         # => Keep this separate from the migration process in case it fails it will be easier to move them back and forth
     end
 
-    def self.migration
+    def self.migration migration_arr=[]
+
+        migration_arr = [{:filename=>"ortho_AL_15_7341010700H6BB000c_1_20240820",
+            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/toMove/01019",
+            :to=>"/vol1/Bernard_Test/Final_Delivery_20240906_AL/SL/AL/01019/Orthos/"},
+            {:filename=>"ortho_AL_15_7341010700H6BB000c_2_20240820",
+            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/toMove/01019",
+            :to=>"/vol1/Bernard_Test/Final_Delivery_20240906_AL/SL/AL/01019/Orthos/"},
+            {:filename=>"ortho_AL_15_7341010700H6BB000c_3_20240820",
+            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/toMove/01019",
+            :to=>"/vol1/Bernard_Test/Final_Delivery_20240906_AL/SL/AL/01019/Orthos/"},
+            {:filename=>"ortho_AL_15_7341010700H6BB000c_4_20240820",
+            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/toMove/01019",
+            :to=>"/vol1/Bernard_Test/Final_Delivery_20240906_AL/SL/AL/01019/Orthos/"},
+            {:filename=>"ortho_AL_15_7341010700H6BB000c_5_20240820",
+            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/toMove/01019",
+            :to=>"/vol1/Bernard_Test/Final_Delivery_20240906_AL/SL/AL/01019/Orthos/"},
+            {:filename=>"ortho_AL_15_7341010700H6BB000c_6_20240820",
+            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/toMove/01019",
+            :to=>"/vol1/Bernard_Test/Final_Delivery_20240906_AL/SL/AL/01019/Orthos/"},
+            {:filename=>"ortho_AL_15_7341010700H6BB000c_7_20240820",
+            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/toMove/01019",
+            :to=>"/vol1/Bernard_Test/Final_Delivery_20240906_AL/SL/AL/01019/Orthos/"},
+            {:filename=>"ortho_AL_15_7341010700H6BB000c_8_20240820",
+            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/toMove/01019",
+            :to=>"/vol1/Bernard_Test/Final_Delivery_20240906_AL/SL/AL/01019/Orthos/"},
+            {:filename=>"ortho_AL_15_7341010700H6BB000c_9_20240820",
+            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/toMove/01019",
+            :to=>"/vol1/Bernard_Test/Final_Delivery_20240906_AL/SL/AL/01019/Orthos/"},
+            {:filename=>"ortho_AL_15_7341010700H6BB000c_10_20240820",
+            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/toMove/01019",
+            :to=>"/vol1/Bernard_Test/Final_Delivery_20240906_AL/SL/AL/01019/Orthos/"}]
+
         # Iterate the county Folders in the ToMove folder into the County folder of the Final Delivery
+
+        p "Migration"
+        p "-------------------"
+        pp migration_arr
+        p "-------------------"
+
+        migration_arr.each do |obj|
+
+            p "Copying #{obj[:filename]}"
+            p " - tif"
+            FileUtils.cp("#{obj[:from]}/#{obj[:filename]}.tif", "#{obj[:to]}/#{obj[:filename]}.tif")
+            p " - tfw"
+            FileUtils.cp("#{obj[:from]}/#{obj[:filename]}.tfw", "#{obj[:to]}/#{obj[:filename]}.tfw")
+            p " - xml"
+            FileUtils.cp("#{obj[:from]}/#{obj[:filename]}.xml", "#{obj[:to]}/#{obj[:filename]}.xml")
+        end
 
         # build the Tile Index once completed
     end
@@ -487,72 +511,71 @@ class FinalDeliverySplits
 
         original_arr = [{:filename=>"ortho_AL_15_7341010700H6BB000c_1_20240820",
             :from=>"/vol1/Bernard_Test/Big_Tiles",
-            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_5/originalSplit/01019/"},
+            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/originalSplit/01019/"},
            {:filename=>"ortho_AL_15_7341010700H6BB000c_2_20240820",
             :from=>"/vol1/Bernard_Test/Big_Tiles",
-            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_5/originalSplit/01019/"},
+            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/originalSplit/01019/"},
            {:filename=>"ortho_AL_15_7341010700H6BB000c_3_20240820",
             :from=>"/vol1/Bernard_Test/Big_Tiles",
-            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_5/originalSplit/01019/"},
+            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/originalSplit/01019/"},
            {:filename=>"ortho_AL_15_7341010700H6BB000c_4_20240820",
             :from=>"/vol1/Bernard_Test/Big_Tiles",
-            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_5/originalSplit/01019/"},
+            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/originalSplit/01019/"},
            {:filename=>"ortho_AL_15_7341010700H6BB000c_5_20240820",
             :from=>"/vol1/Bernard_Test/Big_Tiles",
-            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_5/originalSplit/01019/"},
+            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/originalSplit/01019/"},
            {:filename=>"ortho_AL_15_7341010700H6BB000c_6_20240820",
             :from=>"/vol1/Bernard_Test/Big_Tiles",
-            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_5/originalSplit/01019/"},
+            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/originalSplit/01019/"},
            {:filename=>"ortho_AL_15_7341010700H6BB000c_7_20240820",
             :from=>"/vol1/Bernard_Test/Big_Tiles",
-            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_5/originalSplit/01019/"},
+            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/originalSplit/01019/"},
            {:filename=>"ortho_AL_15_7341010700H6BB000c_8_20240820",
             :from=>"/vol1/Bernard_Test/Big_Tiles",
-            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_5/originalSplit/01019/"},
+            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/originalSplit/01019/"},
            {:filename=>"ortho_AL_15_7341010700H6BB000c_9_20240820",
             :from=>"/vol1/Bernard_Test/Big_Tiles",
-            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_5/originalSplit/01019/"},
+            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/originalSplit/01019/"},
            {:filename=>"ortho_AL_15_7341010700H6BB000c_10_20240820",
             :from=>"/vol1/Bernard_Test/Big_Tiles",
-            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_5/originalSplit/01019/"}]
+            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/originalSplit/01019/"}]
         
         delete_arr = [{:filename=>"ortho_AL_15_7341010700H6BB000c_20240820",
             :from=>"/vol1/Bernard_Test/Final_Delivery_20240906_AL/SL/AL/01019/Orthos/",
-            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_5/toDelete/01019/"}]
+            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/toDelete/01019/"}]
         
         move_arr = [{:filename=>"ortho_AL_15_7341010700H6BB000c_1_20240820",
-            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_5/originalSplit/01019/",
-            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_5/toMove/01019/"},
+            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/originalSplit/01019/",
+            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/toMove/01019/"},
            {:filename=>"ortho_AL_15_7341010700H6BB000c_2_20240820",
-            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_5/originalSplit/01019/",
-            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_5/toMove/01019/"},
+            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/originalSplit/01019/",
+            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/toMove/01019/"},
            {:filename=>"ortho_AL_15_7341010700H6BB000c_3_20240820",
-            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_5/originalSplit/01019/",
-            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_5/toMove/01019/"},
+            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/originalSplit/01019/",
+            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/toMove/01019/"},
            {:filename=>"ortho_AL_15_7341010700H6BB000c_4_20240820",
-            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_5/originalSplit/01019/",
-            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_5/toMove/01019/"},
+            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/originalSplit/01019/",
+            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/toMove/01019/"},
            {:filename=>"ortho_AL_15_7341010700H6BB000c_5_20240820",
-            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_5/originalSplit/01019/",
-            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_5/toMove/01019/"},
+            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/originalSplit/01019/",
+            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/toMove/01019/"},
            {:filename=>"ortho_AL_15_7341010700H6BB000c_6_20240820",
-            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_5/originalSplit/01019/",
-            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_5/toMove/01019/"},
+            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/originalSplit/01019/",
+            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/toMove/01019/"},
            {:filename=>"ortho_AL_15_7341010700H6BB000c_7_20240820",
-            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_5/originalSplit/01019/",
-            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_5/toMove/01019/"},
+            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/originalSplit/01019/",
+            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/toMove/01019/"},
            {:filename=>"ortho_AL_15_7341010700H6BB000c_8_20240820",
-            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_5/originalSplit/01019/",
-            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_5/toMove/01019/"},
+            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/originalSplit/01019/",
+            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/toMove/01019/"},
            {:filename=>"ortho_AL_15_7341010700H6BB000c_9_20240820",
-            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_5/originalSplit/01019/",
-            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_5/toMove/01019/"},
+            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/originalSplit/01019/",
+            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/toMove/01019/"},
            {:filename=>"ortho_AL_15_7341010700H6BB000c_10_20240820",
-            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_5/originalSplit/01019/",
-            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_5/toMove/01019/"}]
+            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/originalSplit/01019/",
+            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/toMove/01019/"}]
 
-        split_final_delivery_folder = "/vol1/Bernard_Test/Big_Tiles/20240906_AL_5"
-
+        split_final_delivery_folder = "/vol1/Bernard_Test/Big_Tiles/20240906_AL_11"
 
         # iterate the move arr and move the files back to the split folder
         p "Original Split Move"

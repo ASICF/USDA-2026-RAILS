@@ -212,7 +212,7 @@ class FinalDelivery < ApplicationRecord
                 p "-----------"
                 p exception.backtrace.count
                 exception.backtrace.each do |x|
-                    next if !x.include? "footprint.rb"
+                    next if !x.include? "final_delivery.rb"
                     x.match(/^(.+?):(\d+)(|:in `(.+)')$/); 
                    p [$1,$2,$4]
                 end

@@ -2,135 +2,180 @@ class FinalDeliverySplits
 
     def self.preprocessing input_directory='P:\Vol_1\Bernard_Test', packing_slip=PackingSlip.find(144), current_user = User.first
 
-        output = {
-            count: 0,
-            pass: false,
-            errors: []
+        response = {
+            status: false,
+            message: nil
         }
+
+        # output = {
+        #     count: 0,
+        #     pass: false,
+        #     errors: []
+        # }
         unmatched_tiles = []
         verified_splits = []
 
-        # get the packing slip project and state
-        project = packing_slip.project
-        state = packing_slip.state
-        psn = packing_slip.name
+        # Start a Transaction Block
+        ActiveRecord::Base.transaction do
+            begin
 
-        # convert the path to unix pathing
-        unix_path = Task.build input_directory
-        split_folder = "#{unix_path}/Big_Tiles"
-        psn_folder_name = packing_slip.name.gsub(/[^\w\s_-]+/, '').gsub(/(^|\b\s)\s+($|\s?\b)/, '\\1\\2').gsub(/\s+/, '_')
-        final_delivery_folder = "#{unix_path}/Final_Delivery_#{psn_folder_name}"
+                # get the packing slip project and state
+                project = packing_slip.project
+                state = packing_slip.state
+                psn = packing_slip.name
 
-        p "------------"
-        p unix_path
-        p split_folder
-        p final_delivery_folder
-        p "------------"
+                # convert the path to unix pathing
+                unix_path = Task.build input_directory
+                split_folder = "#{unix_path}/Big_Tiles"
+                psn_folder_name = packing_slip.name.gsub(/[^\w\s_-]+/, '').gsub(/(^|\b\s)\s+($|\s?\b)/, '\\1\\2').gsub(/\s+/, '_')
+                final_delivery_folder = "#{unix_path}/Final_Delivery_#{psn_folder_name}"
 
-        if !File.directory?(final_delivery_folder)
+                p "------------"
+                p unix_path
+                p split_folder
+                p final_delivery_folder
+                p "------------"
 
-            # => If no Big Tile then just cancel the process
-            output[:message] = "Final Delivery Folder '#{final_delivery_folder}' in #{split_folder}"
-            output[:pass] = false
+                if !File.directory?(final_delivery_folder)
 
-            return output
-        end
+                    raise Exception, "Final Delivery Folder '#{final_delivery_folder}' in #{split_folder}"
 
-        # Check the user supplied path
-        # => Make sure it's all scoped under the project folder
-        # => Check if the Big Tiles folder exists
+                    # # => If no Big Tile then just cancel the process
+                    # output[:message] = "Final Delivery Folder '#{final_delivery_folder}' in #{split_folder}"
+                    # output[:pass] = false
+                    # return output
+                end
 
-        if !File.directory?(split_folder)
+                # Check the user supplied path
+                # => Make sure it's all scoped under the project folder
+                # => Check if the Big Tiles folder exists
 
-            # => Create the Big Tiles folder if it doesn't exist
-            FileUtils.mkdir_p(split_folder)
+                if !File.directory?(split_folder)
 
-            # => If no Big Tile then just cancel the process
-            output[:message] = "No splits found in #{split_folder}"
-            output[:pass] = false
+                    # => Create the Big Tiles folder if it doesn't exist
+                    FileUtils.mkdir_p(split_folder)
 
-            return output
-        end
+                    raise Exception, "No splits found in #{split_folder}"
 
-        # iterate the tiffs in the folder
-        Dir.glob("#{split_folder}/*.tif").each do |file|
-            # p file
+                    # # => If no Big Tile then just cancel the process
+                    # output[:message] = "No splits found in #{split_folder}"
+                    # output[:pass] = false
+                    # return output
+                end
 
-            filename = File.basename(file)
-            filename_without_extension = File.basename(file, '.tif')
+                # iterate the tiffs in the folder
+                Dir.glob("#{split_folder}/*.tif").each do |file|
+                    # p file
 
-            # extract the poly id
-            parsed_poly_id = FinalDeliverySplits.extract_id filename_without_extension, project
+                    filename = File.basename(file)
+                    filename_without_extension = File.basename(file, '.tif')
 
-            # p "-------"
-            # p parsed_poly_id
-            
-            # find the tile based on the state, project, parsed poly id and packing slip
-            tile = state.tiles.find_by(poly_id: parsed_poly_id[:poly_id], project: project, packing_slip: packing_slip)
+                    # extract the poly id
+                    parsed_poly_id = FinalDeliverySplits.extract_id filename_without_extension, project
 
-            if tile.present?
+                    # p "-------"
+                    # p parsed_poly_id
+                    
+                    # find the tile based on the state, project, parsed poly id and packing slip
+                    tile = state.tiles.find_by(poly_id: parsed_poly_id[:poly_id], project: project, packing_slip: packing_slip)
 
-                # p "#{final_delivery_folder}/#{project}/#{tile.state_abv}/#{tile.county.full_fips}/Orthos/#{tile.filename}.tif"
+                    if tile.present?
 
-                # check if the tile is in the final delivery folder
-                if File.file?("#{final_delivery_folder}/#{project}/#{tile.state_abv}/#{tile.county.full_fips}/Orthos/#{tile.filename}.tif")
+                        # p "#{final_delivery_folder}/#{project}/#{tile.state_abv}/#{tile.county.full_fips}/Orthos/#{tile.filename}.tif"
 
-                    # check the tif bands to make sure they are valid
-                    gdalinfo_response = `gdalinfo "#{split_folder}/#{filename_without_extension}.tif"`
+                        # check if the tile is in the final delivery folder
+                        if File.file?("#{final_delivery_folder}/#{project}/#{tile.state_abv}/#{tile.county.full_fips}/Orthos/#{tile.filename}.tif")
 
-                    if gdalinfo_response.include? "Band 4"
-                        verified_splits << "#{split_folder}/#{filename_without_extension}"
+                            # check the tif bands to make sure they are valid
+                            gdalinfo_response = `gdalinfo "#{split_folder}/#{filename_without_extension}.tif"`
+
+                            if gdalinfo_response.include? "Band 4"
+                                verified_splits << "#{split_folder}/#{filename_without_extension}"
+                            else
+                                # output[:errors] << "#{filename} Does Not have 4th Band"
+                                raise Exception, "#{filename} Does Not have 4th Band"
+                            end
+
+                            # check if the tiff is projected
+                            listgeo_response = `listgeo '#{split_folder}/#{filename}'`
+                            # output[:errors] << "#{filename} does Not have GTCitationGeoKey. Check if the Tiff is projected." if !listgeo_response.include? "GTCitationGeoKey"
+                            # output[:errors] << "#{filename} does Not have PCSCitationGeoKey. Check if the Tiff is projected." if !listgeo_response.include? "PCSCitationGeoKey"
+
+                            raise Exception, "#{filename} does Not have GTCitationGeoKey. Check if the Tiff is projected." if !listgeo_response.include? "GTCitationGeoKey"
+                            raise Exception, "#{filename} does Not have PCSCitationGeoKey. Check if the Tiff is projected." if !listgeo_response.include? "PCSCitationGeoKey"
+                        else
+                            # filename does not exist within the county foulder
+                            # output[:errors] << "#{filename} Does not exist within #{final_delivery_folder}/#{project}/#{tile.state_abv}/#{tile.county.full_fips}/Orthos"
+                            raise Exception, "#{filename} Does not exist within #{final_delivery_folder}/#{project}/#{tile.state_abv}/#{tile.county.full_fips}/Orthos"
+                        end
+
                     else
-                        output[:errors] << "#{filename} Does Not have 4th Band"
+                        # check if the tile exists in the app
+                        tile = Tile.find_by(poly_id: parsed_poly_id[:poly_id])
+        
+                        if !tile.present? 
+
+                            # Add to the unmatched tiles that the filename was not found in the app
+                            # => Send email after validation process notifying user
+                            unmatched_tiles << filename
+                        end
                     end
 
-                    # check if the tiff is projected
-                    listgeo_response = `listgeo '#{split_folder}/#{filename}'`
-                    output[:errors] << "#{filename} does Not have GTCitationGeoKey. Check if the Tiff is projected." if !listgeo_response.include? "GTCitationGeoKey"
-                    output[:errors] << "#{filename} does Not have PCSCitationGeoKey. Check if the Tiff is projected." if !listgeo_response.include? "PCSCitationGeoKey"
+                end
 
+                p " "
+                p "Verified Splits"
+                p "--------------"
+                pp verified_splits
+
+                p " "
+                p "Unmatched Tiles"
+                p "--------------"
+                p unmatched_tiles
+
+                if unmatched_tiles.length > 0
+                    # Send email notifying user there are unmatched tiles in the split folder
+                end
+
+                if verified_splits.count > 0
+                    response = {
+                        status: true,
+                        message: "Found #{verified_splits.count} splits, Split tool process has started as a queued job that can be tracked in the Job Tracker. You will receive an email once it finishes."
+                    }
                 else
-                    # filename does not exist within the county foulder
-                    output[:errors] << "#{filename} Does not exist within #{final_delivery_folder}/#{project}/#{tile.state_abv}/#{tile.county.full_fips}/Orthos"
+                    response = {
+                        status: false,
+                        message: "No splits found that match within #{psn}. Process was not initialized."
+                    }
                 end
-
-            else
-                # check if the tile exists in the app
-                tile = Tile.find_by(poly_id: parsed_poly_id[:poly_id])
- 
-                if !tile.present? 
-
-                    # Add to the unmatched tiles that the filename was not found in the app
-                    # => Send email after validation process notifying user
-                    unmatched_tiles << filename
+                
+            rescue Exception => exception
+                Rails.logger.error "#{project} Final Delivery Prep Error: #{exception.message}"
+                p "-----------"
+                p exception.backtrace.count
+                exception.backtrace.each do |x|
+                    next if !x.include? "final_delivery_splits.rb"
+                    x.match(/^(.+?):(\d+)(|:in `(.+)')$/); 
+                p [$1,$2,$4]
                 end
+                p "-----------"
+
+                response[:status] = false
+                response[:message] = [exception.message]
+
+                raise ActiveRecord::Rollback
             end
-
-        end
-
-        p " "
-        p "Verified Splits"
-        p "--------------"
-        pp verified_splits
-
-        p " "
-        p "Unmatched Tiles"
-        p "--------------"
-        p unmatched_tiles
-
-        if unmatched_tiles.length > 0
-            # Send email notifying user there are unmatched tiles in the split folder
         end
 
         # If the verified splits is not empty and there are no unmatched 
-        if verified_splits.length > 0 && output[:errors].length == 0
+        if verified_splits.length > 0
             p "ALL GOOD DUDE"
             # FinalDelivery.delay.nrisl_execute params, current_user, path
-            FinalDeliverySplits.processing verified_splits, packing_slip, split_folder, final_delivery_folder, current_user
+            # FinalDeliverySplits.processing verified_splits, packing_slip, split_folder, final_delivery_folder, current_user
         end
 
         # return to client
-        return output
+        return response
 
     end
 
@@ -404,7 +449,7 @@ class FinalDeliverySplits
         pp migration_arr
         p "----------"
 
-        FinalDeliverySplits.migration migration_arr
+        FinalDeliverySplits.migration final_delivery_folder, project, migration_arr
 
         # cleanup split_final_delivery_folder="", original_arr=[], delete_arr=[], move_arr=[], psn_folder_name="", to_delete_path="", original_path="", to_move_path=""
         # p FinalDeliverySplits.cleanup split_final_delivery_folder, original_arr, delete_arr, move_arr
@@ -429,7 +474,7 @@ class FinalDeliverySplits
         # => Keep this separate from the migration process in case it fails it will be easier to move them back and forth
     end
 
-    def self.migration migration_arr=[]
+    def self.migration final_delivery_folder, project, migration_arr=[]
 
         migration_arr = [{:filename=>"ortho_AL_15_7341010700H6BB000c_1_20240820",
             :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/toMove/01019",
@@ -481,10 +526,7 @@ class FinalDeliverySplits
         end
 
         # build the Tile Index once completed
-    end
-
-    def self.build_tile_index
-        # Connect to the Final Delivery build tile index method
+        self.build_tile_index final_delivery_folder, project
     end
 
     def self.validation
@@ -628,6 +670,148 @@ class FinalDeliverySplits
             if File.file?("#{obj[:to]}/#{obj[:filename]}.xml")
                 p " - Moving xml"
                 FileUtils.mv("#{obj[:to]}/#{obj[:filename]}.xml", obj[:from])
+            end
+        end
+
+    end
+
+    private
+
+    def self.build_tile_index final_delivery_folder, project="SL"
+
+        p "BUILD TILE INDEX"
+
+        # # Testing
+        # final_delivery_folder = "/vol1/Bernard_Test/Final_Delivery_20240906_AL/"
+        # project = "SL"
+
+        # geotag_path = "/vol3/24-6567_USDA_SL/03_FrameBase/WA/Tiles_Dump/Final_Delivery_20240731_WA/SL/"
+        geotag_path = "#{final_delivery_folder}#{project}"
+
+        # Iterate 
+        Dir.glob("#{geotag_path}/*").each do |folder|
+            next if !File.directory?(folder)
+
+            # # extract the folder name
+            state_abv = Pathname(folder).each_filename.to_a[-1]
+
+            p state_abv
+
+            state = State.exclude_geom.find_by(abv: state_abv)
+
+            Dir.glob("#{geotag_path}/#{state_abv}/*").each do |county_folder|
+
+            # ["/vol2/226567_14_SL_NY/04_TilesDump/Final_Delivery_20221130_NY/SL/WA/36051/"].each do |county_folder|
+
+                county_fips = Pathname(county_folder).each_filename.to_a[-1]
+
+                county = state.counties.find_by(full_fips: county_fips)
+
+                utm_indexes = {}
+
+                p county_fips
+
+                # Iterate the files in the folder
+                Dir.glob("#{geotag_path}/#{state_abv}/#{county_fips}/Orthos/*.tif").each do |file|
+                    # p file
+                    next if file == '.' or file == '..'
+
+                    # Get the filename wihtout tif
+                    filename = File.basename(file, '.tif')
+                    arr = filename.split("_")
+
+                    # p filename
+
+                    final_poly_id = arr[3]
+                    original_poly_id = arr[3]
+        
+                    if arr.size == 6
+                        final_poly_id = "#{arr[3]}_#{arr[4]}"
+                        original_poly_id = arr[3]
+                    elsif arr.size == 7
+                        final_poly_id = "#{arr[3]}_#{arr[4]}_#{arr[5]}"
+                        original_poly_id = "#{arr[3]}_#{arr[4]}"
+                    elsif arr.size == 8
+                        final_poly_id = "#{arr[3]}_#{arr[4]}_#{arr[5]}"
+                        original_poly_id = "#{arr[3]}_#{arr[4]}"
+                    end
+
+                    # overrides
+                    if filename == "ortho_IL_15_655A1296005XJ_1_20240320"
+                        original_poly_id = "655A1296005XJ_1"
+                        final_poly_id = "655A1296005XJ_1"
+                    elsif filename == "ortho_IL_15_655A1296005XJ_2_20240329"
+                        original_poly_id = "655A1296005XJ_2"
+                        final_poly_id = "655A1296005XJ_2"
+                    elsif filename == "ortho_IL_15_665A1295005RH_1_20240329"
+                        original_poly_id = "665A1295005RH_1"
+                        final_poly_id = "665A1295005RH_1"
+                    elsif filename == "ortho_IL_15_665A1295005RH_2_20240319"
+                        original_poly_id = "665A1295005RH_2"
+                        final_poly_id = "665A1295005RH_2"
+                    elsif filename == "ortho_MA_15_7313209800H0ZA0007_A_20241004"
+                        original_poly_id = "7313209800H0ZA0007_A"
+                        final_poly_id = "7313209800H0ZA0007_A"
+                    elsif filename == "ortho_MA_15_7313209800H0ZA0007_B_20241005"
+                        original_poly_id = "7313209800H0ZA0007_B"
+                        final_poly_id = "7313209800H0ZA0007_B"
+                    elsif filename == "ortho_ND_15_ND_08_WAHL_20240629"
+                        original_poly_id = "ND_08_WAHL"
+                        final_poly_id = "ND_08_WAHL"
+                    end
+
+                    tile = Tile.ortho_processed.find_by(poly_id: original_poly_id)
+
+                    p "-------"
+                    p filename
+                    p original_poly_id
+                    p final_poly_id
+                    p "-------"
+
+                    # Get the UTM Zone
+                    utm_zone = tile.utm_zone
+
+                    # Create the property if it doesn't exist
+                    utm_indexes[utm_zone] = [] if utm_indexes[utm_zone].nil?
+
+                    # Push the file to the utm zone
+                    utm_indexes[utm_zone] << file
+                end
+
+                p "+++++"
+                p utm_indexes
+                p "+++++"
+
+                utm_indexes.each do |utm_key, utm|
+
+                    # Generate the output tile index
+                    if utm_indexes.count > 1
+                        output_index_file = "#{geotag_path}/#{state_abv}/#{county_fips}/Orthos/ortho_index_#{state.abv}_#{county.full_fips}_15_4_z#{utm_key}"
+                        # next
+                    else
+                        output_index_file = "#{geotag_path}/#{state_abv}/#{county_fips}/Orthos/ortho_index_#{state.abv}_#{county.full_fips}_15_4"
+                        # next
+                    end
+
+                    # # Remove the shapefile if it already exists
+                    File.delete("#{output_index_file}.shp") if File.exist?("#{output_index_file}.shp")
+                    File.delete("#{output_index_file}.dbf") if File.exist?("#{output_index_file}.dbf")
+                    File.delete("#{output_index_file}.prj") if File.exist?("#{output_index_file}.prj")
+                    File.delete("#{output_index_file}.shx") if File.exist?("#{output_index_file}.shx")
+
+                    p "---------------"
+                    p county.full_fips
+                    p "gdaltindex -t_srs EPSG:269#{utm_key} #{output_index_file}.shp '#{utm.join("' '")}'"
+
+                    # # Create the tileindex
+                    response = system("gdaltindex -t_srs EPSG:269#{utm_key} #{output_index_file}.shp '#{utm.join("' '")}'")
+
+                    p "gdaltindex"
+                    p response
+                    p "---------------"
+
+                end
+
             end
         end
 

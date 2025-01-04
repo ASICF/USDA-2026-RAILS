@@ -31,6 +31,7 @@ export default function FinalDeliverySplit({ packing_slips, token }) {
   const [message, setMessage] = useState(null);
   const [validatedObj, setValidatedObj] = useState(null);
   const [result, setResult] = useState(null);
+  const [submitted, setSubmitted] = useState(false);
 
   const {
     handleSubmit,
@@ -48,6 +49,8 @@ export default function FinalDeliverySplit({ packing_slips, token }) {
   const onValidationSubmit = (data) => {
     console.error("onValidationSubmit", data);
 
+    setSubmitted(true);
+
     axios
       .post(`/final_delivery/splits/execute`, {
         authenticity_token: token,
@@ -56,6 +59,14 @@ export default function FinalDeliverySplit({ packing_slips, token }) {
       })
       .then(({ data }) => {
         console.log(data);
+
+        // Set message
+        setMessage({
+          status: data.status ? "Success" : "Error",
+          text: data.message,
+        });
+
+        setSubmitted(false);
       });
   };
 
@@ -161,6 +172,8 @@ export default function FinalDeliverySplit({ packing_slips, token }) {
           primary
           floated="right"
           type="button"
+          loading={submitted}
+          disabled={submitted}
           onClick={handleSubmit(onValidationSubmit)}
         >
           Submit

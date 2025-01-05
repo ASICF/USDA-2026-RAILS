@@ -81,7 +81,7 @@ export default function FinalDeliverySplit({ packing_slips, token }) {
         <Breadcrumb.Divider />
         <Breadcrumb.Section>Final Delivery</Breadcrumb.Section>
         <Breadcrumb.Divider />
-        <Breadcrumb.Section>Proces Splits</Breadcrumb.Section>
+        <Breadcrumb.Section>Process Splits</Breadcrumb.Section>
       </Breadcrumbs>
       <Divider />
 

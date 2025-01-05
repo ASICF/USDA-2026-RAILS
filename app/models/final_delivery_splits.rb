@@ -7,43 +7,32 @@ class FinalDeliverySplits
             message: nil
         }
 
-        # output = {
-        #     count: 0,
-        #     pass: false,
-        #     errors: []
-        # }
         unmatched_tiles = []
         verified_splits = []
+
+        # get the packing slip project and state
+        project = packing_slip.project
+        state = packing_slip.state
+        psn = packing_slip.name
+
+        # convert the path to unix pathing
+        unix_path = Task.build input_directory
+        split_folder = "#{unix_path}/Big_Tiles"
+        psn_folder_name = packing_slip.name.gsub(/[^\w\s_-]+/, '').gsub(/(^|\b\s)\s+($|\s?\b)/, '\\1\\2').gsub(/\s+/, '_')
+        final_delivery_folder = "#{unix_path}/Final_Delivery_#{psn_folder_name}"
+
+        p "------------"
+        p unix_path
+        p split_folder
+        p final_delivery_folder
+        p "------------"
 
         # Start a Transaction Block
         ActiveRecord::Base.transaction do
             begin
 
-                # get the packing slip project and state
-                project = packing_slip.project
-                state = packing_slip.state
-                psn = packing_slip.name
-
-                # convert the path to unix pathing
-                unix_path = Task.build input_directory
-                split_folder = "#{unix_path}/Big_Tiles"
-                psn_folder_name = packing_slip.name.gsub(/[^\w\s_-]+/, '').gsub(/(^|\b\s)\s+($|\s?\b)/, '\\1\\2').gsub(/\s+/, '_')
-                final_delivery_folder = "#{unix_path}/Final_Delivery_#{psn_folder_name}"
-
-                p "------------"
-                p unix_path
-                p split_folder
-                p final_delivery_folder
-                p "------------"
-
                 if !File.directory?(final_delivery_folder)
-
-                    raise Exception, "Final Delivery Folder '#{final_delivery_folder}' in #{split_folder}"
-
-                    # # => If no Big Tile then just cancel the process
-                    # output[:message] = "Final Delivery Folder '#{final_delivery_folder}' in #{split_folder}"
-                    # output[:pass] = false
-                    # return output
+                    raise Exception, "Could not find Final Delivery Folder \"Final_Delivery_#{psn_folder_name}\" in \"#{input_directory}\""
                 end
 
                 # Check the user supplied path
@@ -56,11 +45,6 @@ class FinalDeliverySplits
                     FileUtils.mkdir_p(split_folder)
 
                     raise Exception, "No splits found in #{split_folder}"
-
-                    # # => If no Big Tile then just cancel the process
-                    # output[:message] = "No splits found in #{split_folder}"
-                    # output[:pass] = false
-                    # return output
                 end
 
                 # iterate the tiffs in the folder
@@ -98,14 +82,11 @@ class FinalDeliverySplits
 
                             # check if the tiff is projected
                             listgeo_response = `listgeo '#{split_folder}/#{filename}'`
-                            # output[:errors] << "#{filename} does Not have GTCitationGeoKey. Check if the Tiff is projected." if !listgeo_response.include? "GTCitationGeoKey"
-                            # output[:errors] << "#{filename} does Not have PCSCitationGeoKey. Check if the Tiff is projected." if !listgeo_response.include? "PCSCitationGeoKey"
 
                             raise Exception, "#{filename} does Not have GTCitationGeoKey. Check if the Tiff is projected." if !listgeo_response.include? "GTCitationGeoKey"
                             raise Exception, "#{filename} does Not have PCSCitationGeoKey. Check if the Tiff is projected." if !listgeo_response.include? "PCSCitationGeoKey"
                         else
                             # filename does not exist within the county foulder
-                            # output[:errors] << "#{filename} Does not exist within #{final_delivery_folder}/#{project}/#{tile.state_abv}/#{tile.county.full_fips}/Orthos"
                             raise Exception, "#{filename} Does not exist within #{final_delivery_folder}/#{project}/#{tile.state_abv}/#{tile.county.full_fips}/Orthos"
                         end
 
@@ -171,13 +152,564 @@ class FinalDeliverySplits
         if verified_splits.length > 0
             p "ALL GOOD DUDE"
             # FinalDelivery.delay.nrisl_execute params, current_user, path
-            # FinalDeliverySplits.processing verified_splits, packing_slip, split_folder, final_delivery_folder, current_user
+            FinalDeliverySplits.processing verified_splits, packing_slip, split_folder, final_delivery_folder, current_user, input_directory, project
         end
 
         # return to client
         return response
 
     end
+
+    def self.processing verified_splits, packing_slip, split_folder, final_delivery_folder, current_user, input_directory, project
+
+        p "------------"
+        p "Processing"
+        p packing_slip
+        p "split_folder: #{split_folder}"
+        p "final_delivery_folder: #{final_delivery_folder}"
+        pp verified_splits
+        p "------------"
+
+        process_success = false
+        error_message = "Something went wrong. Contact Programming."
+        split_folder_path = nil
+
+        # track where files are moved so they don't need to be parsed out again
+        original_arr = []
+        delete_arr = []
+        move_arr = []
+        migration_arr = []
+
+        # Created new Job
+        job = Job.create(
+            started_at: Time.now,
+            message: "Processing Request...",
+            active: true,
+            process_type: "#{project} Final Delivery Splits",
+            creator: current_user
+        )
+
+        # Start a Transaction Block
+        ActiveRecord::Base.transaction do
+            begin
+
+                # Create a new History record
+                history = History.new
+                history.action_type = "Final Delivery Splits"
+                history.creator = current_user
+                history.save
+
+                # Create the folder structure 
+                # => OriginalSplit
+                # => ToDelete
+                # => ToMove
+
+                # check if the packing slip folder already exists within the splits folder
+
+                # Get the folder friendly file name
+                psn_folder_name = packing_slip.name.gsub(/[^\w\s_-]+/, '').gsub(/(^|\b\s)\s+($|\s?\b)/, '\\1\\2').gsub(/\s+/, '_')
+
+                split_folder_path = FinalDeliverySplits.build_split_folder "#{split_folder}/#{psn_folder_name}", nil
+
+                # Create subfolders
+                to_delete_path = "#{split_folder_path}/toDelete"
+                original_path = "#{split_folder_path}/originalSplit"
+                to_move_path = "#{split_folder_path}/toMove"
+
+                # create the toDelete folder inside the updated folder path
+                FileUtils.mkdir_p(to_delete_path) unless File.directory?(to_delete_path)
+
+                # create the original folder inside the updated folder path
+                FileUtils.mkdir_p(original_path) unless File.directory?(original_path)
+
+                # create the toMove folder inside the updated folder path
+                FileUtils.mkdir_p(to_move_path) unless File.directory?(to_move_path)
+
+                matched = []
+
+                Dir.glob("#{split_folder}/*.tif").each do |file|
+            
+                    next if file.include? "toDelete"
+
+                    path = File.dirname(file)
+                    # filename = File.basename(file)
+                    filename_without_extension = File.basename(file, '.tif')
+
+                    # get the poly id
+                    parsed_poly_id = FinalDeliverySplits.extract_id filename_without_extension, packing_slip.project
+
+                    p "-------"
+                    p parsed_poly_id
+
+                    # Find the tile in the packing slip
+                    tile = packing_slip.tiles.ortho_processed.dumped.shipped.find_by(poly_id: parsed_poly_id[:poly_id])
+
+                    if tile.nil?
+                        # raise Exception, "#{filename}: Could not find associated tile poly_id using: #{arr[3]}"
+                        # errors << {file: file, message: "Could not find associated tile poly_id using: #{arr[3]}"}
+                        next
+                    end
+
+                    # Get the county full fips
+                    county_fips = tile.county.full_fips
+
+                    # find all the files that match the tile filename
+                    delivery_files = Dir.glob("#{final_delivery_folder}/**/#{tile.filename}.*")
+
+                    # check if any of the tiffs in the final delivery folder match
+                    if delivery_files.size == 0
+
+                        # Check if the file exists in the toDelete folder
+                        if Dir.glob("#{to_delete_path}/#{county_fips}/#{tile.filename}.*").count == 0
+                            raise Exception, "#{tile.filename}: Could not find file in #{to_delete_path} or within to delete path"
+                        end
+
+                    end
+
+                    delivery_path = nil
+
+                    if delivery_files.size > 0
+
+                        delivery_path = File.dirname(delivery_files.first)
+                        # delivery_filename = File.basename(delivery_file.first)
+                        # delivery_filename_without_extension = File.basename(delivery_file.first, '.tif')
+
+                        FileUtils.mkdir_p("#{to_delete_path}/#{county_fips}") unless File.directory?("#{to_delete_path}/#{county_fips}")
+                        FileUtils.mkdir_p("#{original_path}/#{county_fips}") unless File.directory?("#{original_path}/#{county_fips}")
+                        FileUtils.mkdir_p("#{to_move_path}/#{county_fips}") unless File.directory?("#{to_move_path}/#{county_fips}")
+
+                        # check if the file exists in the delivery path and if so then delete the 
+
+                        ## TIF ##
+                        # Check if the file exists in the final delivery folder and in the toDelete folder (means the script failed and re-running)
+                        if File.file?("#{delivery_path}/#{tile.filename}.tif") && File.file?("#{to_delete_path}/#{county_fips}/#{tile.filename}.tif")
+                            # If so then delete the toDelete file so it can be re-copied
+                            File.delete("#{to_delete_path}/#{county_fips}/#{tile.filename}.tif")
+                            p "- tif Found in the ToDelete folder, deleting and moving from Final Delivery Path"
+                        end
+
+                        # If the File exists in the Final delivery folder and not in the To Delete folder then copy
+                        if File.file?("#{delivery_path}/#{tile.filename}.tif") && !File.file?("#{to_delete_path}/#{county_fips}/#{tile.filename}.tif")
+                            # Delete the file form the 
+                            FileUtils.mv("#{delivery_path}/#{tile.filename}.tif", "#{to_delete_path}/#{county_fips}/")
+                            delete_arr << {filename: tile.filename, from: "#{delivery_path}/", to: "#{to_delete_path}/#{county_fips}/"}
+                        end
+
+                        ## TFW ##
+                        # Check if the file exists in the final delivery folder and in the toDelete folder (means the script failed and re-running)
+                        if File.file?("#{delivery_path}/#{tile.filename}.tfw") && File.file?("#{to_delete_path}/#{county_fips}/#{tile.filename}.tfw")
+                            # If so then delete the toDelete file so it can be re-copied
+                            File.delete("#{to_delete_path}/#{county_fips}/#{tile.filename}.tfw")
+                            p "- tfw Found in the ToDelete folder, deleting and moving from Final Delivery Path"
+                        end
+
+                        # If the File exists in the Final delivery folder and not in the To Delete folder then copy
+                        if File.file?("#{delivery_path}/#{tile.filename}.tfw") && !File.file?("#{to_delete_path}/#{county_fips}/#{tile.filename}.tfw")
+                            # Delete the file form thetile.filename
+                            FileUtils.mv("#{delivery_path}/#{tile.filename}.tfw", "#{to_delete_path}/#{county_fips}/")
+                        end
+
+                        ## XML ##
+                        # Check if the file exists in the final delivery folder and in the toDelete folder (means the script failed and re-running)
+                        if File.file?("#{delivery_path}/#{tile.filename}.xml") && File.file?("#{to_delete_path}/#{county_fips}/#{tile.filename}.xml")
+                            # If so then delete the toDelete file so it can be re-copied
+                            File.delete("#{to_delete_path}/#{county_fips}/#{tile.filename}.xml")
+                            p "- xml Found in the ToDelete folder, deleting and moving from Final Delivery Path"
+                        end
+
+                        # If the File exists in the Final delivery folder and not in the To Delete folder then copy
+                        if File.file?("#{delivery_path}/#{tile.filename}.xml") && !File.file?("#{to_delete_path}/#{county_fips}/#{tile.filename}.xml")
+                            # Delete the file form the 
+                            FileUtils.mv("#{delivery_path}/#{tile.filename}.xml", "#{to_delete_path}/#{county_fips}/")
+                        end
+                    end
+
+                    # Check if the metadata file exists in the toDelete folder
+
+                    if Dir.glob("#{to_delete_path}/#{county_fips}/#{tile.filename}.xml").size != 1
+                        raise Exception, "#{tile.filename}: Could not find file in #{final_delivery_folder}"
+                    end
+
+                    # copy the metadata into the original folder
+                    # read the metadata file and vlaidate it
+                    # open and update the metadata with the poly ids
+
+                    # copy the metadata file to the folder and rename it
+                    FileUtils.cp("#{to_delete_path}/#{county_fips}/#{tile.filename}.xml", "#{original_path}/#{county_fips}/#{filename_without_extension}.xml")
+
+                    # Read the template file
+                    metadata_text = File.read("#{original_path}/#{county_fips}/#{filename_without_extension}.xml")
+
+                    # check if the metadata file is valid
+                    if metadata_text.scan(">#{parsed_poly_id[:poly_id]}<").count == 0
+                        raise Exception, "#{"#{original_path}/#{county_fips}/#{filename_without_extension}.xml"}: Could not find matching poly_id #{parsed_poly_id[:poly_id]} in copied metadata"
+                    end
+
+                    # Update the variables
+                    metadata_text = metadata_text.gsub(parsed_poly_id[:poly_id], parsed_poly_id[:split_poly_id])
+
+                    # Write the text to the county folder as a new text file
+                    File.open("#{original_path}/#{county_fips}/#{filename_without_extension}.xml", "w") {|file| file.puts metadata_text }
+
+                    # cut and paste the file to a new folder
+                    FileUtils.mv("#{path}/#{filename_without_extension}.tif", "#{original_path}/#{county_fips}/")
+                    FileUtils.mv("#{path}/#{filename_without_extension}.tfw", "#{original_path}/#{county_fips}/")
+
+                    original_arr << {filename: filename_without_extension, from: path, to: "#{original_path}/#{county_fips}/"}
+
+                    # Generate and update GTF File
+                    # Use geotifcp to create the tiff with updated headers to the toMove folder
+
+                    # Set the GeoTIF tags
+                    # 1. Create the GTF file for the tf
+                    gtf_file = "#{original_path}/#{county_fips}/#{filename_without_extension}.gtf"
+
+                    # 2. Output the listgeo command to a GTF File
+                    listgeo_response = system("listgeo '#{original_path}/#{county_fips}/#{filename_without_extension}.tif' > '#{gtf_file}'")
+
+                    # update the gtf file
+                    FinalDelivery.build_gtf gtf_file, filename_without_extension, tile.utm.zone, parsed_poly_id[:split_poly_id]
+
+                    # Update the Tiff tags and copy to the county folder
+                    geotif_response = system("geotifcp -8 -g '#{gtf_file}' '#{original_path}/#{county_fips}/#{filename_without_extension}.tif' '#{to_move_path}/#{county_fips}/#{filename_without_extension}.tif'")
+
+                    FileUtils.cp("#{original_path}/#{county_fips}/#{filename_without_extension}.tfw", "#{to_move_path}/#{county_fips}/#{filename_without_extension}.tfw")
+                    FileUtils.cp("#{original_path}/#{county_fips}/#{filename_without_extension}.xml", "#{to_move_path}/#{county_fips}/#{filename_without_extension}.xml")
+
+                    move_arr << {filename: filename_without_extension, from: "#{original_path}/#{county_fips}/", to: "#{to_move_path}/#{county_fips}/"}
+
+                    # iterate the delete arr and extract the final delivery county folder name
+                    match_delete = delete_arr.find {|delArr| delArr[:filename] === tile.filename}
+
+                    migration_arr << {
+                        filename: filename_without_extension,
+                        from: "#{to_move_path}/#{county_fips}",
+                        to: match_delete[:from]
+                    }
+
+                end
+
+                p "----------"
+                p "original_arr"
+                pp original_arr
+                p "delete_arr"
+                pp delete_arr
+                p "move_arr"
+                pp move_arr
+                p "migration_arr"
+                pp migration_arr
+                p "----------"
+
+                # start the migration process
+                FinalDeliverySplits.migration final_delivery_folder, project, migration_arr
+
+                p "Back in Processing"
+
+                message = "Moved #{migration_arr.count} to Final Delivery folder at #{input_directory}"
+
+                history.update(message: message)
+
+                # Update the job
+                job.update(
+                    finished_at: Time.now,
+                    success: true,
+                    active: false,
+                    message: message
+                )
+
+                # process_success = true
+
+            rescue Exception => exception
+                Rails.logger.error "Final Delivery Error: #{exception.message}"
+                error_message = exception.message
+                p "-----------"
+                p exception.backtrace.count
+                exception.backtrace.each do |x|
+                    next if !x.include? "final_delivery.rb"
+                    x.match(/^(.+?):(\d+)(|:in `(.+)')$/); 
+                p [$1,$2,$4]
+                end
+                p "-----------"
+
+                # Delete the history object if present
+                history.destroy if history.present?
+
+                # Update the process 
+                process_success = false
+
+                # Rollback the transacction to wipe and and all database changes
+                raise ActiveRecord::Rollback
+            end
+        end
+
+        # Check if the job is still running which means it failed
+        if !process_success
+            job.update(
+                finished_at: Time.now,
+                active: false,
+                success: false,
+                message: "#{project} Final Delivery Splits Failed",
+                error_message: error_message
+            )
+
+            # Cleanup the files
+            if split_folder_path
+                FinalDeliverySplits.cleanup split_folder_path, original_arr, delete_arr, migration_arr
+            end
+        end
+
+        p "done"
+
+        # Iterate the Big Tiles folder Tiffs and extract the poliyid to check against the database
+        # => IMPORTANT! Production should add the _1, _2 to the end of the file instead of after the PolyID for better parsing 
+        # => Check against the database to find the Packing Slip info
+        # => check if associated tiff is in the ToDelete folder then the final delivery folder
+        # => If match then copy the .tif and .tfw to the OriginalSplit folder
+        # => Move the associated .tiff, .tfw, and .xml files from the Final Delivery to the ToDelete folder
+        # ==> Track the folder paths in a text file so that it can be referenced when moving files back by the app or manually. 
+
+        # Copy the XML from the ToDelete Folder into the ToMove folder
+        # Update the filename of the xml to match the split filename
+        # => Update the contents of the file with the new PolyID
+
+        # Update the TiffTags to reference the new PolyID
+
+        # once complete run the Migration
+        # => Keep this separate from the migration process in case it fails it will be easier to move them back and forth
+    end
+
+    def self.migration final_delivery_folder, project, migration_arr=[]
+
+        # migration_arr = [{:filename=>"ortho_AL_15_7341010700H6BB000c_1_20240820",
+        #     :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/toMove/01019",
+        #     :to=>"/vol1/Bernard_Test/Final_Delivery_20240906_AL/SL/AL/01019/Orthos/"},
+        #     {:filename=>"ortho_AL_15_7341010700H6BB000c_2_20240820",
+        #     :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/toMove/01019",
+        #     :to=>"/vol1/Bernard_Test/Final_Delivery_20240906_AL/SL/AL/01019/Orthos/"},
+        #     {:filename=>"ortho_AL_15_7341010700H6BB000c_3_20240820",
+        #     :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/toMove/01019",
+        #     :to=>"/vol1/Bernard_Test/Final_Delivery_20240906_AL/SL/AL/01019/Orthos/"},
+        #     {:filename=>"ortho_AL_15_7341010700H6BB000c_4_20240820",
+        #     :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/toMove/01019",
+        #     :to=>"/vol1/Bernard_Test/Final_Delivery_20240906_AL/SL/AL/01019/Orthos/"},
+        #     {:filename=>"ortho_AL_15_7341010700H6BB000c_5_20240820",
+        #     :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/toMove/01019",
+        #     :to=>"/vol1/Bernard_Test/Final_Delivery_20240906_AL/SL/AL/01019/Orthos/"},
+        #     {:filename=>"ortho_AL_15_7341010700H6BB000c_6_20240820",
+        #     :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/toMove/01019",
+        #     :to=>"/vol1/Bernard_Test/Final_Delivery_20240906_AL/SL/AL/01019/Orthos/"},
+        #     {:filename=>"ortho_AL_15_7341010700H6BB000c_7_20240820",
+        #     :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/toMove/01019",
+        #     :to=>"/vol1/Bernard_Test/Final_Delivery_20240906_AL/SL/AL/01019/Orthos/"},
+        #     {:filename=>"ortho_AL_15_7341010700H6BB000c_8_20240820",
+        #     :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/toMove/01019",
+        #     :to=>"/vol1/Bernard_Test/Final_Delivery_20240906_AL/SL/AL/01019/Orthos/"},
+        #     {:filename=>"ortho_AL_15_7341010700H6BB000c_9_20240820",
+        #     :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/toMove/01019",
+        #     :to=>"/vol1/Bernard_Test/Final_Delivery_20240906_AL/SL/AL/01019/Orthos/"},
+        #     {:filename=>"ortho_AL_15_7341010700H6BB000c_10_20240820",
+        #     :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/toMove/01019",
+        #     :to=>"/vol1/Bernard_Test/Final_Delivery_20240906_AL/SL/AL/01019/Orthos/"}]
+
+        # Iterate the county Folders in the ToMove folder into the County folder of the Final Delivery
+
+        p "Migration"
+        p "-------------------"
+        pp migration_arr
+        p "-------------------"
+
+        migration_arr.each do |obj|
+
+            p "Copying #{obj[:filename]}"
+            p " - tif"
+            FileUtils.cp("#{obj[:from]}/#{obj[:filename]}.tif", "#{obj[:to]}/#{obj[:filename]}.tif")
+            p " - tfw"
+            FileUtils.cp("#{obj[:from]}/#{obj[:filename]}.tfw", "#{obj[:to]}/#{obj[:filename]}.tfw")
+            p " - xml"
+            FileUtils.cp("#{obj[:from]}/#{obj[:filename]}.xml", "#{obj[:to]}/#{obj[:filename]}.xml")
+        end
+
+        # build the Tile Index once completed
+        self.build_tile_index final_delivery_folder, project
+    end
+
+    def self.validation
+        # Pass to the Final Delivery Validation
+    end
+
+    def self.cleanup split_final_delivery_folder, original_arr=[], delete_arr=[], migration_arr=[]
+        # Runs if the script fails
+        # => Copy the original tile from the ToDelete to it's county folder in the Final Delivery
+        # => Copy the split tiles from OriginalSplit into the Big Tiles folder
+
+        # verified_splits = [
+        #     "/vol1/Bernard_Test/Big_Tiles/ortho_AL_15_7341010700H6BB000c_10_20240820",
+        #     "/vol1/Bernard_Test/Big_Tiles/ortho_AL_15_7341010700H6BB000c_9_20240820",
+        #     "/vol1/Bernard_Test/Big_Tiles/ortho_AL_15_7341010700H6BB000c_8_20240820",
+        #     "/vol1/Bernard_Test/Big_Tiles/ortho_AL_15_7341010700H6BB000c_7_20240820",
+        #     "/vol1/Bernard_Test/Big_Tiles/ortho_AL_15_7341010700H6BB000c_6_20240820",
+        #     "/vol1/Bernard_Test/Big_Tiles/ortho_AL_15_7341010700H6BB000c_5_20240820",
+        #     "/vol1/Bernard_Test/Big_Tiles/ortho_AL_15_7341010700H6BB000c_4_20240820",
+        #     "/vol1/Bernard_Test/Big_Tiles/ortho_AL_15_7341010700H6BB000c_3_20240820",
+        #     "/vol1/Bernard_Test/Big_Tiles/ortho_AL_15_7341010700H6BB000c_2_20240820",
+        #     "/vol1/Bernard_Test/Big_Tiles/ortho_AL_15_7341010700H6BB000c_1_20240820"
+        # ]
+
+        # original_arr = [{:filename=>"ortho_AL_15_7341010700H6BB000c_1_20240820",
+        #     :from=>"/vol1/Bernard_Test/Big_Tiles",
+        #     :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/originalSplit/01019/"},
+        #    {:filename=>"ortho_AL_15_7341010700H6BB000c_2_20240820",
+        #     :from=>"/vol1/Bernard_Test/Big_Tiles",
+        #     :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/originalSplit/01019/"},
+        #    {:filename=>"ortho_AL_15_7341010700H6BB000c_3_20240820",
+        #     :from=>"/vol1/Bernard_Test/Big_Tiles",
+        #     :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/originalSplit/01019/"},
+        #    {:filename=>"ortho_AL_15_7341010700H6BB000c_4_20240820",
+        #     :from=>"/vol1/Bernard_Test/Big_Tiles",
+        #     :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/originalSplit/01019/"},
+        #    {:filename=>"ortho_AL_15_7341010700H6BB000c_5_20240820",
+        #     :from=>"/vol1/Bernard_Test/Big_Tiles",
+        #     :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/originalSplit/01019/"},
+        #    {:filename=>"ortho_AL_15_7341010700H6BB000c_6_20240820",
+        #     :from=>"/vol1/Bernard_Test/Big_Tiles",
+        #     :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/originalSplit/01019/"},
+        #    {:filename=>"ortho_AL_15_7341010700H6BB000c_7_20240820",
+        #     :from=>"/vol1/Bernard_Test/Big_Tiles",
+        #     :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/originalSplit/01019/"},
+        #    {:filename=>"ortho_AL_15_7341010700H6BB000c_8_20240820",
+        #     :from=>"/vol1/Bernard_Test/Big_Tiles",
+        #     :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/originalSplit/01019/"},
+        #    {:filename=>"ortho_AL_15_7341010700H6BB000c_9_20240820",
+        #     :from=>"/vol1/Bernard_Test/Big_Tiles",
+        #     :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/originalSplit/01019/"},
+        #    {:filename=>"ortho_AL_15_7341010700H6BB000c_10_20240820",
+        #     :from=>"/vol1/Bernard_Test/Big_Tiles",
+        #     :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/originalSplit/01019/"}]
+        
+        # delete_arr = [{:filename=>"ortho_AL_15_7341010700H6BB000c_20240820",
+        #     :from=>"/vol1/Bernard_Test/Final_Delivery_20240906_AL/SL/AL/01019/Orthos/",
+        #     :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/toDelete/01019/"}]
+        
+        # move_arr = [{:filename=>"ortho_AL_15_7341010700H6BB000c_1_20240820",
+        #     :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/originalSplit/01019/",
+        #     :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/toMove/01019/"},
+        #    {:filename=>"ortho_AL_15_7341010700H6BB000c_2_20240820",
+        #     :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/originalSplit/01019/",
+        #     :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/toMove/01019/"},
+        #    {:filename=>"ortho_AL_15_7341010700H6BB000c_3_20240820",
+        #     :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/originalSplit/01019/",
+        #     :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/toMove/01019/"},
+        #    {:filename=>"ortho_AL_15_7341010700H6BB000c_4_20240820",
+        #     :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/originalSplit/01019/",
+        #     :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/toMove/01019/"},
+        #    {:filename=>"ortho_AL_15_7341010700H6BB000c_5_20240820",
+        #     :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/originalSplit/01019/",
+        #     :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/toMove/01019/"},
+        #    {:filename=>"ortho_AL_15_7341010700H6BB000c_6_20240820",
+        #     :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/originalSplit/01019/",
+        #     :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/toMove/01019/"},
+        #    {:filename=>"ortho_AL_15_7341010700H6BB000c_7_20240820",
+        #     :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/originalSplit/01019/",
+        #     :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/toMove/01019/"},
+        #    {:filename=>"ortho_AL_15_7341010700H6BB000c_8_20240820",
+        #     :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/originalSplit/01019/",
+        #     :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/toMove/01019/"},
+        #    {:filename=>"ortho_AL_15_7341010700H6BB000c_9_20240820",
+        #     :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/originalSplit/01019/",
+        #     :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/toMove/01019/"},
+        #    {:filename=>"ortho_AL_15_7341010700H6BB000c_10_20240820",
+        #     :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/originalSplit/01019/",
+        #     :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/toMove/01019/"}]
+
+        # split_final_delivery_folder = "/vol1/Bernard_Test/Big_Tiles/20240906_AL_12"
+
+        # iterate the move arr and move the files back to the split folder
+        p "Original Split Move"
+        p "-----------------------------"
+        original_arr.each do |obj|
+            pp obj
+
+            # check if the file exists in the to path
+            if !File.directory?(obj[:from])
+                raise Exception, "Directory \"#{obj[:from]}\" does not exist! Could not move files back to previous folders"
+            end
+
+            # check and move the tiff
+            if File.file?("#{obj[:to]}/#{obj[:filename]}.tif")
+                p " - Moving tiff"
+                FileUtils.mv("#{obj[:to]}/#{obj[:filename]}.tif", obj[:from])
+            end
+
+            # check and move the tfw
+            if File.file?("#{obj[:to]}/#{obj[:filename]}.tfw")
+                p " - Moving tfw"
+                FileUtils.mv("#{obj[:to]}/#{obj[:filename]}.tfw", obj[:from])
+            end
+        end
+
+        # iterate the delete arr and move the files back to the county final delivery folder
+        p "Delete Move"
+        p "-----------------------------"
+        delete_arr.each do |obj|
+            pp obj
+
+            # check if the file exists in the to path
+            if !File.directory?(obj[:from])
+                raise Exception, "Directory \"#{obj[:from]}\" does not exist! Could not move files back to previous folders"
+            end
+
+            # check and move the tiff
+            if File.file?("#{obj[:to]}/#{obj[:filename]}.tif")
+                p " - Moving tiff"
+                FileUtils.mv("#{obj[:to]}/#{obj[:filename]}.tif", obj[:from])
+            end
+
+            # check and move the tfw
+            if File.file?("#{obj[:to]}/#{obj[:filename]}.tfw")
+                p " - Moving tfw"
+                FileUtils.mv("#{obj[:to]}/#{obj[:filename]}.tfw", obj[:from])
+            end
+
+            # check and move the tfw
+            if File.file?("#{obj[:to]}/#{obj[:filename]}.xml")
+                p " - Moving xml"
+                FileUtils.mv("#{obj[:to]}/#{obj[:filename]}.xml", obj[:from])
+            end
+        end
+
+        # iterate the delete arr and move the files back to the county final delivery folder
+        p "Migration Move"
+        p "-----------------------------"
+        migration_arr.each do |obj|
+            pp obj
+
+            # check if the file exists in the to path
+            if !File.directory?(obj[:from])
+                raise Exception, "Directory \"#{obj[:from]}\" does not exist! Could not move files back to previous folders"
+            end
+
+            # check and move the tiff
+            if File.file?("#{obj[:to]}/#{obj[:filename]}.tif")
+                p " - Moving tiff"
+                FileUtils.mv("#{obj[:to]}/#{obj[:filename]}.tif", obj[:from])
+            end
+
+            # check and move the tfw
+            if File.file?("#{obj[:to]}/#{obj[:filename]}.tfw")
+                p " - Moving tfw"
+                FileUtils.mv("#{obj[:to]}/#{obj[:filename]}.tfw", obj[:from])
+            end
+
+            # check and move the tfw
+            if File.file?("#{obj[:to]}/#{obj[:filename]}.xml")
+                p " - Moving xml"
+                FileUtils.mv("#{obj[:to]}/#{obj[:filename]}.xml", obj[:from])
+            end
+        end
+
+    end
+
+    private
 
     def self.extract_id filename="ortho_AL_15_7341010700H6BB000c_20240820", project="SL"
         # takes a filename of a split and return the polyid
@@ -232,451 +764,6 @@ class FinalDeliverySplits
         # if it does then increment the index by one and call method again
     end
 
-    def self.processing verified_splits, packing_slip, split_folder, final_delivery_folder, current_user
-
-        p "------------"
-        p "Processing"
-        p packing_slip
-        p "split_folder: #{split_folder}"
-        p "final_delivery_folder: #{final_delivery_folder}"
-        pp verified_splits
-        p "------------"
-
-        # Create the folder structure 
-        # => OriginalSplit
-        # => ToDelete
-        # => ToMove
-
-        # check if the packing slip folder already exists within the splits folder
-
-        # Get the folder friendly file name
-        psn_folder_name = packing_slip.name.gsub(/[^\w\s_-]+/, '').gsub(/(^|\b\s)\s+($|\s?\b)/, '\\1\\2').gsub(/\s+/, '_')
-
-        split_folder_path = FinalDeliverySplits.build_split_folder "#{split_folder}/#{psn_folder_name}", nil
-
-        # Create subfolders
-        to_delete_path = "#{split_folder_path}/toDelete"
-        original_path = "#{split_folder_path}/originalSplit"
-        to_move_path = "#{split_folder_path}/toMove"
-
-        # track where files are moved so they don't need to be parsed out again
-        original_arr = []
-        delete_arr = []
-        move_arr = []
-        migration_arr = []
-
-        # create the toDelete folder inside the updated folder path
-        FileUtils.mkdir_p(to_delete_path) unless File.directory?(to_delete_path)
-
-        # create the original folder inside the updated folder path
-        FileUtils.mkdir_p(original_path) unless File.directory?(original_path)
-
-        # create the toMove folder inside the updated folder path
-        FileUtils.mkdir_p(to_move_path) unless File.directory?(to_move_path)
-
-        matched = []
-
-        Dir.glob("#{split_folder}/*.tif").each do |file|
-    
-            next if file.include? "toDelete"
-
-            path = File.dirname(file)
-            # filename = File.basename(file)
-            filename_without_extension = File.basename(file, '.tif')
-
-            # get the poly id
-            parsed_poly_id = FinalDeliverySplits.extract_id filename_without_extension, packing_slip.project
-
-            p "-------"
-            p parsed_poly_id
-
-            # Find the tile in the packing slip
-            tile = packing_slip.tiles.ortho_processed.dumped.shipped.find_by(poly_id: parsed_poly_id[:poly_id])
-
-            if tile.nil?
-                # raise Exception, "#{filename}: Could not find associated tile poly_id using: #{arr[3]}"
-                # errors << {file: file, message: "Could not find associated tile poly_id using: #{arr[3]}"}
-                next
-            end
-
-            # Get the county full fips
-            county_fips = tile.county.full_fips
-
-            # find all the files that match the tile filename
-            delivery_files = Dir.glob("#{final_delivery_folder}/**/#{tile.filename}.*")
-
-            # check if any of the tiffs in the final delivery folder match
-            if delivery_files.size == 0
-
-                # Check if the file exists in the toDelete folder
-                if Dir.glob("#{to_delete_path}/#{county_fips}/#{tile.filename}.*").count == 0
-                    raise Exception, "#{tile.filename}: Could not find file in #{to_delete_path} or within to delete path"
-                end
-
-            end
-
-            delivery_path = nil
-
-            if delivery_files.size > 0
-
-                delivery_path = File.dirname(delivery_files.first)
-                # delivery_filename = File.basename(delivery_file.first)
-                # delivery_filename_without_extension = File.basename(delivery_file.first, '.tif')
-
-                FileUtils.mkdir_p("#{to_delete_path}/#{county_fips}") unless File.directory?("#{to_delete_path}/#{county_fips}")
-                FileUtils.mkdir_p("#{original_path}/#{county_fips}") unless File.directory?("#{original_path}/#{county_fips}")
-                FileUtils.mkdir_p("#{to_move_path}/#{county_fips}") unless File.directory?("#{to_move_path}/#{county_fips}")
-
-                # check if the file exists in the delivery path and if so then delete the 
-
-                ## TIF ##
-                # Check if the file exists in the final delivery folder and in the toDelete folder (means the script failed and re-running)
-                if File.file?("#{delivery_path}/#{tile.filename}.tif") && File.file?("#{to_delete_path}/#{county_fips}/#{tile.filename}.tif")
-                    # If so then delete the toDelete file so it can be re-copied
-                    File.delete("#{to_delete_path}/#{county_fips}/#{tile.filename}.tif")
-                    p "- tif Found in the ToDelete folder, deleting and moving from Final Delivery Path"
-                end
-
-                # If the File exists in the Final delivery folder and not in the To Delete folder then copy
-                if File.file?("#{delivery_path}/#{tile.filename}.tif") && !File.file?("#{to_delete_path}/#{county_fips}/#{tile.filename}.tif")
-                    # Delete the file form the 
-                    FileUtils.mv("#{delivery_path}/#{tile.filename}.tif", "#{to_delete_path}/#{county_fips}/")
-                    delete_arr << {filename: tile.filename, from: "#{delivery_path}/", to: "#{to_delete_path}/#{county_fips}/"}
-                end
-
-                ## TFW ##
-                # Check if the file exists in the final delivery folder and in the toDelete folder (means the script failed and re-running)
-                if File.file?("#{delivery_path}/#{tile.filename}.tfw") && File.file?("#{to_delete_path}/#{county_fips}/#{tile.filename}.tfw")
-                    # If so then delete the toDelete file so it can be re-copied
-                    File.delete("#{to_delete_path}/#{county_fips}/#{tile.filename}.tfw")
-                    p "- tfw Found in the ToDelete folder, deleting and moving from Final Delivery Path"
-                end
-
-                # If the File exists in the Final delivery folder and not in the To Delete folder then copy
-                if File.file?("#{delivery_path}/#{tile.filename}.tfw") && !File.file?("#{to_delete_path}/#{county_fips}/#{tile.filename}.tfw")
-                    # Delete the file form thetile.filename
-                    FileUtils.mv("#{delivery_path}/#{tile.filename}.tfw", "#{to_delete_path}/#{county_fips}/")
-                end
-
-                ## XML ##
-                # Check if the file exists in the final delivery folder and in the toDelete folder (means the script failed and re-running)
-                if File.file?("#{delivery_path}/#{tile.filename}.xml") && File.file?("#{to_delete_path}/#{county_fips}/#{tile.filename}.xml")
-                    # If so then delete the toDelete file so it can be re-copied
-                    File.delete("#{to_delete_path}/#{county_fips}/#{tile.filename}.xml")
-                    p "- xml Found in the ToDelete folder, deleting and moving from Final Delivery Path"
-                end
-
-                # If the File exists in the Final delivery folder and not in the To Delete folder then copy
-                if File.file?("#{delivery_path}/#{tile.filename}.xml") && !File.file?("#{to_delete_path}/#{county_fips}/#{tile.filename}.xml")
-                    # Delete the file form the 
-                    FileUtils.mv("#{delivery_path}/#{tile.filename}.xml", "#{to_delete_path}/#{county_fips}/")
-                end
-            end
-
-            # Check if the metadata file exists in the toDelete folder
-
-            if Dir.glob("#{to_delete_path}/#{county_fips}/#{tile.filename}.xml").size != 1
-                raise Exception, "#{tile.filename}: Could not find file in #{final_delivery_folder}"
-            end
-
-            # copy the metadata into the original folder
-            # read the metadata file and vlaidate it
-            # open and update the metadata with the poly ids
-
-            # copy the metadata file to the folder and rename it
-            FileUtils.cp("#{to_delete_path}/#{county_fips}/#{tile.filename}.xml", "#{original_path}/#{county_fips}/#{filename_without_extension}.xml")
-
-            # Read the template file
-            metadata_text = File.read("#{original_path}/#{county_fips}/#{filename_without_extension}.xml")
-
-            # check if the metadata file is valid
-            if metadata_text.scan(">#{parsed_poly_id[:poly_id]}<").count == 0
-                raise Exception, "#{"#{original_path}/#{county_fips}/#{filename_without_extension}.xml"}: Could not find matching poly_id #{parsed_poly_id[:poly_id]} in copied metadata"
-            end
-
-            # Update the variables
-            metadata_text = metadata_text.gsub(parsed_poly_id[:poly_id], parsed_poly_id[:split_poly_id])
-
-            # Write the text to the county folder as a new text file
-            File.open("#{original_path}/#{county_fips}/#{filename_without_extension}.xml", "w") {|file| file.puts metadata_text }
-
-            # cut and paste the file to a new folder
-            FileUtils.mv("#{path}/#{filename_without_extension}.tif", "#{original_path}/#{county_fips}/")
-            FileUtils.mv("#{path}/#{filename_without_extension}.tfw", "#{original_path}/#{county_fips}/")
-
-            original_arr << {filename: filename_without_extension, from: path, to: "#{original_path}/#{county_fips}/"}
-
-            # Generate and update GTF File
-            # Use geotifcp to create the tiff with updated headers to the toMove folder
-
-            # Set the GeoTIF tags
-            # 1. Create the GTF file for the tf
-            gtf_file = "#{original_path}/#{county_fips}/#{filename_without_extension}.gtf"
-
-            # 2. Output the listgeo command to a GTF File
-            listgeo_response = system("listgeo '#{original_path}/#{county_fips}/#{filename_without_extension}.tif' > '#{gtf_file}'")
-
-            # update the gtf file
-            FinalDelivery.build_gtf gtf_file, filename_without_extension, tile.utm.zone, parsed_poly_id[:split_poly_id]
-
-            # Update the Tiff tags and copy to the county folder
-            geotif_response = system("geotifcp -8 -g '#{gtf_file}' '#{original_path}/#{county_fips}/#{filename_without_extension}.tif' '#{to_move_path}/#{county_fips}/#{filename_without_extension}.tif'")
-
-            FileUtils.cp("#{original_path}/#{county_fips}/#{filename_without_extension}.tfw", "#{to_move_path}/#{county_fips}/#{filename_without_extension}.tfw")
-            FileUtils.cp("#{original_path}/#{county_fips}/#{filename_without_extension}.xml", "#{to_move_path}/#{county_fips}/#{filename_without_extension}.xml")
-
-            move_arr << {filename: filename_without_extension, from: "#{original_path}/#{county_fips}/", to: "#{to_move_path}/#{county_fips}/"}
-
-            # iterate the delete arr and extract the final delivery county folder name
-            match_delete = delete_arr.find {|delArr| delArr[:filename] === tile.filename}
-
-            migration_arr << {
-                filename: filename_without_extension,
-                from: "#{to_move_path}/#{county_fips}",
-                to: match_delete[:from]
-            }
-
-        end
-
-        p "----------"
-        p "original_arr"
-        pp original_arr
-        p "delete_arr"
-        pp delete_arr
-        p "move_arr"
-        pp move_arr
-        p "migration_arr"
-        pp migration_arr
-        p "----------"
-
-        FinalDeliverySplits.migration final_delivery_folder, project, migration_arr
-
-        # cleanup split_final_delivery_folder="", original_arr=[], delete_arr=[], move_arr=[], psn_folder_name="", to_delete_path="", original_path="", to_move_path=""
-        # p FinalDeliverySplits.cleanup split_final_delivery_folder, original_arr, delete_arr, move_arr
-
-        p "done"
-
-        # Iterate the Big Tiles folder Tiffs and extract the poliyid to check against the database
-        # => IMPORTANT! Production should add the _1, _2 to the end of the file instead of after the PolyID for better parsing 
-        # => Check against the database to find the Packing Slip info
-        # => check if associated tiff is in the ToDelete folder then the final delivery folder
-        # => If match then copy the .tif and .tfw to the OriginalSplit folder
-        # => Move the associated .tiff, .tfw, and .xml files from the Final Delivery to the ToDelete folder
-        # ==> Track the folder paths in a text file so that it can be referenced when moving files back by the app or manually. 
-
-        # Copy the XML from the ToDelete Folder into the ToMove folder
-        # Update the filename of the xml to match the split filename
-        # => Update the contents of the file with the new PolyID
-
-        # Update the TiffTags to reference the new PolyID
-
-        # once complete run the Migration
-        # => Keep this separate from the migration process in case it fails it will be easier to move them back and forth
-    end
-
-    def self.migration final_delivery_folder, project, migration_arr=[]
-
-        migration_arr = [{:filename=>"ortho_AL_15_7341010700H6BB000c_1_20240820",
-            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/toMove/01019",
-            :to=>"/vol1/Bernard_Test/Final_Delivery_20240906_AL/SL/AL/01019/Orthos/"},
-            {:filename=>"ortho_AL_15_7341010700H6BB000c_2_20240820",
-            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/toMove/01019",
-            :to=>"/vol1/Bernard_Test/Final_Delivery_20240906_AL/SL/AL/01019/Orthos/"},
-            {:filename=>"ortho_AL_15_7341010700H6BB000c_3_20240820",
-            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/toMove/01019",
-            :to=>"/vol1/Bernard_Test/Final_Delivery_20240906_AL/SL/AL/01019/Orthos/"},
-            {:filename=>"ortho_AL_15_7341010700H6BB000c_4_20240820",
-            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/toMove/01019",
-            :to=>"/vol1/Bernard_Test/Final_Delivery_20240906_AL/SL/AL/01019/Orthos/"},
-            {:filename=>"ortho_AL_15_7341010700H6BB000c_5_20240820",
-            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/toMove/01019",
-            :to=>"/vol1/Bernard_Test/Final_Delivery_20240906_AL/SL/AL/01019/Orthos/"},
-            {:filename=>"ortho_AL_15_7341010700H6BB000c_6_20240820",
-            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/toMove/01019",
-            :to=>"/vol1/Bernard_Test/Final_Delivery_20240906_AL/SL/AL/01019/Orthos/"},
-            {:filename=>"ortho_AL_15_7341010700H6BB000c_7_20240820",
-            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/toMove/01019",
-            :to=>"/vol1/Bernard_Test/Final_Delivery_20240906_AL/SL/AL/01019/Orthos/"},
-            {:filename=>"ortho_AL_15_7341010700H6BB000c_8_20240820",
-            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/toMove/01019",
-            :to=>"/vol1/Bernard_Test/Final_Delivery_20240906_AL/SL/AL/01019/Orthos/"},
-            {:filename=>"ortho_AL_15_7341010700H6BB000c_9_20240820",
-            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/toMove/01019",
-            :to=>"/vol1/Bernard_Test/Final_Delivery_20240906_AL/SL/AL/01019/Orthos/"},
-            {:filename=>"ortho_AL_15_7341010700H6BB000c_10_20240820",
-            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_12/toMove/01019",
-            :to=>"/vol1/Bernard_Test/Final_Delivery_20240906_AL/SL/AL/01019/Orthos/"}]
-
-        # Iterate the county Folders in the ToMove folder into the County folder of the Final Delivery
-
-        p "Migration"
-        p "-------------------"
-        pp migration_arr
-        p "-------------------"
-
-        migration_arr.each do |obj|
-
-            p "Copying #{obj[:filename]}"
-            p " - tif"
-            FileUtils.cp("#{obj[:from]}/#{obj[:filename]}.tif", "#{obj[:to]}/#{obj[:filename]}.tif")
-            p " - tfw"
-            FileUtils.cp("#{obj[:from]}/#{obj[:filename]}.tfw", "#{obj[:to]}/#{obj[:filename]}.tfw")
-            p " - xml"
-            FileUtils.cp("#{obj[:from]}/#{obj[:filename]}.xml", "#{obj[:to]}/#{obj[:filename]}.xml")
-        end
-
-        # build the Tile Index once completed
-        self.build_tile_index final_delivery_folder, project
-    end
-
-    def self.validation
-        # Pass to the Final Delivery Validation
-    end
-
-    def self.cleanup split_final_delivery_folder="", original_arr=[], delete_arr=[], move_arr=[]
-        # Runs if the script fails
-        # => Copy the original tile from the ToDelete to it's county folder in the Final Delivery
-        # => Copy the split tiles from OriginalSplit into the Big Tiles folder
-
-        # verified_splits = [
-        #     "/vol1/Bernard_Test/Big_Tiles/ortho_AL_15_7341010700H6BB000c_10_20240820",
-        #     "/vol1/Bernard_Test/Big_Tiles/ortho_AL_15_7341010700H6BB000c_9_20240820",
-        #     "/vol1/Bernard_Test/Big_Tiles/ortho_AL_15_7341010700H6BB000c_8_20240820",
-        #     "/vol1/Bernard_Test/Big_Tiles/ortho_AL_15_7341010700H6BB000c_7_20240820",
-        #     "/vol1/Bernard_Test/Big_Tiles/ortho_AL_15_7341010700H6BB000c_6_20240820",
-        #     "/vol1/Bernard_Test/Big_Tiles/ortho_AL_15_7341010700H6BB000c_5_20240820",
-        #     "/vol1/Bernard_Test/Big_Tiles/ortho_AL_15_7341010700H6BB000c_4_20240820",
-        #     "/vol1/Bernard_Test/Big_Tiles/ortho_AL_15_7341010700H6BB000c_3_20240820",
-        #     "/vol1/Bernard_Test/Big_Tiles/ortho_AL_15_7341010700H6BB000c_2_20240820",
-        #     "/vol1/Bernard_Test/Big_Tiles/ortho_AL_15_7341010700H6BB000c_1_20240820"
-        # ]
-
-        original_arr = [{:filename=>"ortho_AL_15_7341010700H6BB000c_1_20240820",
-            :from=>"/vol1/Bernard_Test/Big_Tiles",
-            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/originalSplit/01019/"},
-           {:filename=>"ortho_AL_15_7341010700H6BB000c_2_20240820",
-            :from=>"/vol1/Bernard_Test/Big_Tiles",
-            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/originalSplit/01019/"},
-           {:filename=>"ortho_AL_15_7341010700H6BB000c_3_20240820",
-            :from=>"/vol1/Bernard_Test/Big_Tiles",
-            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/originalSplit/01019/"},
-           {:filename=>"ortho_AL_15_7341010700H6BB000c_4_20240820",
-            :from=>"/vol1/Bernard_Test/Big_Tiles",
-            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/originalSplit/01019/"},
-           {:filename=>"ortho_AL_15_7341010700H6BB000c_5_20240820",
-            :from=>"/vol1/Bernard_Test/Big_Tiles",
-            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/originalSplit/01019/"},
-           {:filename=>"ortho_AL_15_7341010700H6BB000c_6_20240820",
-            :from=>"/vol1/Bernard_Test/Big_Tiles",
-            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/originalSplit/01019/"},
-           {:filename=>"ortho_AL_15_7341010700H6BB000c_7_20240820",
-            :from=>"/vol1/Bernard_Test/Big_Tiles",
-            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/originalSplit/01019/"},
-           {:filename=>"ortho_AL_15_7341010700H6BB000c_8_20240820",
-            :from=>"/vol1/Bernard_Test/Big_Tiles",
-            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/originalSplit/01019/"},
-           {:filename=>"ortho_AL_15_7341010700H6BB000c_9_20240820",
-            :from=>"/vol1/Bernard_Test/Big_Tiles",
-            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/originalSplit/01019/"},
-           {:filename=>"ortho_AL_15_7341010700H6BB000c_10_20240820",
-            :from=>"/vol1/Bernard_Test/Big_Tiles",
-            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/originalSplit/01019/"}]
-        
-        delete_arr = [{:filename=>"ortho_AL_15_7341010700H6BB000c_20240820",
-            :from=>"/vol1/Bernard_Test/Final_Delivery_20240906_AL/SL/AL/01019/Orthos/",
-            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/toDelete/01019/"}]
-        
-        move_arr = [{:filename=>"ortho_AL_15_7341010700H6BB000c_1_20240820",
-            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/originalSplit/01019/",
-            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/toMove/01019/"},
-           {:filename=>"ortho_AL_15_7341010700H6BB000c_2_20240820",
-            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/originalSplit/01019/",
-            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/toMove/01019/"},
-           {:filename=>"ortho_AL_15_7341010700H6BB000c_3_20240820",
-            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/originalSplit/01019/",
-            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/toMove/01019/"},
-           {:filename=>"ortho_AL_15_7341010700H6BB000c_4_20240820",
-            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/originalSplit/01019/",
-            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/toMove/01019/"},
-           {:filename=>"ortho_AL_15_7341010700H6BB000c_5_20240820",
-            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/originalSplit/01019/",
-            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/toMove/01019/"},
-           {:filename=>"ortho_AL_15_7341010700H6BB000c_6_20240820",
-            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/originalSplit/01019/",
-            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/toMove/01019/"},
-           {:filename=>"ortho_AL_15_7341010700H6BB000c_7_20240820",
-            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/originalSplit/01019/",
-            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/toMove/01019/"},
-           {:filename=>"ortho_AL_15_7341010700H6BB000c_8_20240820",
-            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/originalSplit/01019/",
-            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/toMove/01019/"},
-           {:filename=>"ortho_AL_15_7341010700H6BB000c_9_20240820",
-            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/originalSplit/01019/",
-            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/toMove/01019/"},
-           {:filename=>"ortho_AL_15_7341010700H6BB000c_10_20240820",
-            :from=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/originalSplit/01019/",
-            :to=>"/vol1/Bernard_Test/Big_Tiles/20240906_AL_11/toMove/01019/"}]
-
-        split_final_delivery_folder = "/vol1/Bernard_Test/Big_Tiles/20240906_AL_11"
-
-        # iterate the move arr and move the files back to the split folder
-        p "Original Split Move"
-        p "-----------------------------"
-        original_arr.each do |obj|
-            pp obj
-
-            # check if the file exists in the to path
-            if File.directory?(obj[:from])
-                p "From Directory exists"
-            end
-
-            # check and move the tiff
-            if File.file?("#{obj[:to]}/#{obj[:filename]}.tif")
-                p " - Moving tiff"
-                FileUtils.mv("#{obj[:to]}/#{obj[:filename]}.tif", obj[:from])
-            end
-
-            # check and move the tfw
-            if File.file?("#{obj[:to]}/#{obj[:filename]}.tfw")
-                p " - Moving tfw"
-                FileUtils.mv("#{obj[:to]}/#{obj[:filename]}.tfw", obj[:from])
-            end
-        end
-
-        # iterate the delete arr and move the files back to the county final delivery folder
-        p "Delete Move"
-        p "-----------------------------"
-        delete_arr.each do |obj|
-            pp obj
-
-            # check if the file exists in the to path
-            if File.directory?(obj[:from])
-                p "From Directory exists"
-            end
-
-            # check and move the tiff
-            if File.file?("#{obj[:to]}/#{obj[:filename]}.tif")
-                p " - Moving tiff"
-                FileUtils.mv("#{obj[:to]}/#{obj[:filename]}.tif", obj[:from])
-            end
-
-            # check and move the tfw
-            if File.file?("#{obj[:to]}/#{obj[:filename]}.tfw")
-                p " - Moving tfw"
-                FileUtils.mv("#{obj[:to]}/#{obj[:filename]}.tfw", obj[:from])
-            end
-
-            # check and move the tfw
-            if File.file?("#{obj[:to]}/#{obj[:filename]}.xml")
-                p " - Moving xml"
-                FileUtils.mv("#{obj[:to]}/#{obj[:filename]}.xml", obj[:from])
-            end
-        end
-
-    end
-
-    private
-
     def self.build_tile_index final_delivery_folder, project="SL"
 
         p "BUILD TILE INDEX"
@@ -687,6 +774,8 @@ class FinalDeliverySplits
 
         # geotag_path = "/vol3/24-6567_USDA_SL/03_FrameBase/WA/Tiles_Dump/Final_Delivery_20240731_WA/SL/"
         geotag_path = "#{final_delivery_folder}#{project}"
+
+        p "geotag_path: #{geotag_path}"
 
         # Iterate 
         Dir.glob("#{geotag_path}/*").each do |folder|
@@ -716,57 +805,21 @@ class FinalDeliverySplits
                     # p file
                     next if file == '.' or file == '..'
 
-                    # Get the filename wihtout tif
-                    filename = File.basename(file, '.tif')
-                    arr = filename.split("_")
+                    # # Get the filename wihtout tif
+                    filename_without_extension = File.basename(file, '.tif')
 
-                    # p filename
+                    parsed_poly_id = FinalDeliverySplits.extract_id filename_without_extension, project
 
-                    final_poly_id = arr[3]
-                    original_poly_id = arr[3]
-        
-                    if arr.size == 6
-                        final_poly_id = "#{arr[3]}_#{arr[4]}"
-                        original_poly_id = arr[3]
-                    elsif arr.size == 7
-                        final_poly_id = "#{arr[3]}_#{arr[4]}_#{arr[5]}"
-                        original_poly_id = "#{arr[3]}_#{arr[4]}"
-                    elsif arr.size == 8
-                        final_poly_id = "#{arr[3]}_#{arr[4]}_#{arr[5]}"
-                        original_poly_id = "#{arr[3]}_#{arr[4]}"
-                    end
-
-                    # overrides
-                    if filename == "ortho_IL_15_655A1296005XJ_1_20240320"
-                        original_poly_id = "655A1296005XJ_1"
-                        final_poly_id = "655A1296005XJ_1"
-                    elsif filename == "ortho_IL_15_655A1296005XJ_2_20240329"
-                        original_poly_id = "655A1296005XJ_2"
-                        final_poly_id = "655A1296005XJ_2"
-                    elsif filename == "ortho_IL_15_665A1295005RH_1_20240329"
-                        original_poly_id = "665A1295005RH_1"
-                        final_poly_id = "665A1295005RH_1"
-                    elsif filename == "ortho_IL_15_665A1295005RH_2_20240319"
-                        original_poly_id = "665A1295005RH_2"
-                        final_poly_id = "665A1295005RH_2"
-                    elsif filename == "ortho_MA_15_7313209800H0ZA0007_A_20241004"
-                        original_poly_id = "7313209800H0ZA0007_A"
-                        final_poly_id = "7313209800H0ZA0007_A"
-                    elsif filename == "ortho_MA_15_7313209800H0ZA0007_B_20241005"
-                        original_poly_id = "7313209800H0ZA0007_B"
-                        final_poly_id = "7313209800H0ZA0007_B"
-                    elsif filename == "ortho_ND_15_ND_08_WAHL_20240629"
-                        original_poly_id = "ND_08_WAHL"
-                        final_poly_id = "ND_08_WAHL"
-                    end
-
-                    tile = Tile.ortho_processed.find_by(poly_id: original_poly_id)
+                    tile = Tile.ortho_processed.find_by(poly_id: parsed_poly_id[:poly_id])
 
                     p "-------"
-                    p filename
-                    p original_poly_id
-                    p final_poly_id
+                    p filename_without_extension
+                    p parsed_poly_id
                     p "-------"
+
+                    if tile.nil?
+                        raise Exception, "Parsed PolyID \"#{parsed_poly_id[:poly_id]}\" not found in Database while building Tile Index"
+                    end
 
                     # Get the UTM Zone
                     utm_zone = tile.utm_zone

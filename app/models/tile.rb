@@ -1901,13 +1901,13 @@ class Tile < ApplicationRecord
             # => if automatic then return the sun angle
 
 
-        f = File.open("/media/sf_shared/2024/Audit/overview.csv", "w+")
+        f = File.open("/media/sf_shared/2025/Audit/overview.csv", "w+")
         f.puts "PolyID, State, MultipleGeom, Coverage, RejectionCount\n"
 
-        c = File.open("/media/sf_shared/2024/Audit/potential_coverages.csv", "w+")
+        c = File.open("/media/sf_shared/2025/Audit/potential_coverages.csv", "w+")
         c.puts "PolyID, State, FlightDate, StripFrame, FlownBy\n"
 
-        r = File.open("/media/sf_shared/2024/Audit/potential_rejections.csv", "w+")
+        r = File.open("/media/sf_shared/2025/Audit/potential_rejections.csv", "w+")
         r.puts "PolyID, State, FlightDate, RejectedDate, RejectionType, RejectedSunAngle\n"
 
         multiple_coverage_poly_ids = Tile.count_geometries
@@ -1967,7 +1967,7 @@ class Tile < ApplicationRecord
 
     # def self.clear_psn
 
-    #     filenames = ["ortho_GA_15_5443101701L63_20240331", "ortho_VA_15_6633A71101667_20240325", "ortho_TN_15_66474102004SW_20240323", "ortho_WV_15_663D4710011BV_20240325"]
+    #     filenames = ["ortho_GA_15_5443101701L63_20250331", "ortho_VA_15_6633A71101667_20250325", "ortho_TN_15_66474102004SW_20250323", "ortho_WV_15_663D4710011BV_20250325"]
 
     #     filenames.each do |filename|
 

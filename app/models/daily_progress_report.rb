@@ -248,7 +248,7 @@ class DailyProgressReport
         # does not run on the weekends, only weekdays
 
         yesterday = Date.yesterday.strftime("%F")
-        # yesterday = "2024-04-11"
+        # yesterday = "2025-04-11"
 
         # tiles_not_reported = Tile.flown.not_reported.where("project = 'SL' AND flight_date <= '#{yesterday}'").order(:flight_date)
         tiles_not_reported = Tile.sl.flown.not_reported.where("flight_date <= '#{yesterday}'")

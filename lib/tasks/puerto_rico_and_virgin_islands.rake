@@ -113,10 +113,10 @@ namespace :import do
                 amount: row[:total].to_d,
                 flight_amount: row[:flight_price].to_d,
                 production_amount: row[:prod_price].to_d,
-                start_date: "2024-03-09",
+                start_date: "2025-03-09",
                 end_date: "2025-03-09",
-                season_start: "2024-03-11",
-                season_end: "2024-12-31",
+                season_start: "2025-03-11",
+                season_end: "2025-12-31",
                 state: state
             )
 
@@ -139,7 +139,7 @@ namespace :import do
                     company_alias: company.alias,
                     phase: 100,
                     cost: flight_rate.to_d,
-                    start_date: "2024-03-09",
+                    start_date: "2025-03-09",
                     end_date: "2025-03-09",
                     state: state,
                     company: company
@@ -152,7 +152,7 @@ namespace :import do
                     company_alias: company.alias,
                     phase: 300,
                     cost: prod_rate.to_d,
-                    start_date: "2024-03-09",
+                    start_date: "2025-03-09",
                     end_date: "2025-03-09",
                     state: state,
                     company: company

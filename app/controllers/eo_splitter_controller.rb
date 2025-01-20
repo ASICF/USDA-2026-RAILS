@@ -41,8 +41,8 @@ class EoSplitterController < ApplicationController
       }
     end
 
-    # date_flown_from = Time.parse("2024-10-12").utc.beginning_of_day
-    # date_flown_to = Time.parse("2024-10-12").utc.end_of_day
+    # date_flown_from = Time.parse("2025-10-12").utc.beginning_of_day
+    # date_flown_to = Time.parse("2025-10-12").utc.end_of_day
     # Upload.includes(:frame_centers).where(upload_type: "FrameCenter", frame_centers: {flight_date: date_flown_from..date_flown_to, project: "NRI/SL"})
   end
 

@@ -7,9 +7,9 @@ ContractAward.nri.where(state_id: 33).update(pps: 531) # PR
 
 # # # Update the SL contracts with the season dates
 # # ContractAward.update_all(
-# #     season_start: "2024-03-11",
-# #     season_end: "2024-09-30", 
-# #     # season_extension: "2024-09-30", 
+# #     season_start: "2025-03-11",
+# #     season_end: "2025-09-30", 
+# #     # season_extension: "2025-09-30", 
 # # )
 
 # # Upload Shapefiles
@@ -153,10 +153,10 @@ ContractAward.nri.where(state_id: 33).update(pps: 531) # PR
 #     #     amount: row[:total].to_d,
 #     #     flight_amount: row[:flight_price].to_d,
 #     #     production_amount: row[:prod_price].to_d,
-#     #     start_date: "2024-03-09",
+#     #     start_date: "2025-03-09",
 #     #     end_date: "2025-03-09",
-#     #     season_start: "2024-03-11",
-#     #     season_end: "2024-12-31",
+#     #     season_start: "2025-03-11",
+#     #     season_end: "2025-12-31",
 #     #     state: state
 #     # )
 
@@ -179,7 +179,7 @@ ContractAward.nri.where(state_id: 33).update(pps: 531) # PR
 #     #         company_alias: company.alias,
 #     #         phase: 100,
 #     #         cost: flight_rate.to_d,
-#     #         start_date: "2024-03-09",
+#     #         start_date: "2025-03-09",
 #     #         end_date: "2025-03-09",
 #     #         state: state,
 #     #         company: company
@@ -192,7 +192,7 @@ ContractAward.nri.where(state_id: 33).update(pps: 531) # PR
 #     #         company_alias: company.alias,
 #     #         phase: 300,
 #     #         cost: prod_rate.to_d,
-#     #         start_date: "2024-03-09",
+#     #         start_date: "2025-03-09",
 #     #         end_date: "2025-03-09",
 #     #         state: state,
 #     #         company: company
@@ -203,614 +203,614 @@ ContractAward.nri.where(state_id: 33).update(pps: 531) # PR
 
 # return false
 
-# ActiveRecord::Base.connection.execute("TRUNCATE users RESTART IDENTITY")
-# ActiveRecord::Base.connection.execute("TRUNCATE companies RESTART IDENTITY")
-# ActiveRecord::Base.connection.execute("TRUNCATE planes RESTART IDENTITY")
-# ActiveRecord::Base.connection.execute("TRUNCATE cameras RESTART IDENTITY")
-# ActiveRecord::Base.connection.execute("TRUNCATE easements RESTART IDENTITY")
-# ActiveRecord::Base.connection.execute("TRUNCATE tiles RESTART IDENTITY")
-# ActiveRecord::Base.connection.execute("TRUNCATE footprints RESTART IDENTITY")
-# ActiveRecord::Base.connection.execute("TRUNCATE frame_centers RESTART IDENTITY")
-# ActiveRecord::Base.connection.execute("TRUNCATE rejected_tiles RESTART IDENTITY")
-# ActiveRecord::Base.connection.execute("TRUNCATE rejected_footprints RESTART IDENTITY")
-# ActiveRecord::Base.connection.execute("TRUNCATE rejected_frame_centers RESTART IDENTITY")
-# ActiveRecord::Base.connection.execute("TRUNCATE states RESTART IDENTITY")
-# ActiveRecord::Base.connection.execute("TRUNCATE counties RESTART IDENTITY")
-# ActiveRecord::Base.connection.execute("TRUNCATE utms RESTART IDENTITY")
-# ActiveRecord::Base.connection.execute("TRUNCATE mail_groups RESTART IDENTITY")
-# ActiveRecord::Base.connection.execute("TRUNCATE mail_group_users RESTART IDENTITY")
-# ActiveRecord::Base.connection.execute("TRUNCATE contract_awards RESTART IDENTITY")
-# ActiveRecord::Base.connection.execute("TRUNCATE contract_rates RESTART IDENTITY")
-# ActiveRecord::Base.connection.execute("TRUNCATE histories RESTART IDENTITY")
-# ActiveRecord::Base.connection.execute("TRUNCATE historic_assocs RESTART IDENTITY")
-# ActiveRecord::Base.connection.execute("TRUNCATE jobs RESTART IDENTITY")
+ActiveRecord::Base.connection.execute("TRUNCATE users RESTART IDENTITY")
+ActiveRecord::Base.connection.execute("TRUNCATE companies RESTART IDENTITY")
+ActiveRecord::Base.connection.execute("TRUNCATE planes RESTART IDENTITY")
+ActiveRecord::Base.connection.execute("TRUNCATE cameras RESTART IDENTITY")
+ActiveRecord::Base.connection.execute("TRUNCATE easements RESTART IDENTITY")
+ActiveRecord::Base.connection.execute("TRUNCATE tiles RESTART IDENTITY")
+ActiveRecord::Base.connection.execute("TRUNCATE footprints RESTART IDENTITY")
+ActiveRecord::Base.connection.execute("TRUNCATE frame_centers RESTART IDENTITY")
+ActiveRecord::Base.connection.execute("TRUNCATE rejected_tiles RESTART IDENTITY")
+ActiveRecord::Base.connection.execute("TRUNCATE rejected_footprints RESTART IDENTITY")
+ActiveRecord::Base.connection.execute("TRUNCATE rejected_frame_centers RESTART IDENTITY")
+ActiveRecord::Base.connection.execute("TRUNCATE states RESTART IDENTITY")
+ActiveRecord::Base.connection.execute("TRUNCATE counties RESTART IDENTITY")
+ActiveRecord::Base.connection.execute("TRUNCATE utms RESTART IDENTITY")
+ActiveRecord::Base.connection.execute("TRUNCATE mail_groups RESTART IDENTITY")
+ActiveRecord::Base.connection.execute("TRUNCATE mail_group_users RESTART IDENTITY")
+ActiveRecord::Base.connection.execute("TRUNCATE contract_awards RESTART IDENTITY")
+ActiveRecord::Base.connection.execute("TRUNCATE contract_rates RESTART IDENTITY")
+ActiveRecord::Base.connection.execute("TRUNCATE histories RESTART IDENTITY")
+ActiveRecord::Base.connection.execute("TRUNCATE historic_assocs RESTART IDENTITY")
+ActiveRecord::Base.connection.execute("TRUNCATE jobs RESTART IDENTITY")
 
-# if Rails.env.development?
-#     # Create user
-#     admin = User.create(
-#         email: Rails.application.secrets.admin[:email], 
-#         first_name: Rails.application.secrets.admin[:first_name], 
-#         last_name: Rails.application.secrets.admin[:last_name], 
-#         title: Rails.application.secrets.admin[:title], 
-#         approved: true,
-#         role: "Admin",
-#         password: Rails.application.secrets.admin[:password],
-#         password_confirmation: Rails.application.secrets.admin[:password]
-#     )
-# end
+if Rails.env.development?
+    # Create user
+    admin = User.create(
+        email: Rails.application.secrets.admin[:email], 
+        first_name: Rails.application.secrets.admin[:first_name], 
+        last_name: Rails.application.secrets.admin[:last_name], 
+        title: Rails.application.secrets.admin[:title], 
+        approved: true,
+        role: "Admin",
+        password: Rails.application.secrets.admin[:password],
+        password_confirmation: Rails.application.secrets.admin[:password]
+    )
+end
 
-# # Create some companies
-# # ASI
-# # -----------------------------
-# company = Company.create(
-#     name: "Aerial Services, Inc",
-#     alias: "ASI"
-# )
+# Create some companies
+# ASI
+# -----------------------------
+company = Company.create(
+    name: "Aerial Services, Inc",
+    alias: "ASI"
+)
 
-# # Planes
-# company.planes.create(
-#     name: "N78AS",
-#     model: "Cessna TU206H"
-# )
-# company.planes.create(
-#     name: "N144AS",
-#     model: "Piper Navajo PA31-310"
-# )
-# company.planes.create(
-#     name: "N756QV",
-#     model: "Cessna TU206G"
-# )
-# company.planes.create(
-#     name: "N72RK",
-#     model: "Cessna TU206H"
-# )
+# Planes
+company.planes.create(
+    name: "N78AS",
+    model: "Cessna TU206H"
+)
+company.planes.create(
+    name: "N144AS",
+    model: "Piper Navajo PA31-310"
+)
+company.planes.create(
+    name: "N756QV",
+    model: "Cessna TU206G"
+)
+company.planes.create(
+    name: "N72RK",
+    model: "Cessna TU206H"
+)
 
-# # Cameras
-# company.cameras.create(
-#     name: "1300",
-#     manufacturer: "Leica",
-#     model: "ADS80",
-#     serial_number: "763806_1300_090130-1"
-# )
-# company.cameras.create(
-#     name: "1301",
-#     manufacturer: "Leica",
-#     model: "ADS80",
-#     serial_number: "763806_1301_080926-1"
-# )
-# company.cameras.create(
-#     name: "82553",
-#     manufacturer: "Leica",
-#     model: "RCD-30",
-#     serial_number: "791649_82553_180711-1"
-# )
-# company.cameras.create(
-#     name: "UC-Fp-1-20317121-f100",
-#     manufacturer: "Vexcel",
-#     model: "UltraCam Falcon",
-#     serial_number: "UC-Fp-1-20317121-f100 V4.0"
-# )
-# # -----------------------------
+# Cameras
+company.cameras.create(
+    name: "1300",
+    manufacturer: "Leica",
+    model: "ADS80",
+    serial_number: "763806_1300_090130-1"
+)
+company.cameras.create(
+    name: "1301",
+    manufacturer: "Leica",
+    model: "ADS80",
+    serial_number: "763806_1301_080926-1"
+)
+company.cameras.create(
+    name: "82553",
+    manufacturer: "Leica",
+    model: "RCD-30",
+    serial_number: "791649_82553_180711-1"
+)
+company.cameras.create(
+    name: "UC-Fp-1-20317121-f100",
+    manufacturer: "Vexcel",
+    model: "UltraCam Falcon",
+    serial_number: "UC-Fp-1-20317121-f100 V4.0"
+)
+# -----------------------------
 
-# # Aerodata
-# # -----------------------------
-# company = Company.create(
-#     name: "Aerodata",
-#     alias: "AER"
-# )
-# # Planes
-# company.planes.create(
-#     name: "N51CX",
-#     model: "Cessna 340A"
-# )
-# company.planes.create(
-#     name: "N63CX",
-#     model: "Cessna 414"
-# )
-# company.planes.create(
-#     name: "N262AS",
-#     model: "Piper Navajo PA31"
-# )
-# # Cameras
-# company.cameras.create(
-#     serial_number: "DMC III 27546",
-#     manufacturer: "Leica",
-#     model: "DMC III",
-#     name: "00129126 (PAN Head)"
-# )
-# company.cameras.create(
-#     serial_number: "DMC III 27551",
-#     manufacturer: "Leica",
-#     model: "DMC III",
-#     name: "00129129 (PAN Head)"
-# )
-# # -----------------------------
+# Aerodata
+# -----------------------------
+company = Company.create(
+    name: "Aerodata",
+    alias: "AER"
+)
+# Planes
+company.planes.create(
+    name: "N51CX",
+    model: "Cessna 340A"
+)
+company.planes.create(
+    name: "N63CX",
+    model: "Cessna 414"
+)
+company.planes.create(
+    name: "N262AS",
+    model: "Piper Navajo PA31"
+)
+# Cameras
+company.cameras.create(
+    serial_number: "DMC III 27546",
+    manufacturer: "Leica",
+    model: "DMC III",
+    name: "00129126 (PAN Head)"
+)
+company.cameras.create(
+    serial_number: "DMC III 27551",
+    manufacturer: "Leica",
+    model: "DMC III",
+    name: "00129129 (PAN Head)"
+)
+# -----------------------------
 
-# # Midwest Aerial Photography
-# # -----------------------------
-# company = Company.create(
-#     name: "Midwest Aerial Photography",
-#     alias: "MAP"
-# )
-# # Planes
-# company.planes.create(
-#     name: "N4032C",
-#     model: "Cessna 310-R"
-# )
-# company.planes.create(
-#     name: "N5083J",
-#     model: "Cessna 310-R"
-# )
-# company.planes.create(
-#     name: "N211TN",
-#     model: "Piper PA-27 Aztec"
-# )
-# company.planes.create(
-#     name: "N7052H",
-#     model: "Piper PA-27 Aztec"
-# )
-# # Cameras
-# company.cameras.create(
-#     name: "23526",
-#     manufacturer: "Intergraph",
-#     model: "DMC IIe 230",
-#     serial_number: "DMC IIe 230-23526"
-# )
-# company.cameras.create(
-#     name: "036",
-#     manufacturer: "Intergraph",
-#     model: "DMC II 140",
-#     serial_number: "DMC II 140 -036"
-# )
-# # -----------------------------
+# Midwest Aerial Photography
+# -----------------------------
+company = Company.create(
+    name: "Midwest Aerial Photography",
+    alias: "MAP"
+)
+# Planes
+company.planes.create(
+    name: "N4032C",
+    model: "Cessna 310-R"
+)
+company.planes.create(
+    name: "N5083J",
+    model: "Cessna 310-R"
+)
+company.planes.create(
+    name: "N211TN",
+    model: "Piper PA-27 Aztec"
+)
+company.planes.create(
+    name: "N7052H",
+    model: "Piper PA-27 Aztec"
+)
+# Cameras
+company.cameras.create(
+    name: "23526",
+    manufacturer: "Intergraph",
+    model: "DMC IIe 230",
+    serial_number: "DMC IIe 230-23526"
+)
+company.cameras.create(
+    name: "036",
+    manufacturer: "Intergraph",
+    model: "DMC II 140",
+    serial_number: "DMC II 140 -036"
+)
+# -----------------------------
 
-# # GRW
-# # -----------------------------
-# company = Company.create(
-#     name: "GRW",
-#     alias: "GRW"
-# )
-# # Planes
-# company.planes.create(
-#     name: "N83PA",
-#     model: "Piper Navajo PA-31-325"
-# )
-# company.planes.create(
-#     name: "N85PE",
-#     model: "Cessna TU206F"
-# )
-# # Cameras
-# company.cameras.create(
-#     name: "UC-E-1-50111116-f100",
-#     manufacturer: "Vexcel",
-#     model: "UltraCam Eagle",
-#     serial_number: "UC-E-1-50111116-f100 V01"
-# )
-# company.cameras.create(
-#     name: "UCLP-1-10113213",
-#     manufacturer: "Vexcel",
-#     model: "UltraCamLP",
-#     serial_number: "UC-Lp-1-10113213 V15.0"
-# )
-# # -----------------------------
-
-
-# # ADS
-# # -----------------------------
-# company = Company.create(
-#     name: "Aerial Data Services",
-#     alias: "ADS"
-# )
-# # Planes
-# company.planes.create(
-#     name: "N4073L",
-#     model: "Piper Navajo PA-31-350"
-# )
-# # Cameras
-# company.cameras.create(
-#     name: "UC-F-1-30710015-f100",
-#     manufacturer: "Vexcel",
-#     model: "UltraCam Falcon",
-#     serial_number: "UC-F030710015-f100 V04"
-# )
-# # -----------------------------
-
-# # Williams Aerial and Mapping
-# # -----------------------------
-# company = Company.create(
-#     name: "Williams Aerial and Mapping",
-#     alias: "WAM"
-# )
-# # Planes
-# company.planes.create(
-#     name: "N150V",
-#     model: "Cessna TU206G"
-# )
-# company.planes.create(
-#     name: "N92HC",
-#     model: "Cessna TU206F"
-# )
-# company.planes.create(
-#     name: "N64AP",
-#     model: "Piper Navajo PA-31-350"
-# )
-# company.planes.create(
-#     name: "N310EW",
-#     model: "Cessna T310Q"
-# )
-# company.planes.create(
-#     name: "N91PW",
-#     model: "Piper Navajo PA-31-350"
-# )
-# # Cameras
-# company.cameras.create(
-#     name: "UC-F-1-50118074-f100",
-#     manufacturer: "Vexcel",
-#     model: "UltraCam Falcon",
-#     serial_number: "UC-F-1-50118074-f100 V01"
-# )
-# # -----------------------------
-
-# # Arrowhawk
-# # -----------------------------
-# company = Company.create(
-#     name: "Arrowhawk",
-#     alias: "AHK"
-# )
-# # Planes
-# company.planes.create(
-#     name: "N213SM",
-#     model: "Cessna TU206"
-# )
-# # Cameras
-# company.cameras.create(
-#     name: "431S91198X311374-f100",
-#     manufacturer: "Vexcel",
-#     model: "UltraCam Eagle M3",
-#     serial_number: "431S91198X311374-f100 v01"
-# )
-# # -----------------------------
-
-# # Technical Applications & Consulting
-# # -----------------------------
-# company = Company.create(
-#     name: "Technical Applications & Consulting",
-#     alias: "TAC"
-# )
-# # Planes
-# company.planes.create(
-#     name: "N8647Q",
-#     model: "Cessna TU206"
-# )
-# company.planes.create(
-#     name: "N78MW",
-#     model: "Cessna TU206"
-# )
-# company.planes.create(
-#     name: "N528NR",
-#     model: "Cessna T310R"
-# )
-# # Cameras
-# company.cameras.create(
-#     name: "1318",
-#     manufacturer: "Leica",
-#     model: "ADS80",
-#     serial_number: "763806_1318_091209-1"
-# )
-# company.cameras.create(
-#     name: "UC-Lp-1-70410266",
-#     manufacturer: "Vexcel",
-#     model: "UltraCam LP",
-#     serial_number: "UC-Lp-1-70410266 V4.0"
-# )
-# # -----------------------------
-
-# # CT Consultants, Inc
-# # -----------------------------
-# company = Company.create(
-#     name: "CT Consultants, Inc",
-#     alias: "CTC"
-# )
-# # Planes
-# company.planes.create(
-#     name: "N39BT",
-#     model: "Cessna T310Q"
-# )
-# # Cameras
-# company.cameras.create(
-#     name: "YZ000032",
-#     manufacturer: "Phase One",
-#     model: "iXM-RS280 F",
-#     serial_number: "YZ000032"
-# )
-# # -----------------------------
-
-# # The Atlantic Group
-# # -----------------------------
-# company = Company.create(
-#     name: "The Atlantic Group",
-#     alias: "ATL"
-# )
-# # Planes
-# company.planes.create(
-#     name: "N167PM",
-#     model: "Cessna 208"
-# )
-# company.planes.create(
-#     name: "N108RF",
-#     model: "Cessna 208"
-# )
-# company.planes.create(
-#     name: "N750VX",
-#     model: "PAC750"
-# )
-# company.planes.create(
-#     name: "N750DV",
-#     model: "PAC750"
-# )
-# # Cameras
-# company.cameras.create(
-#     name: "033",
-#     manufacturer: "Intergraph",
-#     model: "DMC 1",
-#     serial_number: "DMC01-0033"
-# )
-# company.cameras.create(
-#     name: "001",
-#     manufacturer: "Intergraph",
-#     model: "DMC 1",
-#     serial_number: "DMC01-0001"
-# )
-# company.cameras.create(
-#     name: "YZ000022",
-#     manufacturer: "Phase One",
-#     model: "iXM-RS280 F",
-#     serial_number: "YZ000022"
-# )
-# # -----------------------------
-
-# # Aerial Surveys International
-# # -----------------------------
-# company = Company.create(
-#     name: "Aerial Surveys International",
-#     alias: "ASI"
-# )
-# # Planes
-# company.planes.create(
-#     name: "N1008A",
-#     model: "Cessna 402"
-# )
-# company.planes.create(
-#     name: "N2JJ",
-#     model: "Cessna 402"
-# )
-# # Cameras
-# company.cameras.create(
-#     name: "137",
-#     manufacturer: "Intergraph",
-#     model: "DMC 1",
-#     serial_number: "DMC01-0137"
-# )
-# company.cameras.create(
-#     name: "121",
-#     manufacturer: "Intergraph",
-#     model: "DMC 1",
-#     serial_number: "DMC01-0121"
-# )
-# # -----------------------------
-
-# # Helios Airborne Solutions
-# # -----------------------------
-# company = Company.create(
-#     name: "Helios Airborne Solutions",
-#     alias: "HAS"
-# )
-# # Planes
-# company.planes.create(
-#     name: "N14NN",
-#     model: "Cessna TU206G"
-# )
-# # Cameras
-# company.cameras.create(
-#     name: "005",
-#     manufacturer: "Intergraph",
-#     model: "DMC II",
-#     serial_number: "DMCII40-005"
-# )
-# # -----------------------------
-
-# # GPI Geospatial
-# # -----------------------------
-# company = Company.create(
-#     name: "GPI Geospatial",
-#     alias: "ASI"
-# )
-# # Planes
-# company.planes.create(
-#     name: "N27GP",
-#     model: "Cessna TU206G"
-# )
-# company.planes.create(
-#     name: "N26GP",
-#     model: "Piper Navajo PA-31-325"
-# )
-# company.planes.create(
-#     name: "N9481T",
-#     model: "Cessna TU206G"
-# )
-# # Cameras
-# company.cameras.create(
-#     name: "UC-EpII-22411214-f100",
-#     manufacturer: "Vexcel",
-#     model: "UltraCam Eagle M3",
-#     serial_number: "UC-EpII-22411214-f100 V01"
-# )
-# # -----------------------------
-
-# # Build Mail Groups
-
-# # Imports and Status
-# # MailGroup.create(name: "Last Footprints Uploaded for the Day", description: "Notifies group when a user checks the box on the Footprint Import that the last Footprints are being uploaded for the day")
-# MailGroup.create(name: "Footprints", description: "Notifies group when someone Uploads a Footprint Shapefile")
-# MailGroup.create(name: "Photo Index", description: "Notifies group when someone Uploads a Photo Index File")
-# MailGroup.create(name: "AT Done", description: "Notifies the group when the EO is imported and the associated Tiles are marked as AT Done.")
-# MailGroup.create(name: "Ortho Processing", description: "Notifies group when the Cutfile is created and the Ortho Processing has been set to Tiles")
-# MailGroup.create(name: "Tile Dump", description: "Notifies group when the Tile Dump has been completed")
-# MailGroup.create(name: "Final Delivery", description: "Notifies group when the Final Delivery has been completed")
-# MailGroup.create(name: "USDA Approved", description: "Notifies group when someone updates a packing slip that it has been accepted by the USDA and can be invoiced.")
-# MailGroup.create(name: "Excel Export", description: "Notifies the group when someone exports the Excel report.")
-# MailGroup.create(name: "EAWS", description: "Notifies the group when imports/exports related to the Early Access Web Services are generated.")
-
-# # Daily
-# MailGroup.create(name: "Daily Progress Report", description: "Sends an email when the Daily Progress report has been completed or if there is any Reports that are overdue.")
-# MailGroup.create(name: "Ready to Ship", description: "Daily reminder of what Tiles are ready to ship sent at 8AM. If no Tiles are ready then it will confirm in the email.")
-
-# # Rejections and Coverages
-# MailGroup.create(name: "Easements with Multiple Coverages", description: "Notifies the group when the system checks that an Easement is covered by multiple Footprints of different flight dates or is unrejected and there are Footprints that cover it.")
-# MailGroup.create(name: "Rejection", description: "Email is sent when a Tile has been rejected, either manually or automatically with the Photo Index or Frame Center Imports.")
-
-# # Sanity
-# MailGroup.create(name: "Email Relay Check", description: "Daily Email that's only purpose is to verify the email relay is working")
-
-# # Daily audit check
-# MailGroup.create(name: "Audit", description: "Email is sent during the Quick or Nightly Audits to notify of potential errors within the application.")
-# MailGroup.create(name: "Errors", description: "Group is notified when critical errors are found due to crashes or catches.")
-
-# if Rails.env.development?
-#     # add admin to mailgroups
-#     MailGroup.all.each { |mg| mg.users << admin }
-# else
-#     mg = MailGroup.find_by(name: "AT Done")
-#     Rails.application.secrets.at_done_users.each {|obj| mg.users << User.find_by(obj) }
-
-#     mg = MailGroup.find_by(name: "Ready to Ship")
-#     Rails.application.secrets.ready_to_ship_users.each {|obj| mg.users << User.find_by(obj) }
-
-#     mg = MailGroup.find_by(name: "Rejection")
-#     Rails.application.secrets.rejection_users.each {|obj| mg.users << User.find_by(obj) }
-
-#     mg = MailGroup.find_by(name: "Errors")
-#     Rails.application.secrets.error_users.each {|obj| mg.users << User.find_by(obj) }
-
-#     mg = MailGroup.find_by(name: "USDA Approved")
-#     Rails.application.secrets.usda_approved_users.each {|obj| mg.users << User.find_by(obj) }
-
-#     mg = MailGroup.find_by(name: "Audit")
-#     Rails.application.secrets.audit_users.each {|obj| mg.users << User.find_by(obj) }
-
-#     mg = MailGroup.find_by(name: "Final Delivery")
-#     Rails.application.secrets.packing_slip.each {|obj| mg.users << User.find_by(obj) }
-
-#     mg = MailGroup.find_by(name: "Photo Index")
-#     Rails.application.secrets.photo_index.each {|obj| mg.users << User.find_by(obj) }
-# end
-
-# # -----------------------------
-
-# # Upload Shapefiles
-# require 'rgeo/shapefile'
-
-# # Import the States
-# RGeo::Shapefile::Reader.open("#{Rails.application.secrets.state_path}") do |file|
-#     # puts "File contains #{file.num_records} records."
-#     p "States"
-#     p "--------------------"
-#     file.each do |record|
-
-#         # p "------------"
-#         # p "checking: #{record.attributes["STUSPS"]}"
-#         # p Rails.application.secrets.active_states.include?(record.attributes["STUSPS"])
-#         # p State.find_by(abv: record.attributes["STUSPS"]).nil?
-
-#         # if Rails.application.secrets.active_sl_states.include?(record.attributes["STUSPS"]) && State.find_by(abv: record.attributes["STUSPS"]).nil? || Rails.application.secrets.active_naip_states.include?(record.attributes["STUSPS"]) && State.find_by(abv: record.attributes["STUSPS"]).nil?
-#         if (Rails.application.secrets.active_sl_states.include?(record.attributes["STUSPS"]) || Rails.application.secrets.active_nri_states.include?(record.attributes["STUSPS"]) ) && State.find_by(abv: record.attributes["STUSPS"]).nil? 
-
-#             puts "MATCH: #{record.attributes["STUSPS"]}"
-#             # puts "Record number #{record.index}:"
-#             # puts "  Geometry: #{record.geometry.as_text}"
-#             # puts "  Attributes: #{record.attributes.inspect}"
-#             State.create(
-#                 fips: record.attributes["STATEFP"],
-#                 abv: record.attributes["STUSPS"],
-#                 name: record.attributes["NAME"],
-#                 geom: record.geometry
-#             )
-#         end
-#     end
-# end
-
-# # # Import the Counties
-# RGeo::Shapefile::Reader.open("#{Rails.application.secrets.county_path}") do |file|
-#     # puts "File contains #{file.num_records} records."
-#     p "Counties"
-#     p "--------------------"
-
-#     file.each do |record|
-
-#         state = State.find_by(fips: record.attributes["STATEFP"])
-
-#         if state.present? && state.easements.count == 0
-
-#             puts "Matched #{state.name} - Record number #{record.index}:"
-#             # puts "  Geometry: #{record.geometry.as_text}"
-#             # puts "  Attributes: #{record.attributes.inspect}"
-#             # state = State.where(fips: record.attributes["STATEFP"]).first
-#             state.counties.create(
-#                 fips: record.attributes["COUNTYFP"],
-#                 full_fips: record.attributes["GEOID"],
-#                 name: record.attributes["NAME"],
-#                 geom: record.geometry
-#             )
-#         end
-#     end
-# end
-
-# # Import the UTM
-# RGeo::Shapefile::Reader.open("#{Rails.application.secrets.utm_path}") do |file|
-#     # puts "File contains #{file.num_records} records."
-#     p "UTM"
-#     p "--------------------"
-#     file.each do |record|
-#         p "++++++++++++"
-#         puts "Record number #{record.index}:"
-#         # puts "  Geometry: #{record.geometry.as_text}"
-#         # puts "  Attributes: #{record.attributes.inspect}"
-
-#         p !(10..19).to_a.include?(record.attributes["ZONE"].to_i)
-#         p Utm.find_by(zone: record.attributes["ZONE"]).present?
-#         p "++++++++++++"
-
-#         next if !(10..19).to_a.include?(record.attributes["ZONE"].to_i)
-#         next if Utm.find_by(zone: record.attributes["ZONE"]).present?
-
-#         # puts "Record number #{record.index}:"
-
-#         Utm.create(
-#             # swlon: record.attributes["swlon"],
-#             # swlat: record.attributes["swlat"],
-#             hemisphere: "N",
-#             zone: record.attributes["ZONE"],
-#             geom: record.geometry
-#         )
-#     end
-# end
+# GRW
+# -----------------------------
+company = Company.create(
+    name: "GRW",
+    alias: "GRW"
+)
+# Planes
+company.planes.create(
+    name: "N83PA",
+    model: "Piper Navajo PA-31-325"
+)
+company.planes.create(
+    name: "N85PE",
+    model: "Cessna TU206F"
+)
+# Cameras
+company.cameras.create(
+    name: "UC-E-1-50111116-f100",
+    manufacturer: "Vexcel",
+    model: "UltraCam Eagle",
+    serial_number: "UC-E-1-50111116-f100 V01"
+)
+company.cameras.create(
+    name: "UCLP-1-10113213",
+    manufacturer: "Vexcel",
+    model: "UltraCamLP",
+    serial_number: "UC-Lp-1-10113213 V15.0"
+)
+# -----------------------------
 
 
-# # Import the Timezone
-# RGeo::Shapefile::Reader.open("#{Rails.application.secrets.timezone_path}") do |file|
-#     # puts "File contains #{file.num_records} records."
-#     p "TimeZone"
-#     p "--------------------"
-#     file.each do |record|
-#         # p "++++++++++++"
-#         puts "Timezone #{record.attributes["TZID"]}"
+# ADS
+# -----------------------------
+company = Company.create(
+    name: "Aerial Data Services",
+    alias: "ADS"
+)
+# Planes
+company.planes.create(
+    name: "N4073L",
+    model: "Piper Navajo PA-31-350"
+)
+# Cameras
+company.cameras.create(
+    name: "UC-F-1-30710015-f100",
+    manufacturer: "Vexcel",
+    model: "UltraCam Falcon",
+    serial_number: "UC-F030710015-f100 V04"
+)
+# -----------------------------
 
-#         TimeZone.create(
-#             name: record.attributes["TZID"],
-#             geom: record.geometry
-#         )
-#     end
-# end
+# Williams Aerial and Mapping
+# -----------------------------
+company = Company.create(
+    name: "Williams Aerial and Mapping",
+    alias: "WAM"
+)
+# Planes
+company.planes.create(
+    name: "N150V",
+    model: "Cessna TU206G"
+)
+company.planes.create(
+    name: "N92HC",
+    model: "Cessna TU206F"
+)
+company.planes.create(
+    name: "N64AP",
+    model: "Piper Navajo PA-31-350"
+)
+company.planes.create(
+    name: "N310EW",
+    model: "Cessna T310Q"
+)
+company.planes.create(
+    name: "N91PW",
+    model: "Piper Navajo PA-31-350"
+)
+# Cameras
+company.cameras.create(
+    name: "UC-F-1-50118074-f100",
+    manufacturer: "Vexcel",
+    model: "UltraCam Falcon",
+    serial_number: "UC-F-1-50118074-f100 V01"
+)
+# -----------------------------
+
+# Arrowhawk
+# -----------------------------
+company = Company.create(
+    name: "Arrowhawk",
+    alias: "AHK"
+)
+# Planes
+company.planes.create(
+    name: "N213SM",
+    model: "Cessna TU206"
+)
+# Cameras
+company.cameras.create(
+    name: "431S91198X311374-f100",
+    manufacturer: "Vexcel",
+    model: "UltraCam Eagle M3",
+    serial_number: "431S91198X311374-f100 v01"
+)
+# -----------------------------
+
+# Technical Applications & Consulting
+# -----------------------------
+company = Company.create(
+    name: "Technical Applications & Consulting",
+    alias: "TAC"
+)
+# Planes
+company.planes.create(
+    name: "N8647Q",
+    model: "Cessna TU206"
+)
+company.planes.create(
+    name: "N78MW",
+    model: "Cessna TU206"
+)
+company.planes.create(
+    name: "N528NR",
+    model: "Cessna T310R"
+)
+# Cameras
+company.cameras.create(
+    name: "1318",
+    manufacturer: "Leica",
+    model: "ADS80",
+    serial_number: "763806_1318_091209-1"
+)
+company.cameras.create(
+    name: "UC-Lp-1-70410266",
+    manufacturer: "Vexcel",
+    model: "UltraCam LP",
+    serial_number: "UC-Lp-1-70410266 V4.0"
+)
+# -----------------------------
+
+# CT Consultants, Inc
+# -----------------------------
+company = Company.create(
+    name: "CT Consultants, Inc",
+    alias: "CTC"
+)
+# Planes
+company.planes.create(
+    name: "N39BT",
+    model: "Cessna T310Q"
+)
+# Cameras
+company.cameras.create(
+    name: "YZ000032",
+    manufacturer: "Phase One",
+    model: "iXM-RS280 F",
+    serial_number: "YZ000032"
+)
+# -----------------------------
+
+# The Atlantic Group
+# -----------------------------
+company = Company.create(
+    name: "The Atlantic Group",
+    alias: "ATL"
+)
+# Planes
+company.planes.create(
+    name: "N167PM",
+    model: "Cessna 208"
+)
+company.planes.create(
+    name: "N108RF",
+    model: "Cessna 208"
+)
+company.planes.create(
+    name: "N750VX",
+    model: "PAC750"
+)
+company.planes.create(
+    name: "N750DV",
+    model: "PAC750"
+)
+# Cameras
+company.cameras.create(
+    name: "033",
+    manufacturer: "Intergraph",
+    model: "DMC 1",
+    serial_number: "DMC01-0033"
+)
+company.cameras.create(
+    name: "001",
+    manufacturer: "Intergraph",
+    model: "DMC 1",
+    serial_number: "DMC01-0001"
+)
+company.cameras.create(
+    name: "YZ000022",
+    manufacturer: "Phase One",
+    model: "iXM-RS280 F",
+    serial_number: "YZ000022"
+)
+# -----------------------------
+
+# Aerial Surveys International
+# -----------------------------
+company = Company.create(
+    name: "Aerial Surveys International",
+    alias: "ASI"
+)
+# Planes
+company.planes.create(
+    name: "N1008A",
+    model: "Cessna 402"
+)
+company.planes.create(
+    name: "N2JJ",
+    model: "Cessna 402"
+)
+# Cameras
+company.cameras.create(
+    name: "137",
+    manufacturer: "Intergraph",
+    model: "DMC 1",
+    serial_number: "DMC01-0137"
+)
+company.cameras.create(
+    name: "121",
+    manufacturer: "Intergraph",
+    model: "DMC 1",
+    serial_number: "DMC01-0121"
+)
+# -----------------------------
+
+# Helios Airborne Solutions
+# -----------------------------
+company = Company.create(
+    name: "Helios Airborne Solutions",
+    alias: "HAS"
+)
+# Planes
+company.planes.create(
+    name: "N14NN",
+    model: "Cessna TU206G"
+)
+# Cameras
+company.cameras.create(
+    name: "005",
+    manufacturer: "Intergraph",
+    model: "DMC II",
+    serial_number: "DMCII40-005"
+)
+# -----------------------------
+
+# GPI Geospatial
+# -----------------------------
+company = Company.create(
+    name: "GPI Geospatial",
+    alias: "ASI"
+)
+# Planes
+company.planes.create(
+    name: "N27GP",
+    model: "Cessna TU206G"
+)
+company.planes.create(
+    name: "N26GP",
+    model: "Piper Navajo PA-31-325"
+)
+company.planes.create(
+    name: "N9481T",
+    model: "Cessna TU206G"
+)
+# Cameras
+company.cameras.create(
+    name: "UC-EpII-22411214-f100",
+    manufacturer: "Vexcel",
+    model: "UltraCam Eagle M3",
+    serial_number: "UC-EpII-22411214-f100 V01"
+)
+# -----------------------------
+
+# Build Mail Groups
+
+# Imports and Status
+# MailGroup.create(name: "Last Footprints Uploaded for the Day", description: "Notifies group when a user checks the box on the Footprint Import that the last Footprints are being uploaded for the day")
+MailGroup.create(name: "Footprints", description: "Notifies group when someone Uploads a Footprint Shapefile")
+MailGroup.create(name: "Photo Index", description: "Notifies group when someone Uploads a Photo Index File")
+MailGroup.create(name: "AT Done", description: "Notifies the group when the EO is imported and the associated Tiles are marked as AT Done.")
+MailGroup.create(name: "Ortho Processing", description: "Notifies group when the Cutfile is created and the Ortho Processing has been set to Tiles")
+MailGroup.create(name: "Tile Dump", description: "Notifies group when the Tile Dump has been completed")
+MailGroup.create(name: "Final Delivery", description: "Notifies group when the Final Delivery has been completed")
+MailGroup.create(name: "USDA Approved", description: "Notifies group when someone updates a packing slip that it has been accepted by the USDA and can be invoiced.")
+MailGroup.create(name: "Excel Export", description: "Notifies the group when someone exports the Excel report.")
+MailGroup.create(name: "EAWS", description: "Notifies the group when imports/exports related to the Early Access Web Services are generated.")
+
+# Daily
+MailGroup.create(name: "Daily Progress Report", description: "Sends an email when the Daily Progress report has been completed or if there is any Reports that are overdue.")
+MailGroup.create(name: "Ready to Ship", description: "Daily reminder of what Tiles are ready to ship sent at 8AM. If no Tiles are ready then it will confirm in the email.")
+
+# Rejections and Coverages
+MailGroup.create(name: "Easements with Multiple Coverages", description: "Notifies the group when the system checks that an Easement is covered by multiple Footprints of different flight dates or is unrejected and there are Footprints that cover it.")
+MailGroup.create(name: "Rejection", description: "Email is sent when a Tile has been rejected, either manually or automatically with the Photo Index or Frame Center Imports.")
+
+# Sanity
+MailGroup.create(name: "Email Relay Check", description: "Daily Email that's only purpose is to verify the email relay is working")
+
+# Daily audit check
+MailGroup.create(name: "Audit", description: "Email is sent during the Quick or Nightly Audits to notify of potential errors within the application.")
+MailGroup.create(name: "Errors", description: "Group is notified when critical errors are found due to crashes or catches.")
+
+if Rails.env.development?
+    # add admin to mailgroups
+    MailGroup.all.each { |mg| mg.users << admin }
+else
+    mg = MailGroup.find_by(name: "AT Done")
+    Rails.application.secrets.at_done_users.each {|obj| mg.users << User.find_by(obj) }
+
+    mg = MailGroup.find_by(name: "Ready to Ship")
+    Rails.application.secrets.ready_to_ship_users.each {|obj| mg.users << User.find_by(obj) }
+
+    mg = MailGroup.find_by(name: "Rejection")
+    Rails.application.secrets.rejection_users.each {|obj| mg.users << User.find_by(obj) }
+
+    mg = MailGroup.find_by(name: "Errors")
+    Rails.application.secrets.error_users.each {|obj| mg.users << User.find_by(obj) }
+
+    mg = MailGroup.find_by(name: "USDA Approved")
+    Rails.application.secrets.usda_approved_users.each {|obj| mg.users << User.find_by(obj) }
+
+    mg = MailGroup.find_by(name: "Audit")
+    Rails.application.secrets.audit_users.each {|obj| mg.users << User.find_by(obj) }
+
+    mg = MailGroup.find_by(name: "Final Delivery")
+    Rails.application.secrets.packing_slip.each {|obj| mg.users << User.find_by(obj) }
+
+    mg = MailGroup.find_by(name: "Photo Index")
+    Rails.application.secrets.photo_index.each {|obj| mg.users << User.find_by(obj) }
+end
+
+# -----------------------------
+
+# Upload Shapefiles
+require 'rgeo/shapefile'
+
+# Import the States
+RGeo::Shapefile::Reader.open("#{Rails.application.secrets.state_path}") do |file|
+    # puts "File contains #{file.num_records} records."
+    p "States"
+    p "--------------------"
+    file.each do |record|
+
+        # p "------------"
+        # p "checking: #{record.attributes["STUSPS"]}"
+        # p Rails.application.secrets.active_states.include?(record.attributes["STUSPS"])
+        # p State.find_by(abv: record.attributes["STUSPS"]).nil?
+
+        # if Rails.application.secrets.active_sl_states.include?(record.attributes["STUSPS"]) && State.find_by(abv: record.attributes["STUSPS"]).nil? || Rails.application.secrets.active_naip_states.include?(record.attributes["STUSPS"]) && State.find_by(abv: record.attributes["STUSPS"]).nil?
+        if (Rails.application.secrets.active_sl_states.include?(record.attributes["STUSPS"]) || Rails.application.secrets.active_nri_states.include?(record.attributes["STUSPS"]) ) && State.find_by(abv: record.attributes["STUSPS"]).nil? 
+
+            puts "MATCH: #{record.attributes["STUSPS"]}"
+            # puts "Record number #{record.index}:"
+            # puts "  Geometry: #{record.geometry.as_text}"
+            # puts "  Attributes: #{record.attributes.inspect}"
+            State.create(
+                fips: record.attributes["STATEFP"],
+                abv: record.attributes["STUSPS"],
+                name: record.attributes["NAME"],
+                geom: record.geometry
+            )
+        end
+    end
+end
+
+# # Import the Counties
+RGeo::Shapefile::Reader.open("#{Rails.application.secrets.county_path}") do |file|
+    # puts "File contains #{file.num_records} records."
+    p "Counties"
+    p "--------------------"
+
+    file.each do |record|
+
+        state = State.find_by(fips: record.attributes["STATEFP"])
+
+        if state.present? && state.easements.count == 0
+
+            puts "Matched #{state.name} - Record number #{record.index}:"
+            # puts "  Geometry: #{record.geometry.as_text}"
+            # puts "  Attributes: #{record.attributes.inspect}"
+            # state = State.where(fips: record.attributes["STATEFP"]).first
+            state.counties.create(
+                fips: record.attributes["COUNTYFP"],
+                full_fips: record.attributes["GEOID"],
+                name: record.attributes["NAME"],
+                geom: record.geometry
+            )
+        end
+    end
+end
+
+# Import the UTM
+RGeo::Shapefile::Reader.open("#{Rails.application.secrets.utm_path}") do |file|
+    # puts "File contains #{file.num_records} records."
+    p "UTM"
+    p "--------------------"
+    file.each do |record|
+        p "++++++++++++"
+        puts "Record number #{record.index}:"
+        # puts "  Geometry: #{record.geometry.as_text}"
+        # puts "  Attributes: #{record.attributes.inspect}"
+
+        p !(10..19).to_a.include?(record.attributes["ZONE"].to_i)
+        p Utm.find_by(zone: record.attributes["ZONE"]).present?
+        p "++++++++++++"
+
+        next if !(10..19).to_a.include?(record.attributes["ZONE"].to_i)
+        next if Utm.find_by(zone: record.attributes["ZONE"]).present?
+
+        # puts "Record number #{record.index}:"
+
+        Utm.create(
+            # swlon: record.attributes["swlon"],
+            # swlat: record.attributes["swlat"],
+            hemisphere: "N",
+            zone: record.attributes["ZONE"],
+            geom: record.geometry
+        )
+    end
+end
+
+
+# Import the Timezone
+RGeo::Shapefile::Reader.open("#{Rails.application.secrets.timezone_path}") do |file|
+    # puts "File contains #{file.num_records} records."
+    p "TimeZone"
+    p "--------------------"
+    file.each do |record|
+        # p "++++++++++++"
+        puts "Timezone #{record.attributes["TZID"]}"
+
+        TimeZone.create(
+            name: record.attributes["TZID"],
+            geom: record.geometry
+        )
+    end
+end
 
 # # SL Contract Rates
 # CSV.foreach(Rails.application.secrets.project_cost_path, {:headers => true, :header_converters => :symbol}) do |row|
@@ -829,7 +829,7 @@ ContractAward.nri.where(state_id: 33).update(pps: 531) # PR
 #         amount: row[:total].to_d,
 #         flight_amount: row[:flight_price].to_d,
 #         production_amount: row[:prod_price].to_d,
-#         start_date: "2024-03-09",
+#         start_date: "2025-03-09",
 #         end_date: "2025-03-09",
 #         state: state
 #     )
@@ -853,7 +853,7 @@ ContractAward.nri.where(state_id: 33).update(pps: 531) # PR
 #             company_alias: company.alias,
 #             phase: 100,
 #             cost: flight_rate.to_d,
-#             start_date: "2024-03-09",
+#             start_date: "2025-03-09",
 #             end_date: "2025-03-09",
 #             state: state,
 #             company: company
@@ -866,7 +866,7 @@ ContractAward.nri.where(state_id: 33).update(pps: 531) # PR
 #             company_alias: company.alias,
 #             phase: 300,
 #             cost: prod_rate.to_d,
-#             start_date: "2024-03-09",
+#             start_date: "2025-03-09",
 #             end_date: "2025-03-09",
 #             state: state,
 #             company: company

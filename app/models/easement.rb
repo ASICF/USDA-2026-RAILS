@@ -475,12 +475,12 @@ class Easement < ApplicationRecord
                             # create the easement
                             easement = Easement.new(
                                 # scale: record.attributes["Scale"],
-                                acres: record.attributes["Acreage"],
+                                acres: record.attributes["CalcAcres_"],
                                 # buffer_acres: record.attributes["BufferAcre"],
                                 latitude: record.geometry.centroid.y,
                                 longitude: record.geometry.centroid.x,
-                                original_poly_id: record.attributes["POLY_ID"],
-                                poly_id: record.attributes["POLY_ID"],
+                                original_poly_id: record.attributes["NESTID"],
+                                poly_id: record.attributes["NESTID"],
                                 project: params[:project],
                                 project_no: contract_award.project_no,
                                 project_state_name: state.name,

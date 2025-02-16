@@ -1,7 +1,7 @@
 # update nri contract awards
 
-ContractAward.nri.where(state_id: 30).update(pps: 565) # HI
-ContractAward.nri.where(state_id: 33).update(pps: 531) # PR
+# ContractAward.nri.where(state_id: 30).update(pps: 565) # HI
+# ContractAward.nri.where(state_id: 33).update(pps: 531) # PR
 
 
 
@@ -776,11 +776,11 @@ RGeo::Shapefile::Reader.open("#{Rails.application.secrets.utm_path}") do |file|
         # puts "  Geometry: #{record.geometry.as_text}"
         # puts "  Attributes: #{record.attributes.inspect}"
 
-        p !(10..19).to_a.include?(record.attributes["ZONE"].to_i)
+        p !(0..20).to_a.include?(record.attributes["ZONE"].to_i)
         p Utm.find_by(zone: record.attributes["ZONE"]).present?
         p "++++++++++++"
 
-        next if !(10..19).to_a.include?(record.attributes["ZONE"].to_i)
+        next if !(0..20).to_a.include?(record.attributes["ZONE"].to_i)
         next if Utm.find_by(zone: record.attributes["ZONE"]).present?
 
         # puts "Record number #{record.index}:"

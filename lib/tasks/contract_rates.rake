@@ -1,142 +1,38 @@
-namespace :money do
-    desc "Import Contract Awards and Rates"
-    task go: :environment do
-        p "Starting Contract Awards and Rates"
+namespace :contract do
+    desc "Import Contract Rates"
+    task rates: :environment do
+        p "Starting Contract Rates"
 
         # Clear all awards and rates
-        ActiveRecord::Base.connection.execute("TRUNCATE contract_awards RESTART IDENTITY")
         ActiveRecord::Base.connection.execute("TRUNCATE contract_rates RESTART IDENTITY")
 
-        states = {}
-        State.active.each do |state|
-            states[state.abv] = state.id
-        end
+        # fields
+        fields = ["project","project_no","company_alias","phase","start_date","end_date","cost","sub_cost"]
 
-        companies = Company.all.select(:id, :name, :alias)
+        # iterate the contract awards
+        CSV.foreach(Rails.application.secrets.contract_rate_path, {:headers => true, :header_converters => :symbol}) do |row|
 
-        CSV.foreach(Rails.application.secrets.project_cost_path, {:headers => true, :header_converters => :symbol}) do |row|
+            p row
 
-            # p row
-
-            state_abv = row[:state]
-            project = row[:project_type]
-            flight_price = row[:flight_price].to_d
-            prod_price = row[:prod_price].to_d
-            asi_flight = row[:asi_flight].to_d
-            asi_prod = row[:asi_prod].to_d
-
-            # get the state id
-            state_id = states[state_abv]
-
-            season_start = "2025-03-11"
-            season_end = "2025-09-30"
-            season_extension = "2025-09-30"
-
-            if project == "NRI"
-                season_start = "2025-03-11"
-                season_end = "2025-12-31"
-                season_extension = nil
+            obj = {}
+            fields.each do |field|
+                obj[field] = row[field.to_sym]
             end
 
-            # Create the award
-            ContractAward.create(
-                project: project,
-                project_no: row[:project],
-                amount: row[:total].to_d,
-                flight_amount: flight_price.to_d,
-                production_amount: flight_price.to_d,
-                start_date: "2025-03-09",
-                end_date: "2025-03-09",
-                season_start: season_start,
-                season_end: season_end,
-                season_extension: season_extension,
-                state_id: state_id
-            )
+            # match the state
+            obj[:state_id] = State.find_by(abv: row[:state_abv]).id
+            obj[:company_id] = Company.find_by(alias: row[:company_alias]).id
 
-            # ContractAward.find_by(project: project, state_id: state_id).update(
-            #     flight_amount: flight_price, 
-            #     production_amount: prod_price
-            # )
+            # ContractRate.create(obj)
 
-            companies.each do |company|
+            record = ContractRate.new(obj)
 
-                # Create the Contract Rates
-                # Flight
-                ContractRate.create(
-                    project: row[:project_type],
-                    project_no: row[:project],
-                    company_alias: company.alias,
-                    phase: 100,
-                    cost: row[:asi_flight].to_d,
-                    sub_cost: row[:sub_flight].to_d,
-                    start_date: "2025-03-09",
-                    end_date: "2025-03-09",
-                    state_id: state_id,
-                    company: company
-                )
+            p "valid?: #{record.valid?}"
+            p record.errors
 
-                # Production
-                ContractRate.create(
-                    project: row[:project_type],
-                    project_no: row[:project],
-                    company_alias: company.alias,
-                    phase: 300,
-                    cost: row[:asi_prod].to_d,
-                    sub_cost: row[:sub_prod].to_d,
-                    start_date: "2025-03-09",
-                    end_date: "2025-03-09",
-                    state_id: state_id,
-                    company: company
-                )
-
-                # if project === "SL"
-
-                #     # find the contract rates
-                #     # => Flight
-                #     ContractRate.find_by(state_id: state_id, project: project, company_id: company_id, phase: "100").update(cost: asi_flight)
-                #     # => Production
-                #     ContractRate.find_by(state_id: state_id, project: project, company_id: company_id, phase: "300").update(cost: asi_prod)
-
-                # else
-
-
-                #     # Create the Contract Rates
-                #     # Flight
-                #     ContractRate.create(
-                #         project: project,
-                #         project_no: row[:project],
-                #         company_alias: company.alias,
-                #         phase: 100,
-                #         cost: asi_flight,
-                #         start_date: "2025-03-09",
-                #         end_date: "2025-03-09",
-                #         state_id: state_id,
-                #         company: company
-                #     )
-
-                #     # Production
-                #     ContractRate.create(
-                #         project: "NRI",
-                #         project_no: row[:project],
-                #         company_alias: company.alias,
-                #         phase: 300,
-                #         cost: asi_prod,
-                #         start_date: "2025-03-09",
-                #         end_date: "2025-03-09",
-                #         state_id: state_id,
-                #         company: company
-                #     )
-                # end
-                
-            end
-            
-
-            # update
-
+            record.save
 
         end
-
-        Tile.flown.each {|tile| tile.set_contract_rate}
 
     end
 

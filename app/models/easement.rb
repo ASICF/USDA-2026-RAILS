@@ -1,6 +1,7 @@
 class Easement < ApplicationRecord
     include Concerns::Archive
     require 'zip'
+    require 'rgeo/shapefile'
 
     # Associations
     belongs_to :county
@@ -390,23 +391,32 @@ class Easement < ApplicationRecord
                             # pp record.attributes
 
                             # Find the State 
-                            state = State.find_by(abv: record.attributes["SPATIAL_ST"])
+                            state = State.find_by(abv: record.attributes["STATE_ABBR"])
 
                             # p "=-=-=-=-=-=-=-="
                             # p state.name
-                            # p record.attributes["SPATIAL_ST"]
+                            # p record.attributes["STATE_ABBR"]
                             # p "=-=-=-=-=-=-=-="
 
                             if state.nil?
-                                raise Exception, "Could not match State with FIPS: #{record.attributes["SPATIAL_ST"]}"
+                                raise Exception, "Could not match State with FIPS: #{record.attributes["STATE_ABBR"]}"
                             end
 
                             # Find the county based on the selected state
-                            county = state.counties.find_by(full_fips: "#{record.attributes["SPATIAL_FI"]}")
+                            county = state.counties.find_by(full_fips: "#{record.attributes["FIPS"]}")
 
-                            if county.nil? || county.name != record.attributes["SPATIAL_Co"]
-                                raise Exception, "Could not match County with FIPS: #{record.attributes["SPATIAL_FI"]} in State: #{record.attributes["SPATIAL_ST"]}"
+                            p "---------"
+                            p "SHP County: #{record.attributes["NAME"]}"
+                            p "SHP FIPS: #{record.attributes["FIPS"]}"
+                            p "County: #{county.name}"
+                            p "County FIPS: #{county.full_fips}"
+                            p "---------"
+
+                            if county.nil?
+                                raise Exception, "Could not match County with FIPS: #{record.attributes["FIPS"]} in State: #{record.attributes["STATE_ABBR"]}"
                             end
+
+                            p state.name
 
                             # Find the contract award
                             contract_award = ContractAward.find_by(state: state, project: params[:project])
@@ -416,8 +426,8 @@ class Easement < ApplicationRecord
                                 # scale: record.attributes["Scale"],
                                 acres: record.attributes["CalcAcres_"],
                                 # buffer_acres: record.attributes["BufferAcre"],
-                                latitude: record.attributes["Lat_WGS84"],
-                                longitude: record.attributes["Long_WGS84"],
+                                latitude: record.attributes["Latitude"],
+                                longitude: record.attributes["Longitude"],
                                 original_poly_id: record.attributes["NESTID"],
                                 poly_id: record.attributes["NESTID"],
                                 project: params[:project],
@@ -444,17 +454,19 @@ class Easement < ApplicationRecord
                             puts "Poly ID: #{record.attributes["POLY_ID"]}"
                             pp record.attributes
 
+                            p record.attributes["FIPS"]
+
                             # Find the county based on the selected state
-                            county = County.find_by(full_fips: "#{record.attributes["FIPS_l"]}")
+                            county = County.find_by(full_fips: "#{record.attributes["FIPS"]}")
 
                             if county.nil?
-                                raise Exception, "Could not match County with FIPS: #{record.attributes["FIPS_l"]}"
+                                raise Exception, "Could not match County with FIPS: #{record.attributes["FIPS"]}"
                             end
 
                             state = county.state
 
                             if state.nil?
-                                raise Exception, "Could not match State with FIPS: #{record.attributes["SPATIAL_ST"]}"
+                                raise Exception, "Could not match State with FIPS: #{record.attributes["STATE_ABBR"]}"
                             end
 
                             # Find the contract award
@@ -488,18 +500,17 @@ class Easement < ApplicationRecord
                                 upload: upload
                             )
 
-
                         end
 
                         # check that the easement is within the associated county
-                        matched_county = County.find_by("counties.full_fips = '#{record.attributes["FIPS_l"]}' AND st_contains(counties.geom::geometry, ST_SetSRID(ST_Point(#{easement.longitude}, #{easement.latitude}),4326))")
+                        # matched_county = County.find_by("counties.full_fips = '#{record.attributes["FIPS"]}' AND st_intersects(counties.geom::geometry, ST_SetSRID(ST_GeomFromText('#{easement.geom.to_s}'),4326))")
 
-                        # pp matched_county
+                        # # pp matched_county
 
-                        if (!matched_county || matched_county.id != county.id) && !["15009_030401R", "72115_030302R"].include?(easement.poly_id)
-                            pp easement
-                            raise Exception, "Easement #{easement.poly_id} lat/long does not exist within specified county (fips match: #{county.full_fips} | loc match: #{matched_county.nil? ? "NA" : matched_county.full_fips})"
-                        end
+                        # if (!matched_county || matched_county.id != county.id) && !["15009_030401R", "72115_030302R"].include?(easement.poly_id)
+                        #     pp easement
+                        #     raise Exception, "Easement #{easement.poly_id} lat/long does not exist within specified county (fips match: #{county.full_fips} | loc match: #{matched_county.nil? ? "NA" : matched_county.full_fips})"
+                        # end
 
                         # Get the footprint UTM zone
                         sql = "select id, zone, (st_area(st_intersection(ST_GeomFromText('#{easement.geom.to_s}'), u.geom))/st_area(ST_GeomFromText('#{easement.geom.to_s}'))) as area
@@ -927,5 +938,46 @@ class Easement < ApplicationRecord
         # f.close
 
     end
+
+    # def self.find_multiple_envelopes
+
+    #     features = Array.new
+    #     factory = RGeo::GeoJSON::EntityFactory.instance
+
+    #     Easement.has_multiple_geom.each do |record|
+
+    #         p record.poly_id
+
+    #         # Get extent of all records
+    #         extent = record.geom.envelope
+
+    #         features << factory.feature(extent, record.id, {
+    #             poly_id: record.poly_id,
+    #             state: record.state_name,
+    #             count: record.county_name
+    #         })
+
+    #         File.open("/media/sf_shared/2025/prep/multi_poly.json", "w+") do |f|
+    #             f.puts(RGeo::GeoJSON.encode(factory.feature_collection(features)).to_json)
+    #         end
+
+    #     end
+
+    #   rescue => e
+    #     puts "Error: #{e.message}"
+    #   ensure
+    #     writer.close if writer && !writer.closed?
+    # end
+
+    # def self.build_state_list
+    #     total = 0
+    #     State.all.order(:abv).each do |state|
+    #         if state.easements.count > 0
+    #             p "#{state.abv} | #{state.easements.count} Sites | #{state.easements.sum(:acres).round(0).to_f} Acres"
+    #             total += state.easements.sum(:acres).round(0)
+    #         end
+    #     end
+    #     p "Total Acres: #{total.to_f}"
+    # end
 
 end

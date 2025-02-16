@@ -10,6 +10,7 @@ class Company < ApplicationRecord
     has_many :tiles, foreign_key: :flown_by_id
     has_many :doqqs, foreign_key: :flown_by_id
     has_many :rejected_tiles, foreign_key: :flown_by_id
+    has_many :contract_rates, foreign_key: :company_id
 
     # Validations
     validates :name, presence: true

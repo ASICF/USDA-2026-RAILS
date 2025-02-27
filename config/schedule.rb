@@ -9,18 +9,18 @@ set :output, {
 job_type :envcommand, 'cd :path && RAILS_ENV=:environment :task'
 
 # Every time the server is rebooted it *should* start up the delayed job service
-every :reboot do
-  envcommand 'RAILS_ENV=production bin/delayed_job start'
-end
+# every :reboot do
+#   envcommand 'RAILS_ENV=production bin/delayed_job start'
+# end
 
 # Problems with RVM so set bundle_command and create a new runner
 if @environment == 'development'
   set :bundle_command, '/home/booshwa/.rvm/rubies/ruby-2.6.2/bin/bundle exec'
 else
-  set :bundle_command, '/home/app/.rvm/rubies/ruby-2.6.2/bin/bundle exec'
+  set :bundle_command, '/home/booshwa/.rvm/rubies/ruby-2.6.2/bin/bundle exec'
 end
 
-job_type :bundle_runner, "cd :path && :bundle_command rails runner -e :environment ':task' :output"
+job_type :bundle_runner, "cd :path && DISABLE_SPRING=true :bundle_command rails runner -e :environment ':task' :output"
 
 # Perform every 30 minutes
 every 30.minutes do 

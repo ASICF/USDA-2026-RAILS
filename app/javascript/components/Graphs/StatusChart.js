@@ -9,7 +9,7 @@ import "../Styles/default";
 import MessageBox from "../Shared/MessageBox";
 import axios from "axios";
 
-export default function StatusChart({ project, month_range, states }) {
+export default function StatusChart({ project, month_range, states = [] }) {
   const [dataset, setDataset] = useState(null);
   const [chartReady, setChartReady] = useState(true);
   const [label, setLabel] = useState(null);
@@ -18,7 +18,7 @@ export default function StatusChart({ project, month_range, states }) {
   const [month, setMonth] = useState("all");
   const [message, setMessage] = useState(null);
 
-  // console.log("StatusChart", { project, month_range, stateId, month, dataset });
+  // console.log("StatusChart", { project, month_range, states });
 
   useEffect(() => {
     fetch();
@@ -125,21 +125,25 @@ export default function StatusChart({ project, month_range, states }) {
             className="status_chart_dropdown"
             inline
             onChange={handleChange}
-            options={[
-              {
-                key: "all",
-                text: "All States",
-                value: "all",
-              },
-            ].concat(
-              states.map((state) => {
-                return {
-                  key: state.id,
-                  text: state.name,
-                  value: state.id,
-                };
-              })
-            )}
+            options={
+              states
+                ? [
+                    {
+                      key: "all",
+                      text: "All States",
+                      value: "all",
+                    },
+                  ].concat(
+                    states.map((state) => {
+                      return {
+                        key: state.id,
+                        text: state.name,
+                        value: state.id,
+                      };
+                    })
+                  )
+                : []
+            }
             defaultValue={"all"}
           />{" "}
           and{" "}

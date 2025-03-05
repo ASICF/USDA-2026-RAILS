@@ -21,11 +21,11 @@ import { DateInput } from "semantic-ui-calendar-react";
 import { Controller, useForm } from "react-hook-form";
 import axios from "axios";
 
-const WeeklyProgressReport = ({ projects, path, to, cc, token }) => {
+const WeeklyProgressReport = ({ projects, path, to, token }) => {
   const [submitted, setSubmitted] = useState(false);
   const [message, setMessage] = useState(null);
 
-  console.log("WeeklyProgressReport", { projects, path, to, cc, token });
+  console.log("WeeklyProgressReport", { projects, path, to, token });
 
   const {
     handleSubmit,
@@ -86,8 +86,6 @@ const WeeklyProgressReport = ({ projects, path, to, cc, token }) => {
 
         <b>Send To:</b>
         <List bulleted items={to} />
-        <b>CC:</b>
-        <List bulleted items={cc} />
       </Message>
       <Divider />
 

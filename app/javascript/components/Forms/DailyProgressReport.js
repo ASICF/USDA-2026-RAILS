@@ -81,7 +81,7 @@ function DailyProgressReport(props) {
     }
 
     // Launch the email handler
-    location.href = `mailto:${props.to}?cc=${props.cc.join(";")}&subject=${
+    location.href = `mailto:${props.to}?subject=${
       result.header
     }&body=${html}`;
   };
@@ -215,8 +215,8 @@ function DailyProgressReport(props) {
             </p>
             <b>TO:</b>
             <List bulleted items={props.to} />
-            <b>CC:</b>
-            <List bulleted items={props.cc} />
+            {/* <b>CC:</b>
+            <List bulleted items={props.cc} /> */}
           </Message.Content>
         </Message>
 

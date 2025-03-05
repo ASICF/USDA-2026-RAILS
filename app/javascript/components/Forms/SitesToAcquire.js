@@ -24,7 +24,6 @@ import { DateInput } from "semantic-ui-calendar-react";
 import { tableSortReducer } from "../Shared/TableSort";
 
 export default function SitesToAcquire({ sl, nri, naip, token }) {
-
   console.log("SitesToAcquire", {
     sl,
     nri,
@@ -79,6 +78,7 @@ export default function SitesToAcquire({ sl, nri, naip, token }) {
   function RenderSL({ records, token }) {
     const [states, setStates] = useState([]);
     const [message, setMessage] = useState(null);
+    const [submitted, setSubmitted] = useState(false);
 
     console.log("RenderSL", { records, states });
 
@@ -120,11 +120,14 @@ export default function SitesToAcquire({ sl, nri, naip, token }) {
     const onSubmit = (data) => {
       console.error("onSubmit", data);
 
+      setSubmitted(true);
+
       if (states.length === 0) {
         setMessage({
           status: "Error",
           text: "Select one or more states to export shapefile",
         });
+        setSubmitted(false);
       }
 
       setMessage(null);
@@ -150,6 +153,7 @@ export default function SitesToAcquire({ sl, nri, naip, token }) {
               text: data.message,
             });
           }
+          setSubmitted(false);
         })
         .catch((err) => {
           console.log(err);
@@ -158,6 +162,7 @@ export default function SitesToAcquire({ sl, nri, naip, token }) {
             text: "Something went wrong",
           });
           window.onbeforeunload = null;
+          setSubmitted(false);
         });
 
       // window.open(
@@ -274,7 +279,14 @@ export default function SitesToAcquire({ sl, nri, naip, token }) {
             UnCheck All
           </Button>
         </Button.Group>
-        <Button primary floated="right" type="button" onClick={onSubmit}>
+        <Button
+          primary
+          floated="right"
+          type="button"
+          disabled={states.length === 0}
+          loading={submitted}
+          onClick={onSubmit}
+        >
           Download Selected States
         </Button>
         <br />
@@ -286,6 +298,7 @@ export default function SitesToAcquire({ sl, nri, naip, token }) {
   function RenderNRI({ records, token }) {
     const [states, setStates] = useState([]);
     const [message, setMessage] = useState(null);
+    const [submitted, setSubmitted] = useState(false);
 
     console.log("RenderNRI", { records, states });
 
@@ -326,12 +339,14 @@ export default function SitesToAcquire({ sl, nri, naip, token }) {
 
     const onSubmit = (data) => {
       console.error("onSubmit", data);
+      setSubmitted(true);
 
       if (states.length === 0) {
         setMessage({
           status: "Error",
           text: "Select one or more states to export shapefile",
         });
+        setSubmitted(false);
       }
 
       setMessage(null);
@@ -357,6 +372,7 @@ export default function SitesToAcquire({ sl, nri, naip, token }) {
               text: data.message,
             });
           }
+          setSubmitted(false);
         })
         .catch((err) => {
           console.log(err);
@@ -365,6 +381,7 @@ export default function SitesToAcquire({ sl, nri, naip, token }) {
             text: "Something went wrong",
           });
           window.onbeforeunload = null;
+          setSubmitted(false);
         });
 
       // window.open(
@@ -481,7 +498,14 @@ export default function SitesToAcquire({ sl, nri, naip, token }) {
             UnCheck All
           </Button>
         </Button.Group>
-        <Button primary floated="right" type="button" onClick={onSubmit}>
+        <Button
+          primary
+          floated="right"
+          type="button"
+          disabled={states.length === 0}
+          loading={submitted}
+          onClick={onSubmit}
+        >
           Download Selected States
         </Button>
         <br />
@@ -533,12 +557,14 @@ export default function SitesToAcquire({ sl, nri, naip, token }) {
 
     const onSubmit = (data) => {
       console.error("onSubmit", data);
+      setSubmitted(true);
 
       if (states.length === 0) {
         setMessage({
           status: "Error",
           text: "Select one or more states to export shapefile",
         });
+        setSubmitted(false);
       }
 
       setMessage(null);
@@ -564,6 +590,7 @@ export default function SitesToAcquire({ sl, nri, naip, token }) {
               text: data.message,
             });
           }
+          setSubmitted(false);
         })
         .catch((err) => {
           console.log(err);
@@ -572,6 +599,7 @@ export default function SitesToAcquire({ sl, nri, naip, token }) {
             text: "Something went wrong",
           });
           window.onbeforeunload = null;
+          setSubmitted(false);
         });
 
       // window.open(
@@ -679,7 +707,14 @@ export default function SitesToAcquire({ sl, nri, naip, token }) {
             UnCheck All
           </Button>
         </Button.Group>
-        <Button primary floated="right" type="button" onClick={onSubmit}>
+        <Button
+          primary
+          floated="right"
+          type="button"
+          disabled={states.length === 0}
+          loading={submitted}
+          onClick={onSubmit}
+        >
           Download Selected States
         </Button>
         <br />

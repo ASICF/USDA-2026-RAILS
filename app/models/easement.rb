@@ -669,13 +669,13 @@ class Easement < ApplicationRecord
 
             factory = RGeo::GeoJSON::EntityFactory.instance
 
+            # Set the file name
+            file_name = "easements_left_to_fly_#{project}_#{time_string}"
+
+            features = Array.new
+
             # Get State
             State.where(id: params[:states]).each do |state|
-
-                # Set the file name
-                file_name = "#{state.abv}_easements_left_to_fly_#{project}_#{time_string}"
-
-                features = Array.new
 
                 if project == "SL"
                     easements = state.easements.sl.not_flown.includes(:tiles, :time_zone)
@@ -710,17 +710,17 @@ class Easement < ApplicationRecord
                     features << factory.feature(record.geom, record.id, obj)
                 end
 
-                # Creates a text file and saves it to the report directory
-                File.open("#{path}/json/#{file_name}.json", "w+") do |f|
-                    f.puts(RGeo::GeoJSON.encode(factory.feature_collection(features)).to_json)
-                end
-
-                # Convert GeoJSON to Shapefile with ogr2ogr
-                `ogr2ogr -f "ESRI Shapefile" -fieldTypeToString Date,Time #{path}/shapefile/#{file_name}.shp "#{path}/json/#{file_name}.json"`
-
-                shapefiles << file_name
-
             end
+
+            # Creates a text file and saves it to the report directory
+            File.open("#{path}/json/#{file_name}.json", "w+") do |f|
+                f.puts(RGeo::GeoJSON.encode(factory.feature_collection(features)).to_json)
+            end
+
+            # Convert GeoJSON to Shapefile with ogr2ogr
+            `ogr2ogr -f "ESRI Shapefile" -fieldTypeToString Date,Time #{path}/shapefile/#{file_name}.shp "#{path}/json/#{file_name}.json"`
+
+            shapefiles << file_name
 
             # Zip the files
             Zip::File.open("#{path}/zipped/#{project}_easements_to_fly_#{time_string}.zip", Zip::File::CREATE) do |zipfile|

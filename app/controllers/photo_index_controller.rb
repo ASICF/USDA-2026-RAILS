@@ -1,7 +1,7 @@
 class PhotoIndexController < ApplicationController
   def index
     @companies = Company.all.select(:id, :name, :alias).order(:name)
-    @cameras = Camera.all.order(:name).map { |c| {id: c.id, label: "#{c.company.alias} | #{c.name} | #{c.serial_number}", company_id: c.company_id} }
+    @cameras = [{id: "auto", label: "ASI Auto Detect", company_id: 1}] + Camera.all.order(:name).map { |c| {id: c.id, label: "#{c.company.alias} | #{c.name} | #{c.serial_number}", company_id: c.company_id} }
     @projects = ["NRI/SL"]
   end
 
@@ -32,11 +32,11 @@ class PhotoIndexController < ApplicationController
             state: false,
             message: "No Company specified"
         }
-    elsif strong_params[:flight_date].blank?
-        render json: {
-            state: false,
-            message: "No Flight Date specified"
-        }
+    # elsif strong_params[:flight_date].blank?
+    #     render json: {
+    #         state: false,
+    #         message: "No Flight Date specified"
+    #     }
     else
       # response = FrameCenter.import(strong_params, @current_user)
       response = PhotoIndex.prepare_import strong_params, current_user
@@ -78,7 +78,7 @@ class PhotoIndexController < ApplicationController
   end
 
   def strong_params
-    params.require(:photo_index).permit(:project, :flown_by_id, :camera_id, :flight_date, :file)
+    params.require(:photo_index).permit(:project, :flown_by_id, :camera_id, :file)
   end
 
 end

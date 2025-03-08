@@ -60,7 +60,7 @@ export default function PhotoIndexImport({
     reset({
       project: "NRI/SL",
       flown_by_id: 1,
-      camera_id: 4,
+      camera_id: "auto",
       flight_date: "",
       file: "",
     });
@@ -295,9 +295,9 @@ export default function PhotoIndexImport({
               />
             )}
           />
-        </Form.Group>
-        <Form.Group widths="equal">
-          <Form.Field error={errors.hasOwnProperty("flight_date")}>
+        {/* </Form.Group>
+        <Form.Group widths="equal"> */}
+          {/* <Form.Field error={errors.hasOwnProperty("flight_date")}>
             <div className="calendar-input">
               <Controller
                 name={"flight_date"}
@@ -326,12 +326,12 @@ export default function PhotoIndexImport({
                 {errors[`flight_date`].message}
               </Label>
             )}
-          </Form.Field>
+          </Form.Field> */}
           <Controller
             name={"camera_id"}
             control={control}
             rules={{ required: "Required" }}
-            defaultValue={4}
+            defaultValue={"auto"}
             render={({ field: { name, value } }) => (
               <Form.Select
                 fluid

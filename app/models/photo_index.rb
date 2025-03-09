@@ -468,8 +468,6 @@ class PhotoIndex < ApplicationRecord
                     end
                 end
 
-                return
-
                 p "_________"
                 p upload.photo_indices.count
                 p upload.photo_indices.approved.count
@@ -481,48 +479,48 @@ class PhotoIndex < ApplicationRecord
                     raise Exception, "No Footprints were associated with Photo Indices. Upload aborted."
                 end
 
-                p "FOOTPRINTS TO BE REJECTED: #{footprints_to_be_rejected.pluck(:id)}"
-                # check the footprints that need to be rejected
-                if upload.photo_indices.rejected.count > 0
+                # p "FOOTPRINTS TO BE REJECTED: #{footprints_to_be_rejected.pluck(:id)}"
+                # # check the footprints that need to be rejected
+                # if upload.photo_indices.rejected.count > 0
 
-                    footprint_ids = upload.photo_indices.rejected.pluck(:footprint_id)
-                    nri_footprints = Footprint.nri.where(id: footprint_ids)
-                    sl_footprints = Footprint.sl.where(id: footprint_ids)
+                #     footprint_ids = upload.photo_indices.rejected.pluck(:footprint_id)
+                #     nri_footprints = Footprint.nri.where(id: footprint_ids)
+                #     sl_footprints = Footprint.sl.where(id: footprint_ids)
 
-                    p "<><><><><><>"
-                    p "NRI Reject: #{nri_footprints.count}"
-                    p "SL Reject: #{sl_footprints.count}"
-                    p "<><><><><><>"
+                #     p "<><><><><><>"
+                #     p "NRI Reject: #{nri_footprints.count}"
+                #     p "SL Reject: #{sl_footprints.count}"
+                #     p "<><><><><><>"
 
-                    # Check rejected footprints 
-                    if nri_footprints.count > 0
+                #     # Check rejected footprints 
+                #     if nri_footprints.count > 0
 
-                        rejection_output = PhotoIndex.auto_reject_tiles flight_date, upload, camera, company, user, "NRI"
+                #         rejection_output = PhotoIndex.auto_reject_tiles flight_date, upload, camera, company, user, "NRI"
 
-                        if !rejection_output[:pass]
-                            raise Exception, rejection_output[:error] ? rejection_output[:error] : "Error occurred while attmepting to auto-reject the Photo Indices. Import aborted."
-                        end
+                #         if !rejection_output[:pass]
+                #             raise Exception, rejection_output[:error] ? rejection_output[:error] : "Error occurred while attmepting to auto-reject the Photo Indices. Import aborted."
+                #         end
 
-                    end
+                #     end
                     
-                    if sl_footprints.count > 0
+                #     if sl_footprints.count > 0
 
-                        rejection_output = PhotoIndex.auto_reject_tiles flight_date, upload, camera, company, user, "SL"
+                #         rejection_output = PhotoIndex.auto_reject_tiles flight_date, upload, camera, company, user, "SL"
 
-                        if !rejection_output[:pass]
-                            raise Exception, rejection_output[:error] ? rejection_output[:error] : "Error occurred while attmepting to auto-reject the Photo Indices. Import aborted."
-                        end
-                    end
-                end
+                #         if !rejection_output[:pass]
+                #             raise Exception, rejection_output[:error] ? rejection_output[:error] : "Error occurred while attmepting to auto-reject the Photo Indices. Import aborted."
+                #         end
+                #     end
+                # end
 
                 message = "Successfully imported #{history.photo_indices.count} Photo Indices from #{params[:file].original_filename}. #{history.photo_indices.approved.count} contained valid sun angles."
 
-                if history.photo_indices.rejected.count > 0
-                    message += " #{history.photo_indices.rejected.count} did not meet the sun angle requirement."
-                end
+                # if history.photo_indices.rejected.count > 0
+                #     message += " #{history.photo_indices.rejected.count} did not meet the sun angle requirement."
+                # end
 
                 if skipped > 0
-                    message += "#{skipped} Photo Indices were skipped because of no matching Footprints or Rejected Footprints."
+                    message += "#{skipped} Photo Indices were skipped because of duplicates or Free Shots."
                 end
 
                 # if history.photo_indices.where(footprint_id: nil, rejected_footprint_id: nil).count > 0

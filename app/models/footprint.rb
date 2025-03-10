@@ -70,11 +70,6 @@ class Footprint < ApplicationRecord
                     raise Exception, "Invalid Project (#{params[:project]}), must be #{Rails.application.secrets.active_projects.join(", ")}"
                 end
 
-                # Check 
-                if (params[:project] == "NAIP" && params[:state_id].blank?)
-                    raise Exception, "NAIP Projects require State included in the form"
-                end
-
                 # Get the folder name by converting the current time to seconds
                 folder = Time.now.to_i
 
@@ -147,32 +142,33 @@ class Footprint < ApplicationRecord
                     # p "-----------------"
 
                     # Check the Flight Dates
-                    file_date = Date.parse(arr[0])
-                    if file_date != Date.parse(params[:flight_date])
-                        raise Exception, "Filename Flight Date does not match the Form supplied Flight Date"
-                    end
+                    # file_date = Date.parse(arr[0])
+                    # if file_date != Date.parse(params[:flight_date])
+                    #     raise Exception, "Filename Flight Date does not match the Form supplied Flight Date"
+                    # end
+                    file_date = Date.parse(params[:flight_date])
 
                     # Check the Flown By Company
                     company = Company.find(params[:flown_by_id])
-                    company_filename = Company.find_by(alias: arr[1])
-                    if company.id != company_filename.id
-                        raise Exception, "Company extract from Filename does not match the Company supplied by the form"
-                    end
+                    # company_filename = Company.find_by(alias: arr[1])
+                    # if company.id != company_filename.id
+                    #     raise Exception, "Company extract from Filename does not match the Company supplied by the form"
+                    # end
 
                     # Check the plane
                     plane = Plane.find_by(id: params[:plane_id])
-                    plane_filename = Plane.find_by(name: arr[2])
-                    if plane.id != plane_filename.id
-                        raise Exception, "Plane extract from Filename does not match the Plane supplied by the form"
-                    end
+                    # plane_filename = Plane.find_by(name: arr[2])
+                    # if plane.id != plane_filename.id
+                    #     raise Exception, "Plane extract from Filename does not match the Plane supplied by the form"
+                    # end
 
                     # Check if the plane is valid for the project
-                    if params[:project] === "NAIP" && !plane.naip
-                        raise Exception, "Plane is not approved for NAIP Project"
-                    end
-                    if params[:project] === "SL" && !plane.sl
-                        raise Exception, "Plane is not approved for SL Project"
-                    end
+                    # if params[:project] === "NAIP" && !plane.naip
+                    #     raise Exception, "Plane is not approved for NAIP Project"
+                    # end
+                    # if params[:project] === "SL" && !plane.sl
+                    #     raise Exception, "Plane is not approved for SL Project"
+                    # end
 
                     # Check the Camera
                     camera = Camera.find_by(id: params[:camera_id])
@@ -181,15 +177,15 @@ class Footprint < ApplicationRecord
                         raise Exception, "Camera extract from Filename does not match the Camera supplied by the form"
                     end
 
-                    # Check if the camera is valid for the project
-                    # if (["All", "NAIP"].include? params[:project]) && !camera.naip
-                    if params[:project] === "NAIP" && !camera.naip
-                        raise Exception, "Camera is not approved for NAIP Project"
-                    end
-                    # if (["All", "SL"].include? params[:project]) && !camera.sl
-                    if params[:project] === "SL" && !camera.sl
-                        raise Exception, "Camera is not approved for SL Project"
-                    end
+                    # # Check if the camera is valid for the project
+                    # # if (["All", "NAIP"].include? params[:project]) && !camera.naip
+                    # if params[:project] === "NAIP" && !camera.naip
+                    #     raise Exception, "Camera is not approved for NAIP Project"
+                    # end
+                    # # if (["All", "SL"].include? params[:project]) && !camera.sl
+                    # if params[:project] === "SL" && !camera.sl
+                    #     raise Exception, "Camera is not approved for SL Project"
+                    # end
 
                     # Call ogr2ogr to reproject the shapefile to 4326
                     # => Footprints should be in 4326, might be overkill but don't want to have to add later

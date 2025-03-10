@@ -10,7 +10,7 @@ import {
   Breadcrumb,
   Icon,
   List,
-  ButtonContent
+  ButtonContent,
 } from "semantic-ui-react";
 import _ from "lodash";
 
@@ -78,19 +78,19 @@ export default function FootprintImport({
       flight_date: "",
       state_id: "",
       plane_id: 4,
-      camera_id: 4,
+      camera_id: "auto",
       pilot_name: "",
       sensor_operator: "",
       last_file: false,
       files: null,
     });
-    setProject("NRI/SL")
+    setProject("NRI/SL");
   };
 
   const onSubmit = (data) => {
     console.error("onSubmit", data);
     setSubmitted(true);
-    setLoading(true)
+    setLoading(true);
     const form = new FormData();
 
     form.append("authenticity_token", token);
@@ -153,8 +153,8 @@ export default function FootprintImport({
         });
         window.onbeforeunload = null;
       });
-      setSubmitted(false);
-        setLoading(false)
+    setSubmitted(false);
+    setLoading(false);
   };
 
   return (
@@ -326,72 +326,6 @@ export default function FootprintImport({
               />
             )}
           />
-          <Form.Field error={errors.hasOwnProperty("flight_date")}>
-            <div className="calendar-input">
-              <Controller
-                name={"flight_date"}
-                control={control}
-                rules={{
-                  required: "Required",
-                }}
-                render={({ field: { name, value, defaultValue } }) => (
-                  <DateInput
-                    closable
-                    clearable
-                    name={name}
-                    label={"Flight Date"}
-                    required={true}
-                    value={value || ""}
-                    dateFormat="MM/DD/YYYY"
-                    iconPosition="left"
-                    onChange={handleChange}
-                    autoComplete="off"
-                  />
-                )}
-              />
-            </div>
-            {errors[`flight_date`] && (
-              <Label pointing prompt>
-                {errors[`flight_date`].message}
-              </Label>
-            )}
-          </Form.Field>
-          {project === "NAIP" && (
-            <Controller
-              name={"state_id"}
-              control={control}
-              rules={{ required: "Required" }}
-              render={({ field: { name, value } }) => (
-                <Form.Select
-                  fluid
-                  search
-                  selection
-                  name={name}
-                  required={true}
-                  data-value={value}
-                  label={"State"}
-                  value={value || ""}
-                  onChange={handleChange}
-                  autoComplete="off"
-                  options={states.map((record) => {
-                    return {
-                      key: record.id,
-                      text: record.name,
-                      value: record.id,
-                    };
-                  })}
-                  error={
-                    errors["state_id"]
-                      ? {
-                          content: errors["state_id"].message,
-                          pointing: "above",
-                        }
-                      : false
-                  }
-                />
-              )}
-            />
-          )}
         </Form.Group>
         <Form.Group widths="equal">
           <Controller
@@ -463,7 +397,7 @@ export default function FootprintImport({
           <Controller
             name={"camera_id"}
             control={control}
-            defaultValue={4}
+            defaultValue={"auto"}
             rules={{ required: "Required" }}
             render={({ field: { name, value } }) => (
               <Form.Select
@@ -529,55 +463,6 @@ export default function FootprintImport({
           />
         </Form.Group>
 
-        <Form.Group widths="equal">
-          <Controller
-            name={"pilot_name"}
-            control={control}
-            render={({ field: { name, onBlur, onChange, value } }) => (
-              <Form.Input
-                fluid
-                label={"Pilot Name"}
-                name={name}
-                autoComplete="off"
-                onBlur={onBlur}
-                onChange={onChange}
-                value={value || ""}
-              />
-            )}
-          />
-          <Controller
-            name={"sensor_operator"}
-            control={control}
-            render={({ field: { name, onBlur, onChange, value } }) => (
-              <Form.Input
-                fluid
-                label={"Sensor Operator Name"}
-                name={name}
-                autoComplete="off"
-                onBlur={onBlur}
-                onChange={onChange}
-                value={value || ""}
-              />
-            )}
-          />
-        </Form.Group>
-
-        <Form.Group inline>
-          <Controller
-            name={"last_file"}
-            control={control}
-            defaultValue={false}
-            render={({ field: { name, value } }) => (
-              <Form.Checkbox
-                name={name}
-                onClick={checkboxChange}
-                checked={value || false}
-                label="Last File for the Day"
-              />
-            )}
-          />
-        </Form.Group>
-
         <Form.Group>
           <Form.Field
             required
@@ -610,9 +495,9 @@ export default function FootprintImport({
           disabled={submitted}
           onClick={handleSubmit(onSubmit)}
         >
-           <ButtonContent visible>Submit</ButtonContent>
+          <ButtonContent visible>Submit</ButtonContent>
           <ButtonContent hidden>
-          <Icon name='arrow right' />
+            <Icon name="arrow right" />
           </ButtonContent>
         </Button>
         <Button
@@ -622,9 +507,9 @@ export default function FootprintImport({
           type="button"
           onClick={() => resetForm()}
         >
-           <ButtonContent visible>Reset</ButtonContent>
+          <ButtonContent visible>Reset</ButtonContent>
           <ButtonContent hidden>
-          <Icon name="undo" />
+            <Icon name="undo" />
           </ButtonContent>
         </Button>
         <div style={{ clear: "both" }} />

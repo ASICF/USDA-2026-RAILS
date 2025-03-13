@@ -78,7 +78,7 @@ export default function FootprintImport({
       flight_date: "",
       state_id: "",
       plane_id: 4,
-      camera_id: "auto",
+      camera_id: 4,
       pilot_name: "",
       sensor_operator: "",
       last_file: false,
@@ -397,7 +397,7 @@ export default function FootprintImport({
           <Controller
             name={"camera_id"}
             control={control}
-            defaultValue={"auto"}
+            defaultValue={4}
             rules={{ required: "Required" }}
             render={({ field: { name, value } }) => (
               <Form.Select

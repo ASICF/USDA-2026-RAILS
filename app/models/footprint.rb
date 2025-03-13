@@ -60,6 +60,10 @@ class Footprint < ApplicationRecord
         shapefile_filename = nil
         path = nil
 
+        company = nil
+        plane = nil
+        camera = nil
+
         # Start a Transaction Block
         ActiveRecord::Base.transaction do
             begin
@@ -129,7 +133,7 @@ class Footprint < ApplicationRecord
                     }
 
                     # Split filename into an array
-                    arr = shapefile_filename.split("_")
+                    # arr = shapefile_filename.split("_")
 
                     # # Validate the filename
                     # p "-----------------"
@@ -146,7 +150,7 @@ class Footprint < ApplicationRecord
                     # if file_date != Date.parse(params[:flight_date])
                     #     raise Exception, "Filename Flight Date does not match the Form supplied Flight Date"
                     # end
-                    file_date = Date.parse(params[:flight_date])
+                    # file_date = Date.parse(params[:flight_date])
 
                     # Check the Flown By Company
                     company = Company.find(params[:flown_by_id])
@@ -156,11 +160,12 @@ class Footprint < ApplicationRecord
                     # end
 
                     # Check the plane
+                    p "Plane ID: #{params[:plane_id]}"
                     plane = Plane.find_by(id: params[:plane_id])
                     # plane_filename = Plane.find_by(name: arr[2])
-                    # if plane.id != plane_filename.id
-                    #     raise Exception, "Plane extract from Filename does not match the Plane supplied by the form"
-                    # end
+                    if plane.nil?
+                        raise Exception, "Plane extract from Filename does not match the Plane supplied by the form"
+                    end
 
                     # Check if the plane is valid for the project
                     # if params[:project] === "NAIP" && !plane.naip
@@ -171,9 +176,9 @@ class Footprint < ApplicationRecord
                     # end
 
                     # Check the Camera
+                    p "Camera ID: #{params[:camera_id]}"
                     camera = Camera.find_by(id: params[:camera_id])
-                    camera_filename = Camera.find_by(name: arr[3])
-                    if camera.id != camera_filename.id
+                    if camera.nil?
                         raise Exception, "Camera extract from Filename does not match the Camera supplied by the form"
                     end
 
@@ -273,7 +278,7 @@ class Footprint < ApplicationRecord
         end
 
         if response[:pass]
-            Footprint.delay.import params, shapefile_filename, path, user
+            Footprint.import params, company, plane, camera, shapefile_filename, path, user
         end
 
         response
@@ -281,7 +286,7 @@ class Footprint < ApplicationRecord
     end
 
     # Imports the shapefile
-    def self.import params, shapefile_filename, path, user
+    def self.import params, company, plane, camera, shapefile_filename, path, user
 
         count = 0
 
@@ -322,14 +327,14 @@ class Footprint < ApplicationRecord
                 end
 
                 # state = State.find(params[:state_id])
-                plane = Plane.find(params[:plane_id])
-                camera = Camera.find(params[:camera_id])
-                company = Company.find(params[:flown_by_id])
+                # plane = Plane.find(params[:plane_id])
+                # camera = Camera.find(params[:camera_id])
+                # company = Company.find(params[:flown_by_id])
 
-                flight_date = Date.parse(params[:flight_date])
+                # flight_date = Date.parse(params[:flight_date])
 
                 # generate the provisional due date
-                provisional_due_date = 5.business_days.after(flight_date)
+                # provisional_due_date = 5.business_days.after(flight_date)
 
                 # Calculate the business days
                 vm_array = []
@@ -337,7 +342,8 @@ class Footprint < ApplicationRecord
                 # Get the state, if no state then it should be nil
                 state = nil
                 if project == "NAIP"
-                    state = State.find_by(id: params[:state_id])
+                    # state = State.find_by(id: params[:state_id])
+                    raise Exception, "NAIP Footprints are not configured"
                 end
 
                 # Call ogr2ogr to reproject the shapefile to 4326
@@ -410,26 +416,26 @@ class Footprint < ApplicationRecord
                         # p modified_strip_frame
 
 
-                        if project === "NAIP"
-                            # Check if the strip frame has already been used with the same flight date
-                            if Footprint.naip.where(strip_frame: modified_strip_frame, flight_date: params[:flight_date], camera_id: camera.id, flown_by_id: company.id, project_state_name: state.name).count > 0
-                                raise Exception, "Strip Frame (Original: #{original_strip_frame}, Modified: #{modified_strip_frame}) already exists with the same Flight Date (#{params[:flight_date]}), Camera (#{camera.serial_number}), and Flown By Company (#{company.name}) for NAIP Project within #{state.name}"
-                            end
-                        else
-                            # Check if the strip frame has already been used with the same flight date
-                            if Footprint.nri_sl.where(strip_frame: modified_strip_frame, flight_date: params[:flight_date], camera_id: camera.id, flown_by_id: company.id).count > 0
-                                raise Exception, "Strip Frame (Original: #{original_strip_frame}, Modified: #{modified_strip_frame}) already exists with the same Flight Date (#{params[:flight_date]}), Camera (#{camera.serial_number}), and Flown By Company (#{company.name})"
-                            end
-                        end
+                        # if project === "NAIP"
+                        #     # Check if the strip frame has already been used with the same flight date
+                        #     if Footprint.naip.where(strip_frame: modified_strip_frame, camera_id: camera.id, flown_by_id: company.id, project_state_name: state.name).count > 0
+                        #         raise Exception, "Strip Frame (Original: #{original_strip_frame}, Modified: #{modified_strip_frame}) already exists with the same Flight Date (#{params[:flight_date]}), Camera (#{camera.serial_number}), and Flown By Company (#{company.name}) for NAIP Project within #{state.name}"
+                        #     end
+                        # else
+                        #     # Check if the strip frame has already been used with the same flight date
+                        #     if Footprint.nri_sl.where(strip_frame: modified_strip_frame, camera_id: camera.id, flown_by_id: company.id).count > 0
+                        #         raise Exception, "Strip Frame (Original: #{original_strip_frame}, Modified: #{modified_strip_frame}) already exists with the same Flight Date (#{params[:flight_date]}), Camera (#{camera.serial_number}), and Flown By Company (#{company.name})"
+                        #     end
+                        # end
 
                         footprint = Footprint.new(
                             project: project,
                             original_strip_frame: original_strip_frame,
                             strip_frame: modified_strip_frame,
-                            flight_date: params[:flight_date],
+                            # flight_date: params[:flight_date],
                             geom: record.geometry,
-                            pilot_name: params[:pilot_name].blank? ? nil : params[:pilot_name],
-                            camera_operator_name: params[:camera_operator_name].blank? ? nil : params[:camera_operator_name],
+                            # pilot_name: params[:pilot_name].blank? ? nil : params[:pilot_name],
+                            # camera_operator_name: params[:camera_operator_name].blank? ? nil : params[:camera_operator_name],
                             plane: plane,
                             camera: camera,
                             upload: upload,
@@ -493,31 +499,36 @@ class Footprint < ApplicationRecord
                             footprint.project_state_id = state.id
                         end
 
-                        # if project == "NAIP"
+                        # Find Photo Index
+                        # => Find Photo Index that matches the strip frame and camera (and the photo index is contained within the footprint)
 
-                        #     # Find the associated vector metadatum
-                        #     vm = VectorMetadatum.find_or_create_by(
-                        #         project: "NAIP", 
-                        #         flight_date: params[:flight_date],
-                        #         service_name: "#{state.abv}_PROVISIONAL_4B_#{flight_date.strftime("%Y%m%d")}",
-                        #         state_name: state.name,
-                        #         provisional_due_date: provisional_due_date,
-                        #         state_id: state.id
-                        #     )
+                        # sql = "select id from photo_indices pi where pi.strip_frame = '#{modified_strip_frame}' AND st_intersects(ST_GeomFromText('#{record.geometry.to_s}'), pi.geom)"
+                        # result = ActiveRecord::Base.connection.execute(sql)
 
-                        #     # Add the footprints to the vm
-                        #     vm.footprints << footprint
+                        # Match the photo index
+                        # => TODO: Chat with nathan about requiring the camera or not
+                        photo_index = PhotoIndex.find_by("strip_frame = '#{modified_strip_frame}' AND camera_id = #{camera.id} AND st_intersects(ST_GeomFromText('#{record.geometry.to_s}'), geom)")
 
-                        #     # add the vm to the vm array
-                        #     vm_array |= [vm]
+                        if photo_index
+                            footprint.flight_date = photo_index.flight_date
+                            footprint.camera = photo_index.camera
 
-                        # end
+                            p "------------"
+                            p "Photo Index: #{modified_strip_frame}"
+                            # p result[0]
+                            p photo_index
+                            p "------------"
 
-                        if !footprint.save
-                            raise Exception, footprint.errors.full_messages.to_sentence
+                            if footprint.save
+                                if photo_index
+                                    photo_index.update(footprint: footprint)
+                                end
+                            else
+                                raise Exception, footprint.errors.full_messages.to_sentence
+                            end
+                            count += 1
                         end
 
-                        count += 1
                     end
                 end
 

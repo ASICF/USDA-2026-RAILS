@@ -8,6 +8,7 @@ class Plane < ApplicationRecord
     has_many :doqqs
     has_many :rejected_tiles
     has_many :footprints
+    has_many :photo_indices
     has_many :historic_assocs, as: :historicable, dependent: :destroy
     has_many :histories, through: :historic_assocs
 

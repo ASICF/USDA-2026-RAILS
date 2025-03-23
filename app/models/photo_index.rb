@@ -5,6 +5,7 @@ class PhotoIndex < ApplicationRecord
     # Associations
     belongs_to :upload
     belongs_to :camera
+    belongs_to :plane
     belongs_to :footprint, optional: true
     belongs_to :rejected_footprint, optional: true
     belongs_to :flown_by, class_name: 'Company'
@@ -150,12 +151,15 @@ class PhotoIndex < ApplicationRecord
 
         # Set the project
         project = params[:project]
+        count = 0
 
         current_time = Time.now
         # Stores variables for the job process
         process_success = false
         error_message = "Something went wrong. Contact Programming"
         auto_detect_camera = true
+
+        uploads = {}
 
         # Start a Transaction Block
         ActiveRecord::Base.transaction do
@@ -252,15 +256,6 @@ class PhotoIndex < ApplicationRecord
                         p "longitude: #{arr[5]}"
                         p "Camera: #{arr[7]}"
 
-                        # p "======"
-                        # p "gpstime: #{arr[0]}"
-                        # p "strip: #{strip}"
-                        # p "frame: #{frame}"
-                        # p "strip_frame: #{arr[1]}"
-                        # p "flight_time: #{Date.strptime(arr[2], "%m/%d/%Y")}"
-                        # p "latitude: #{arr[3]}"
-                        # p "longitude: #{arr[4]}"
-
                         # next
 
                         # # if the line is not 7 indices then throw error
@@ -273,13 +268,14 @@ class PhotoIndex < ApplicationRecord
                         #     raise Exception, "Filename flight date does not match record flight date"
                         # end
 
-                        free_shot = arr[2] == "Free shot" ? true : false
+                        free_shot = arr[2].downcase == "free shot" ? true : false
                         
                         # if free shot skip it
                         if free_shot
                             # strip = "FREE_SHOT"
                             # frame = arr[3]
                             # strip_frame = strip
+                            skipped += 1
                             next
                         else
                             strip = "#{"0" * (4 - arr[2].to_s.length)}#{arr[2]}"
@@ -301,12 +297,14 @@ class PhotoIndex < ApplicationRecord
                         latitude = arr[6].to_f.round(6)
                         longitude = arr[5].to_f.round(6)
                         gpstime = arr[1]
-                        
+
                         if auto_detect_camera
-                            if arr[7] && arr[7] == "A"
-                                camera = Camera.find(4)
+                            if arr[7].include? "_"
+                                camera = Camera.find(24)
+                                plane = Plane.find(4)
                             else
-                                camera = Camera.find(23)
+                                camera = Camera.find(4)
+                                plane = Plane.find(1)
                             end
                         end
 
@@ -318,6 +316,7 @@ class PhotoIndex < ApplicationRecord
 
                         if PhotoIndex.where(strip_frame: strip_frame, flight_date: record_flight_date, gpstime: gpstime).count > 0
                             p "Found duplicate strip frame: #{strip_frame}. Skipping"
+                            skipped += 1
                             next
                         end
 
@@ -329,6 +328,7 @@ class PhotoIndex < ApplicationRecord
                             strip_frame: strip_frame,
                             flown_by_name: company.alias,
                             camera_name: camera.name,
+                            plane_name: plane.name,
                             flight_date: record_flight_date,
                             gpstime: gpstime,
                             recorded_sun_angle: nil,
@@ -336,10 +336,23 @@ class PhotoIndex < ApplicationRecord
                             longitude: longitude,
                             geom: RGeo::Geographic.spherical_factory(srid: 4326).point(longitude, latitude),
                             camera: camera,
-                            upload: upload,
+                            plane: plane,
+                            # upload: upload,
                             flown_by: company,
                             free_shot: free_shot
                         )
+
+                        upload_key = "#{record_flight_date.to_s}#{record.camera_id}"
+
+                        if !uploads[upload_key]
+
+                            uploads[upload_key] = Upload.create(
+                                folder_path: "#{path}/",
+                                upload_type: "PhotoIndex",
+                                uploader: user
+                            )
+                        end
+                        record.upload = uploads[upload_key]
 
                         pp record
 
@@ -364,646 +377,57 @@ class PhotoIndex < ApplicationRecord
                             record.sun_angle_error = true if !free_shot
                         end
 
-                        # p "Strip Frame: #{record.strip_frame}"
-                        # p "Sun Angle: #{record.sun_angle}"
-
                         # save the record
-                        record.save!
-
-                        # Query out the matching fooptrint 
-                        # => included a spatial query within the 
-                        # footprint = Footprint.find_by("footprints.project = '#{project}' 
-                        #     AND footprints.camera_id = '#{camera.id}' 
-                        #     AND footprints.strip_frame = '#{record.strip_frame}' 
-                        #     AND footprints.flight_date = '#{record.flight_date.strftime("%F")}' 
-                        #     AND footprints.flown_by_id = '#{company.id}' 
-                        #     AND st_contains(footprints.geom::geometry, ST_SetSRID(ST_Point(#{record.longitude}, #{record.latitude}),4326))")
-
-                        # if footprint
-
-                        #     # check if the footprint already has a strip frame
-                        #     if footprint.photo_index.present?
-                        #         record.destroy
-                        #         skipped += 1
-                        #         next
-                        #     end
-
-                        #     p "FOOTPRINT FOUND: #{footprint.id}"
-
-                        #     # update the project state
-                        #     record.sl = footprint.sl
-                        #     record.nri = footprint.nri
-                        #     record.naip = footprint.naip
-
-                        #     # update attributes
-                        #     record.county_name = footprint.county_name
-                        #     record.state_name = footprint.state_name
-                        #     record.utm_zone = footprint.utm_zone
-
-                        #     record.county_id = footprint.county_id
-                        #     record.state_id = footprint.state_id
-                        #     record.utm_id = footprint.utm_id
-                        #     record.footprint = footprint
-                        #     record.save!
-
-                        #     # update the footprint to indiciate it has been associated
-                        #     footprint.update(has_pi: true)
-                                
-                        #     # add the foorptint to the appropriate array
-                        #     # valid_footprints << footprint if !record.sun_angle_error
-                        #     # footprints_to_be_rejected << footprint if record.sun_angle_error
-                        # elsif !free_shot
-
-                        #     # Check if the Strip Frame is in the Rejected Footprint
-                        #     # rejected_footprint = RejectedFootprint.find_by(project: project, camera_id: camera.id, strip_frame: obj[:strip_frame], flight_date: params[:flight_date], flown_by_id: company.id)
-                        #     rejected_footprint = RejectedFootprint.find_by("rejected_footprints.project = '#{project}' AND rejected_footprints.camera_id = '#{camera.id}' AND rejected_footprints.strip_frame = '#{record.strip_frame}' AND rejected_footprints.flight_date = '#{record.flight_date}' AND rejected_footprints.flown_by_id = '#{company.id}' AND st_contains(rejected_footprints.geom::geometry, ST_SetSRID(ST_Point(#{record.longitude}, #{record.latitude}),4326))")
-
-                        #     if rejected_footprint
-                        #         # Reject the Frame Center
-
-                        #         # Set the footprint id to the original rejected footprint id
-                        #         record.footprint_id = rejected_footprint.original_id
-                        #         record.rejected_footprint_id = rejected_footprint.id
-
-                        #         # update the project state
-                        #         record.sl = rejected_footprint.sl
-                        #         record.nri = rejected_footprint.nri
-                        #         record.naip = rejected_footprint.naip
-
-                        #         # update attributes
-                        #         record.county_name = rejected_footprint.county_name
-                        #         record.state_name = rejected_footprint.state_name
-                        #         record.utm_zone = rejected_footprint.utm_zone
-
-                        #         record.county_id = rejected_footprint.county_id
-                        #         record.state_id = rejected_footprint.state_id
-                        #         record.utm_id = rejected_footprint.utm_id
-                        #         record.save!
-
-                        #         # Reject the Fream Center
-                        #         # rejected_frame_center = RejectedFrameCenter.reject record, "Footprint was already Rejected"
-                                
-                        #         # If the rejected Frame Center is valid then skip, otherwise raise exception
-                        #         # if rejected_frame_center
-                        #         #     upload.rejected_frame_centers << rejected_frame_center
-                        #         #     history.rejected_frame_centers << rejected_frame_center
-                        #         #     rejected_footprints += 1
-                        #         #     next
-                        #         # else
-                        #         #     raise Exception, "Error attempting to reject Frame Center #{fc.strip_frame} that matched Rejected Footprint #{rejected_footprint.id}"
-                        #         # end
-                        #     else
-
-                        #         # no footprint or rejected footprint found
-                        #         # Destroy the record and increment the skipped variable 
-
-                        #         record.destroy
-                        #         skipped += 1
-                        #         next
-                        #         # raise Exception, "Could not find matching Footprint flown by #{company.alias} using #{camera.name} with Strip Frame #{strip_frame} flown on #{file_date.strftime("%m/%d/%Y")} in Footprints and Rejected Footprints"
-                        #     end
-                        # end
+                        if !record.save
+                            raise Exception, record.errors.full_messages.to_sentence
+                        end
+                        count += 1
 
                         history.photo_indices << record
                     end
                 end
 
-                p "_________"
-                p upload.photo_indices.count
-                p upload.photo_indices.approved.count
-                p upload.photo_indices.rejected.count
-                p "_________"
+                # p "_________"
+                # p upload.photo_indices.count
+                # p upload.photo_indices.approved.count
+                # p upload.photo_indices.rejected.count
+                # p "_________"
 
-                # check if there were any 
-                if upload.photo_indices.approved.count == 0
-                    raise Exception, "No Footprints were associated with Photo Indices. Upload aborted."
+                uploads.each do |key, upload|
+
+                    # check if there were any 
+                    if upload.photo_indices.approved.count == 0
+                        upload.destroy
+                        # raise Exception, "No Photo Indices were imported most likely due to duplicates. Upload aborted."
+                    end
+
                 end
 
-                # p "FOOTPRINTS TO BE REJECTED: #{footprints_to_be_rejected.pluck(:id)}"
-                # # check the footprints that need to be rejected
-                # if upload.photo_indices.rejected.count > 0
-
-                #     footprint_ids = upload.photo_indices.rejected.pluck(:footprint_id)
-                #     nri_footprints = Footprint.nri.where(id: footprint_ids)
-                #     sl_footprints = Footprint.sl.where(id: footprint_ids)
-
-                #     p "<><><><><><>"
-                #     p "NRI Reject: #{nri_footprints.count}"
-                #     p "SL Reject: #{sl_footprints.count}"
-                #     p "<><><><><><>"
-
-                #     # Check rejected footprints 
-                #     if nri_footprints.count > 0
-
-                #         rejection_output = PhotoIndex.auto_reject_tiles flight_date, upload, camera, company, user, "NRI"
-
-                #         if !rejection_output[:pass]
-                #             raise Exception, rejection_output[:error] ? rejection_output[:error] : "Error occurred while attmepting to auto-reject the Photo Indices. Import aborted."
-                #         end
-
-                #     end
-                    
-                #     if sl_footprints.count > 0
-
-                #         rejection_output = PhotoIndex.auto_reject_tiles flight_date, upload, camera, company, user, "SL"
-
-                #         if !rejection_output[:pass]
-                #             raise Exception, rejection_output[:error] ? rejection_output[:error] : "Error occurred while attmepting to auto-reject the Photo Indices. Import aborted."
-                #         end
-                #     end
-                # end
-
-                message = "Successfully imported #{history.photo_indices.count} Photo Indices from #{params[:file].original_filename}. #{history.photo_indices.approved.count} contained valid sun angles."
-
-                # if history.photo_indices.rejected.count > 0
-                #     message += " #{history.photo_indices.rejected.count} did not meet the sun angle requirement."
-                # end
+                message = "Successfully imported #{count} Photo Indices from #{params[:file].original_filename}. #{history.photo_indices.approved.count} contained valid sun angles."
 
                 if skipped > 0
-                    message += "#{skipped} Photo Indices were skipped because of duplicates or Free Shots."
+                    message += " #{skipped} Photo Indices were skipped because of duplicates or Free Shots."
                 end
 
-                # if history.photo_indices.where(footprint_id: nil, rejected_footprint_id: nil).count > 0
-                #     message += " #{history.photo_indices.where(footprint_id: nil, rejected_footprint_id: nil).count} Photo Indices did not associate to a Footprint."
-                # end
-
+                key = uploads.keys.first
 
                 job.update(
                     finished_at: Time.now,
                     active: false,
                     success: true,
-                    upload: upload,
+                    upload: uploads[key],
                     message: message
                 )
 
                 # Update the history
                 history.update(message: message)
-                history.uploads << upload
 
-                # Build the Export of Photo ID
-                PhotoIndex.build_export_file upload
+                uploads.each do |key, upload|
+                    history.uploads << upload
 
-                # Log and send email
-                Mailbox.ship({
-                    users: MailGroup.find_by(name: "Photo Index").users | [user],
-                    subject: "Photo Index Import Succeeded",
-                    message: message.html_safe,
-                    route: Rails.application.routes.url_helpers.show_timeline_url(history.id, only_path: false, host: Rails.application.secrets.host)
-                })
-
-                # # Send out email about import
-                # Rails.application.secrets.photo_index.each do |user|
-                #     email_user = User.find_by(user)
-                #     next if email_user.nil?
-                #     PostmasterMailer.notify(email_user, message.html_safe, "USDA #{Rails.application.secrets.project_year}: Photo Index have been imported - #{Time.now.strftime("%m/%d/%Y")}", Rails.application.routes.url_helpers.show_timeline_url(history.id, only_path: false, host: Rails.application.secrets.host)).deliver
-                # end
-
-                process_success = true
-
-            rescue Exception => exception
-                Rails.logger.error "Photo Index Import Error: #{exception.message}"
-                error_message = exception.message
-
-                # # Delete the Upload and History
-                # upload.destroy if upload.present?
-                # history.destroy if history.present?
-
-                p "-----------"
-                p exception.backtrace.count
-                exception.backtrace.each do |x|
-                    next if !x.include? "photo_index.rb"
-                    x.match(/^(.+?):(\d+)(|:in `(.+)')$/); 
-                p [$1,$2,$4]
+                    # Build the Export of Photo ID
+                    PhotoIndex.build_export_file upload
                 end
-                p "-----------"
-
-                # Delete the files
-                FileUtils.rm_rf("#{path}/") if path
-
-                # Update the process
-                process_success = false
-
-                raise ActiveRecord::Rollback
-            end
-        end
-
-        # Run if the process failed
-        if !process_success
-
-            # Log and send email
-            Mailbox.ship({
-                users: [user],
-                subject: "Photo Index Import Failed",
-                message: "Photo Index Import Failed, error encountered is listed below: <br/><br/>#{error_message}".html_safe
-            })
-
-            # Send email to notified it failed
-            # PostmasterMailer.notify(user, "Photo Index Import Failed, error encountered is listed below: <br/><br/>#{error_message}".html_safe, "USDA #{Rails.application.secrets.project_year}: Photo Index Import Failed - #{Time.now.strftime("%m/%d/%Y")}").deliver
-
-            # Update the Job
-            job.update(
-                finished_at: Time.now,
-                active: false,
-                success: false,
-                message: "Import Failed",
-                upload: nil,
-                error_message: error_message
-            )
-
-        end
-
-        p "done"
-
-    end
-
-
-    def self.old_import params, path, file, user
-
-        p "Imported"
-
-        # create an Error array to hold any messages
-        output = {
-            pass: false,
-            errors: [],
-            count: 0,
-            rejected: 0,
-            sun_angle_failed: 0,
-            easement_count: 0
-        }
-
-        job = Job.create(
-            started_at: Time.now,
-            message: "Processing Request...",
-            active: true,
-            process_type: "Photo Index Import (#{params[:project]})",
-            filename: File.basename(file),
-            creator: user
-        )
-
-        # Set the project
-        project = params[:project]
-
-        current_time = Time.now
-        # Stores variables for the job process
-        process_success = false
-        error_message = "Something went wrong. Contact Programming"
-
-        # Start a Transaction Block
-        ActiveRecord::Base.transaction do
-            begin
-
-                # Validate the filename
-                arr = params[:file].original_filename.split("_")
-
-                # get the flight date
-                flight_date = params[:flight_date].to_date
-
-                if flight_date.nil? 
-                    raise Exception, "Missing Flight Date"
-                end
-
-                company = Company.find_by(id: params[:flown_by_id].to_i)
-                if company.nil? 
-                    raise Exception, "Contractor does not exist in application"
-                end
-
-                # Check the Camera
-                camera = Camera.find_by(id: params[:camera_id])
-                if camera.nil?
-                    raise Exception, "Camera extract from Filename does not match the Camera supplied by the form"
-                end
-
-                # Create a new History record
-                history = History.new
-                history.action_type = "Photo Index Upload (#{project})"
-                history.creator = user
-                history.save
-
-                # Copy the file to the server
-                # Get the folder name by converting the current time to seconds
-                folder = Time.now.to_i
-
-                # Create a new Upload instance
-                upload = Upload.create(
-                    uploader: user,
-                    folder_path: "#{path}/",
-                    upload_type: "PhotoIndex",
-                )
-
-                out_factory = RGeo::Geographic.spherical_factory(srid: 4326, proj4: '+proj=longlat +datum=WGS84 +no_defs' )
-
-                # p "---------"
-                # p file
-                # p "---------"
-
-                valid_footprints = []
-                footprints_to_be_rejected = []
-
-                skipped = 0
-
-                File.open(file, "r") do |f|
-
-                    f.each_line.with_index do |line, index|
-
-                        p "#{index} - #{line.tr("\r\n","")}"
-
-                        # split the array by commans
-                        arr = line.split(",")
-
-                        # skip if the array does not have 7 fields
-                        next if arr.size != 7
-
-                        # skip if it's the header line
-                        next if line[0..2] == "UTC"
-
-                        # # skip if the line is a free shot
-                        # next if line.downcase.include? "free shot"
-
-                        # skip the first 
-                        # next if index+1 < 8
-
-                        # Remove the newlines from end of line
-                        line = line.tr("\r\n","")
-
-                        # split the array by commans
-                        arr = line.split(",")
-
-                        record_flight_date = Date.strptime(arr[4], "%m/%d/%Y")
-
-                        # p "======"
-                        # p "gpstime: #{arr[0]}"
-                        # p "strip: #{strip}"
-                        # p "frame: #{frame}"
-                        # p "strip_frame: #{arr[1]}"
-                        # p "flight_time: #{Date.strptime(arr[2], "%m/%d/%Y")}"
-                        # p "latitude: #{arr[3]}"
-                        # p "longitude: #{arr[4]}"
-
-                        # # if the line is not 7 indices then throw error
-                        # if arr.size != 5
-                        #     raise Exception, "Row malformation found in txt file, please check the file for errors"
-                        # end
-
-                        # check if the flight date in the filename matches the record
-                        if flight_date != record_flight_date
-                            raise Exception, "Filename flight date does not match record flight date"
-                        end
-
-                        free_shot = arr[2] == "Free shot" ? true : false
-                        
-                        if free_shot
-                            strip = "FREE_SHOT"
-                            frame = arr[3]
-                            strip_frame = strip
-                        else
-                            strip = "#{"0" * (4 - arr[2].to_s.length)}#{arr[2]}"
-                            frame = arr[3]
-
-                            # if the frame is greater than 5 digits then return the last 4 digits off 
-                            if frame.length > 4
-                                frame = frame[-4..-1]
-                            end
-
-                            if frame.length < 4
-                                # Buffer the second array with "0" to be 4 digits
-                                frame = "#{"0" * (4 - frame.length)}#{frame}"
-                            end
-
-                            # frame = "#{"0" * (4 - arr[3].to_s.length)}#{arr[3]}"
-                            strip_frame = "#{strip}_#{frame}"
-                        end
-                        latitude = arr[6].to_f.round(6)
-                        longitude = arr[5].to_f.round(6)
-                        gpstime = arr[1]
-
-                        # If Free Shot then check if it's a dup based on the gpstime, lat, and long
-
-                        if PhotoIndex.where(strip_frame: strip_frame, latitude: latitude, longitude: longitude, flight_date: record_flight_date, gpstime: gpstime,flown_by: company, camera: camera,).count > 0
-                            p "Found duplicate strip frame: #{strip_frame}. Skipping"
-                            next
-                        end
-
-                        # start building the PhotoIndex
-                        record = PhotoIndex.new(
-                            project: params[:project],
-                            strip: strip,
-                            frame: frame,
-                            strip_frame: strip_frame,
-                            flown_by_name: company.alias,
-                            camera_name: camera.name,
-                            flight_date: record_flight_date,
-                            gpstime: gpstime,
-                            recorded_sun_angle: nil,
-                            latitude: latitude, 
-                            longitude: longitude,
-                            geom: RGeo::Geographic.spherical_factory(srid: 4326).point(longitude, latitude),
-                            camera: camera,
-                            upload: upload,
-                            flown_by: company,
-                            free_shot: free_shot
-                        )
-
-                        pp record
-
-                        # p record.flight_date
-
-                        # Calcualte the GPS Time
-                        # => Get the Sunday of the week the flight date starts on
-                        # => Add the GPS Time to it as seconds
-                        record.flight_date_time = record.flight_date.beginning_of_week(:sunday) + record.gpstime.to_f.seconds
-
-                        if record.flight_date_time.strftime("%F") != record.flight_date.strftime("%F")
-                            raise Exception, "Photo Index's (Strip Frame: #{record.strip_frame}) GPS Time (#{record.flight_date_time.strftime("%F")}} does not match the provided Flight Date (#{record.flight_date})!"
-                        end
-
-                        # Get the sun angle 
-                        record.sun_angle, azimuth = Solar.position(record.flight_date_time, record.longitude, record.latitude)
-
-                        # Check if the sun angle is equal to or greater than the minimum allowed
-                        record.sun_angle_error = false
-                        if record.sun_angle < Rails.application.secrets.min_sun_angle
-                            p "#{record.strip_frame} - Sun Angle below #{Rails.application.secrets.min_sun_angle}: #{record.sun_angle}"
-                            record.sun_angle_error = true if !free_shot
-                        end
-
-                        # p "Strip Frame: #{record.strip_frame}"
-                        # p "Sun Angle: #{record.sun_angle}"
-
-                        # save the record
-                        record.save!
-
-                        # Query out the matching fooptrint 
-                        # => included a spatial query within the 
-                        footprint = Footprint.find_by("footprints.project = '#{project}' 
-                            AND footprints.camera_id = '#{camera.id}' 
-                            AND footprints.strip_frame = '#{record.strip_frame}' 
-                            AND footprints.flight_date = '#{record.flight_date.strftime("%F")}' 
-                            AND footprints.flown_by_id = '#{company.id}' 
-                            AND st_contains(footprints.geom::geometry, ST_SetSRID(ST_Point(#{record.longitude}, #{record.latitude}),4326))")
-
-                        if footprint
-
-                            # check if the footprint already has a strip frame
-                            if footprint.photo_index.present?
-                                record.destroy
-                                skipped += 1
-                                next
-                            end
-
-                            p "FOOTPRINT FOUND: #{footprint.id}"
-
-                            # update the project state
-                            record.sl = footprint.sl
-                            record.nri = footprint.nri
-                            record.naip = footprint.naip
-
-                            # update attributes
-                            record.county_name = footprint.county_name
-                            record.state_name = footprint.state_name
-                            record.utm_zone = footprint.utm_zone
-
-                            record.county_id = footprint.county_id
-                            record.state_id = footprint.state_id
-                            record.utm_id = footprint.utm_id
-                            record.footprint = footprint
-                            record.save!
-
-                            # update the footprint to indiciate it has been associated
-                            footprint.update(has_pi: true)
-                                
-                            # add the foorptint to the appropriate array
-                            # valid_footprints << footprint if !record.sun_angle_error
-                            # footprints_to_be_rejected << footprint if record.sun_angle_error
-                        elsif !free_shot
-
-                            # Check if the Strip Frame is in the Rejected Footprint
-                            # rejected_footprint = RejectedFootprint.find_by(project: project, camera_id: camera.id, strip_frame: obj[:strip_frame], flight_date: params[:flight_date], flown_by_id: company.id)
-                            rejected_footprint = RejectedFootprint.find_by("rejected_footprints.project = '#{project}' AND rejected_footprints.camera_id = '#{camera.id}' AND rejected_footprints.strip_frame = '#{record.strip_frame}' AND rejected_footprints.flight_date = '#{record.flight_date}' AND rejected_footprints.flown_by_id = '#{company.id}' AND st_contains(rejected_footprints.geom::geometry, ST_SetSRID(ST_Point(#{record.longitude}, #{record.latitude}),4326))")
-
-                            if rejected_footprint
-                                # Reject the Frame Center
-
-                                # Set the footprint id to the original rejected footprint id
-                                record.footprint_id = rejected_footprint.original_id
-                                record.rejected_footprint_id = rejected_footprint.id
-
-                                # update the project state
-                                record.sl = rejected_footprint.sl
-                                record.nri = rejected_footprint.nri
-                                record.naip = rejected_footprint.naip
-
-                                # update attributes
-                                record.county_name = rejected_footprint.county_name
-                                record.state_name = rejected_footprint.state_name
-                                record.utm_zone = rejected_footprint.utm_zone
-
-                                record.county_id = rejected_footprint.county_id
-                                record.state_id = rejected_footprint.state_id
-                                record.utm_id = rejected_footprint.utm_id
-                                record.save!
-
-                                # Reject the Fream Center
-                                # rejected_frame_center = RejectedFrameCenter.reject record, "Footprint was already Rejected"
-                                
-                                # If the rejected Frame Center is valid then skip, otherwise raise exception
-                                # if rejected_frame_center
-                                #     upload.rejected_frame_centers << rejected_frame_center
-                                #     history.rejected_frame_centers << rejected_frame_center
-                                #     rejected_footprints += 1
-                                #     next
-                                # else
-                                #     raise Exception, "Error attempting to reject Frame Center #{fc.strip_frame} that matched Rejected Footprint #{rejected_footprint.id}"
-                                # end
-                            else
-
-                                # no footprint or rejected footprint found
-                                # Destroy the record and increment the skipped variable 
-
-                                record.destroy
-                                skipped += 1
-                                next
-                                # raise Exception, "Could not find matching Footprint flown by #{company.alias} using #{camera.name} with Strip Frame #{strip_frame} flown on #{file_date.strftime("%m/%d/%Y")} in Footprints and Rejected Footprints"
-                            end
-                        end
-
-                        history.photo_indices << record
-                    end
-                end
-
-                p "_________"
-                p upload.photo_indices.count
-                p upload.photo_indices.approved.count
-                p upload.photo_indices.rejected.count
-                p "_________"
-
-                # check if there were any 
-                if upload.photo_indices.approved.count == 0
-                    raise Exception, "No Footprints were associated with Photo Indices. Upload aborted."
-                end
-
-                p "FOOTPRINTS TO BE REJECTED: #{footprints_to_be_rejected.pluck(:id)}"
-                # check the footprints that need to be rejected
-                if upload.photo_indices.rejected.count > 0
-
-                    footprint_ids = upload.photo_indices.rejected.pluck(:footprint_id)
-                    nri_footprints = Footprint.nri.where(id: footprint_ids)
-                    sl_footprints = Footprint.sl.where(id: footprint_ids)
-
-                    p "<><><><><><>"
-                    p "NRI Reject: #{nri_footprints.count}"
-                    p "SL Reject: #{sl_footprints.count}"
-                    p "<><><><><><>"
-
-                    # Check rejected footprints 
-                    if nri_footprints.count > 0
-
-                        rejection_output = PhotoIndex.auto_reject_tiles flight_date, upload, camera, company, user, "NRI"
-
-                        if !rejection_output[:pass]
-                            raise Exception, rejection_output[:error] ? rejection_output[:error] : "Error occurred while attmepting to auto-reject the Photo Indices. Import aborted."
-                        end
-
-                    end
-                    
-                    if sl_footprints.count > 0
-
-                        rejection_output = PhotoIndex.auto_reject_tiles flight_date, upload, camera, company, user, "SL"
-
-                        if !rejection_output[:pass]
-                            raise Exception, rejection_output[:error] ? rejection_output[:error] : "Error occurred while attmepting to auto-reject the Photo Indices. Import aborted."
-                        end
-                    end
-                end
-
-                message = "Successfully imported #{history.photo_indices.count} Photo Indices from #{params[:file].original_filename}. #{history.photo_indices.approved.count} contained valid sun angles."
-
-                if history.photo_indices.rejected.count > 0
-                    message += " #{history.photo_indices.rejected.count} did not meet the sun angle requirement."
-                end
-
-                if skipped > 0
-                    message += "#{skipped} Photo Indices were skipped because of no matching Footprints or Rejected Footprints."
-                end
-
-                # if history.photo_indices.where(footprint_id: nil, rejected_footprint_id: nil).count > 0
-                #     message += " #{history.photo_indices.where(footprint_id: nil, rejected_footprint_id: nil).count} Photo Indices did not associate to a Footprint."
-                # end
-
-
-                job.update(
-                    finished_at: Time.now,
-                    active: false,
-                    success: true,
-                    upload: upload,
-                    message: message
-                )
-
-                # Update the history
-                history.update(message: message)
-                history.uploads << upload
-
-                # Build the Export of Photo ID
-                PhotoIndex.build_export_file upload
 
                 # Log and send email
                 Mailbox.ship({

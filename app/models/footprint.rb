@@ -22,17 +22,17 @@ class Footprint < ApplicationRecord
     has_many :doqqs, -> { distinct }, through: :doqq_footprints
 
     # Validations
-    validates :strip_frame, uniqueness: { scope: [:flight_date, :camera_id, :flown_by_id, :project, :project_state_name], message: "(%{value}) found with the same Flight Date, Flown By Company, and Camera already existing in Database" }
+    validates :strip_frame, uniqueness: { message: "(%{value}) found with the same Strip Frame already existing in Database"}
     validates :strip_frame, uniqueness: { scope: [:centroid_latitude, :centroid_longitude, :project, :project_state_name], message: "(%{value}) and centroid geometry found in Database for Footprints. Likely Duplicate." }, on: :create
     validates :geom, :flight_date, :centroid_latitude, :centroid_longitude, presence: true
 
     # Callbacks
-    before_save :set_pilot_and_so
+    # before_save :set_pilot_and_so
 
-    def set_pilot_and_so
-        self.pilot_name = "NA" if self.pilot_name.nil?
-        self.camera_operator_name = "NA" if self.camera_operator_name.nil?
-    end
+    # def set_pilot_and_so
+    #     self.pilot_name = "NA" if self.pilot_name.nil?
+    #     self.camera_operator_name = "NA" if self.camera_operator_name.nil?
+    # end
 
     # Scopes
     scope :associated, -> { where(associated: true) }
@@ -160,12 +160,12 @@ class Footprint < ApplicationRecord
                     # end
 
                     # Check the plane
-                    p "Plane ID: #{params[:plane_id]}"
-                    plane = Plane.find_by(id: params[:plane_id])
-                    # plane_filename = Plane.find_by(name: arr[2])
-                    if plane.nil?
-                        raise Exception, "Plane extract from Filename does not match the Plane supplied by the form"
-                    end
+                    # p "Plane ID: #{params[:plane_id]}"
+                    # plane = Plane.find_by(id: params[:plane_id])
+                    # # plane_filename = Plane.find_by(name: arr[2])
+                    # if plane.nil?
+                    #     raise Exception, "Plane extract from Filename does not match the Plane supplied by the form"
+                    # end
 
                     # Check if the plane is valid for the project
                     # if params[:project] === "NAIP" && !plane.naip
@@ -176,11 +176,11 @@ class Footprint < ApplicationRecord
                     # end
 
                     # Check the Camera
-                    p "Camera ID: #{params[:camera_id]}"
-                    camera = Camera.find_by(id: params[:camera_id])
-                    if camera.nil?
-                        raise Exception, "Camera extract from Filename does not match the Camera supplied by the form"
-                    end
+                    # p "Camera ID: #{params[:camera_id]}"
+                    # camera = Camera.find_by(id: params[:camera_id])
+                    # if camera.nil?
+                    #     raise Exception, "Camera extract from Filename does not match the Camera supplied by the form"
+                    # end
 
                     # # Check if the camera is valid for the project
                     # # if (["All", "NAIP"].include? params[:project]) && !camera.naip
@@ -196,63 +196,63 @@ class Footprint < ApplicationRecord
                     # => Footprints should be in 4326, might be overkill but don't want to have to add later
                     `ogr2ogr -f "ESRI Shapefile" -t_srs EPSG:4326 #{path}/projected/footprints.shp "#{path}/original/#{shapefile_filename}.shp" -dim 2`
 
-                    strip_frames = []
-                    dup_strip_frames = []
+                    # strip_frames = []
+                    # dup_strip_frames = []
 
-                    # Iterate the shapefile and check for duplicates
-                    RGeo::Shapefile::Reader.open("#{path}/projected/footprints.shp") do |file|
-                        # puts "File contains #{file.num_records} records."
-                        # p file
-                        # p "--------------------"
-                        file.each do |record|
+                    # # Iterate the shapefile and check for duplicates
+                    # RGeo::Shapefile::Reader.open("#{path}/projected/footprints.shp") do |file|
+                    #     # puts "File contains #{file.num_records} records."
+                    #     # p file
+                    #     # p "--------------------"
+                    #     file.each do |record|
 
-                            # default the original strip frame variable to nil
-                            original_strip_frame = nil
+                    #         # default the original strip frame variable to nil
+                    #         original_strip_frame = nil
 
-                            # Check the attributes for the Name field either proper case or capitialized
-                            if record.attributes["Name"]
-                                original_strip_frame = record.attributes["Name"]
-                            elsif record.attributes["NAME"]
-                                original_strip_frame = record.attributes["NAME"]
-                            else
-                                raise Exception, "No \"Name\" Column found for Strip Frame"
-                            end
+                    #         # Check the attributes for the Name field either proper case or capitialized
+                    #         if record.attributes["Name"]
+                    #             original_strip_frame = record.attributes["Name"]
+                    #         elsif record.attributes["NAME"]
+                    #             original_strip_frame = record.attributes["NAME"]
+                    #         else
+                    #             raise Exception, "No \"Name\" Column found for Strip Frame"
+                    #         end
                         
-                            puts "Record number #{original_strip_frame}:"
+                    #         puts "Record number #{original_strip_frame}:"
 
-                            if strip_frames.include? original_strip_frame
-                                dup_strip_frames |= [original_strip_frame]
-                            else
-                                strip_frames << original_strip_frame
-                            end
+                    #         if strip_frames.include? original_strip_frame
+                    #             dup_strip_frames |= [original_strip_frame]
+                    #         else
+                    #             strip_frames << original_strip_frame
+                    #         end
 
-                        end
+                    #     end
 
-                    end
+                    # end
 
                     # if there are dups then send an email
-                    if dup_strip_frames.count > 0
+                    # if dup_strip_frames.count > 0
                         
-                        response = {
-                            pass: false,
-                            message: "Duplicates were found in the Footprint Import validation process. Please check your email to see a list of Strip Frames to resolve and try again."
-                        }
+                    #     response = {
+                    #         pass: false,
+                    #         message: "Duplicates were found in the Footprint Import validation process. Please check your email to see a list of Strip Frames to resolve and try again."
+                    #     }
 
-                        html = "Duplicates found while validating the Footprint Import. Review and remove the following strip frames."
-                        html += "<hr />"
-                        html += '<ul>'
-                        dup_strip_frames.each do |sf|
-                            html += "<li>#{sf}</li>"
-                        end
-                        html += '</ul>'
+                    #     html = "Duplicates found while validating the Footprint Import. Review and remove the following strip frames."
+                    #     html += "<hr />"
+                    #     html += '<ul>'
+                    #     dup_strip_frames.each do |sf|
+                    #         html += "<li>#{sf}</li>"
+                    #     end
+                    #     html += '</ul>'
 
-                        # Log and send email
-                        Mailbox.ship({
-                            users: MailGroup.find_by(name: "Footprints").users | [user],
-                            subject: "#{params[:project]} Footprint Import Duplicates Found",
-                            message: html
-                        })
-                    end
+                    #     # Log and send email
+                    #     Mailbox.ship({
+                    #         users: MailGroup.find_by(name: "Footprints").users | [user],
+                    #         subject: "#{params[:project]} Footprint Import Duplicates Found",
+                    #         message: html
+                    #     })
+                    # end
                 end
 
 
@@ -278,7 +278,7 @@ class Footprint < ApplicationRecord
         end
 
         if response[:pass]
-            Footprint.import params, company, plane, camera, shapefile_filename, path, user
+            Footprint.import params, company, shapefile_filename, path, user
         end
 
         response
@@ -286,7 +286,7 @@ class Footprint < ApplicationRecord
     end
 
     # Imports the shapefile
-    def self.import params, company, plane, camera, shapefile_filename, path, user
+    def self.import params, company, shapefile_filename, path, user
 
         count = 0
 
@@ -310,15 +310,18 @@ class Footprint < ApplicationRecord
         process_success = false
         error_message = "Something went wrong. Contact Programming"
 
+        uploads = {}
+        upload_folder_path = "#{path}/"
+
         # Start a Transaction Block
         ActiveRecord::Base.transaction do
             begin
 
-                upload = Upload.create(
-                    folder_path: "#{path}/",
-                    upload_type: "Footprint",
-                    uploader: user
-                )
+                # upload = Upload.create(
+                #     folder_path: "#{path}/",
+                #     upload_type: "Footprint",
+                #     uploader: user
+                # )
 
                 shp = Dir.glob("#{path}/projected/footprints.shp")
 
@@ -422,10 +425,11 @@ class Footprint < ApplicationRecord
                         #         raise Exception, "Strip Frame (Original: #{original_strip_frame}, Modified: #{modified_strip_frame}) already exists with the same Flight Date (#{params[:flight_date]}), Camera (#{camera.serial_number}), and Flown By Company (#{company.name}) for NAIP Project within #{state.name}"
                         #     end
                         # else
-                        #     # Check if the strip frame has already been used with the same flight date
-                        #     if Footprint.nri_sl.where(strip_frame: modified_strip_frame, camera_id: camera.id, flown_by_id: company.id).count > 0
-                        #         raise Exception, "Strip Frame (Original: #{original_strip_frame}, Modified: #{modified_strip_frame}) already exists with the same Flight Date (#{params[:flight_date]}), Camera (#{camera.serial_number}), and Flown By Company (#{company.name})"
-                        #     end
+                            # Check if the strip frame has already been used with the same flight date
+                            if Footprint.nri_sl.where(strip_frame: modified_strip_frame).count > 0
+                                # next
+                                raise Exception, "Strip Frame (Original: #{original_strip_frame}, Modified: #{modified_strip_frame}) already exists!"
+                            end
                         # end
 
                         footprint = Footprint.new(
@@ -436,17 +440,17 @@ class Footprint < ApplicationRecord
                             geom: record.geometry,
                             # pilot_name: params[:pilot_name].blank? ? nil : params[:pilot_name],
                             # camera_operator_name: params[:camera_operator_name].blank? ? nil : params[:camera_operator_name],
-                            plane: plane,
-                            camera: camera,
-                            upload: upload,
+                            # plane: plane,
+                            # camera: camera,
+                            # upload: upload,
                             nri: false,
                             sl: false,
                             naip: project == "NAIP" ? true : false,
                             flown_by_alias: company.alias,
                             flown_by_name: company.name,
                             flown_by_id: company.id,
-                            plane_name: plane.name,
-                            camera_name: "#{camera.model} | #{camera.name}",
+                            # plane_name: plane.name,
+                            # camera_name: "#{camera.model} | #{camera.name}",
                         )
 
                         # Add the centroid lat/long
@@ -507,11 +511,27 @@ class Footprint < ApplicationRecord
 
                         # Match the photo index
                         # => TODO: Chat with nathan about requiring the camera or not
-                        photo_index = PhotoIndex.find_by("strip_frame = '#{modified_strip_frame}' AND camera_id = #{camera.id} AND st_intersects(ST_GeomFromText('#{record.geometry.to_s}'), geom)")
+                        photo_index = PhotoIndex.find_by("strip_frame = '#{modified_strip_frame}' AND st_intersects(ST_GeomFromText('#{record.geometry.to_s}'), geom)")
 
                         if photo_index
                             footprint.flight_date = photo_index.flight_date
                             footprint.camera = photo_index.camera
+                            footprint.plane = photo_index.plane
+
+                            footprint.camera_name = "#{photo_index.camera.model} | #{photo_index.camera.name}"
+                            footprint.plane_name = photo_index.plane.name
+
+                            upload_key = "#{photo_index.flight_date.to_s}#{footprint.camera_id}"
+
+                            if !uploads[upload_key]
+                                uploads[upload_key] = Upload.create(
+                                    folder_path: upload_folder_path,
+                                    upload_type: "Footprint",
+                                    uploader: user
+                                )
+                            end
+
+                            footprint.upload = uploads[upload_key]
 
                             p "------------"
                             p "Photo Index: #{modified_strip_frame}"
@@ -529,34 +549,64 @@ class Footprint < ApplicationRecord
                             count += 1
                         end
 
+                        next
+
                     end
                 end
 
-                # Create a new History record
-                history = History.new
-                history.action_type = "Upload Footprints (#{project})"
-                history.creator = user
-                history.message = "Uploaded #{count} Footprints in #{upload.footprints.order(:state_name).pluck(:state_name).uniq.to_sentence} from #{shapefile_filename}.shp"
-                history.save
+                histories = {}
+                uploads.each do |key, upload|
 
-                upload.number_uploaded = count
-                upload.save
+                    # Create a new History record
+                    history = History.new
+                    history.action_type = "Upload Footprints (#{project})"
+                    history.creator = user
+                    history.message = "Uploaded #{upload.footprints.count} Footprints in #{upload.footprints.order(:state_name).pluck(:state_name).uniq.to_sentence} from #{shapefile_filename}.shp"
+                    history.save
+
+                    histories[key] = history
+
+                    upload.number_uploaded = upload.footprints.count
+                    upload.save
+
+                end
 
                 p "Project: #{project}"
+                pp uploads
+
+                # flight_dates = upload.footprints.pluck(:flight_date).uniq
 
                 # Compare the Project Type and perform Spatial Query
                 # if ["All", "Sl"].include? project
                 if project == "NRI/SL"
 
-                    # Dissolve all the footprints in the db
-                    # => Now it should only dissolve those that have the correct flight date
-                    DissolvedFootprint.dissolve_by_scope params[:flight_date], company.id, camera.id, project
+                    # flight_dates.each do |flight_date|
+                    uploads.each do |key, upload|
 
-                    # Find new completed Easements and update their flight date
-                    Footprint.update_tiles upload, history, params[:flight_date], plane, camera, company, params[:pilot_name], params[:camera_operator_name], project
+                        p "----------"
+                        p "upload loop"
+                        p upload
+                        p upload.footprints
+                        p "----------"
 
-                    # CHeck if any of the footprints cover already flown easements
-                    Footprint.delay.find_duplicate_overlapping_footprints_for_tiles upload, project, user
+                        flight_date = upload.footprints.first.flight_date.to_s
+                        plane = upload.footprints.first.plane
+                        camera = upload.footprints.first.camera
+
+                        # Dissolve all the footprints in the db
+                        # => Now it should only dissolve those that have the correct flight date
+                        DissolvedFootprint.dissolve_by_scope flight_date, company.id, camera.id, project
+
+                        # Find new completed Easements and update their flight date
+                        Footprint.update_tiles upload, histories[key], flight_date, plane, camera, company, project
+
+                        # CHeck if any of the footprints cover already flown easements
+                        Footprint.delay.find_duplicate_overlapping_footprints_for_tiles upload, flight_date, project, user
+
+                        histories[key].save
+
+                    end
+
                 end
 
                 # # if ["All", "NAIP"].include? project
@@ -597,22 +647,24 @@ class Footprint < ApplicationRecord
                 p "DONE WITH PROJECT SPECIFIC OPERATIONS"
 
                 if count > 0
-
-                    # add records to polymorphic association
-                    history.uploads << upload
-                    history.footprints = upload.footprints
-
+                    uploads.each do |key, upload|
+                        # add records to polymorphic association
+                        histories[key].uploads << upload
+                        histories[key].footprints = upload.footprints
+                    end
                 elsif output[:count] == 0
                     raise Exception, "No Footprint Features were uploaded, please check the shapefile for a valid projection and try again."
                 else
                     raise Exception, "Something went wrong"
                 end
 
+                key = uploads.keys.first
+
                 job.update(
                     finished_at: Time.now,
                     success: true,
                     active: false,
-                    upload: upload,
+                    upload: uploads[key],
                     message: "Uploaded #{count} Footprints"
                 )
 
@@ -620,7 +672,7 @@ class Footprint < ApplicationRecord
                 Mailbox.ship({
                     users: MailGroup.find_by(name: "Footprints").users | [user],
                     subject: "#{project} Footprint Import Success",
-                    message: "#{project} Footprint Import finished successfully, #{upload.footprints.count} Footprints were uploaded to the application."
+                    message: "#{project} Footprint Import finished successfully, #{count} Footprints were uploaded to the application."
                 })
 
                 # PostmasterMailer.notify(user, "Footprint Import finished successfully, #{upload.footprints.count} Footprints were uploaded to the system.", "USDA #{Rails.application.secrets.project_year}: Footprint Import Success - #{Time.now.strftime("%m/%d/%Y")}").deliver
@@ -650,7 +702,7 @@ class Footprint < ApplicationRecord
                 error_message = exception.message
 
                 # Delete the Upload and History
-                upload.destroy if upload
+                # upload.destroy if upload
                 history.destroy if history
 
                 # Delete the files
@@ -898,7 +950,7 @@ class Footprint < ApplicationRecord
     private
 
     # Should only run after the dissolved footprint has been built
-    def self.update_tiles upload, history, flight_date, plane, camera, company, pilot, so, project
+    def self.update_tiles upload, history, flight_date, plane, camera, company, project
 
         tiles = []
         footprints = []
@@ -946,14 +998,17 @@ class Footprint < ApplicationRecord
                         flown_by_alias: company.alias,
                         flown_by_name: company.name,
                         flown_by: company,
-                        pilot: pilot,
-                        sensor_operator: so
+                        # pilot: pilot,
+                        # sensor_operator: so
                     )
 
                     # Update the Tiles Rate and if it's not successful then push to array to send email later
                     if !tile.set_contract_rate
                         invalid_contract_rates << tile
                     end
+
+                    p tile
+                    p tile.upload_id
 
                     # Add tile to history
                     history.tiles << tile
@@ -1172,11 +1227,12 @@ class Footprint < ApplicationRecord
     #     end
     # end
 
-    def self.find_duplicate_overlapping_footprints_for_tiles upload, project, user
+    def self.find_duplicate_overlapping_footprints_for_tiles upload, flight_date, project, user
         # Take the footprints that were just uploaded and dissolve them to check for coverage that is already marked as flown but not on the same flight date
 
         p "_+_+_+_+_+_"
-        p "Upload #{upload.id}"
+        p "Upload"
+        p upload
 
         # Create a new History record
         history = History.new

@@ -327,7 +327,7 @@ export default function FootprintImport({
             )}
           />
         </Form.Group>
-        <Form.Group widths="equal">
+        {/* <Form.Group widths="equal">
           <Controller
             name={"plane_id"}
             control={control}
@@ -461,7 +461,7 @@ export default function FootprintImport({
               />
             )}
           />
-        </Form.Group>
+        </Form.Group> */}
 
         <Form.Group>
           <Form.Field

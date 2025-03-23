@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2024_10_27_171028) do
+ActiveRecord::Schema.define(version: 2025_03_21_003357) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -591,12 +591,15 @@ ActiveRecord::Schema.define(version: 2024_10_27_171028) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.boolean "free_shot", default: false, null: false
+    t.string "plane_name"
+    t.bigint "plane_id"
     t.index ["camera_id"], name: "index_photo_indices_on_camera_id"
     t.index ["county_id"], name: "index_photo_indices_on_county_id"
     t.index ["flown_by_id"], name: "index_photo_indices_on_flown_by_id"
     t.index ["footprint_id"], name: "index_photo_indices_on_footprint_id"
     t.index ["geom"], name: "index_photo_indices_on_geom", using: :gist
     t.index ["notes"], name: "index_photo_indices_on_notes"
+    t.index ["plane_id"], name: "index_photo_indices_on_plane_id"
     t.index ["rejected_footprint_id"], name: "index_photo_indices_on_rejected_footprint_id"
     t.index ["state_id"], name: "index_photo_indices_on_state_id"
     t.index ["strip_frame"], name: "index_photo_indices_on_strip_frame"

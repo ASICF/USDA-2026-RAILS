@@ -1,3 +1,9 @@
+ContractRate.all.update(start_date: "2025-03-01", end_date: "2026-03-09")
+
+Tile.flown.where(production_rate_id: nil).each {|tile| tile.set_contract_rate }
+
+return
+
 # update nri contract awards
 
 # ContractAward.nri.where(state_id: 30).update(pps: 565) # HI

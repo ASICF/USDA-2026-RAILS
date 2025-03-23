@@ -24,16 +24,16 @@ class FootprintsController < ApplicationController
                 state: false,
                 message: "No Project Specified"
             }
-        elsif footprint_params[:camera_id].blank?
-            render json: {
-                state: false,
-                message: "No Camera Selected"
-            }
-        elsif footprint_params[:plane_id].blank?
-            render json: {
-                state: false,
-                message: "No Plane Selected"
-            }
+        # elsif footprint_params[:camera_id].blank?
+        #     render json: {
+        #         state: false,
+        #         message: "No Camera Selected"
+        #     }
+        # elsif footprint_params[:plane_id].blank?
+        #     render json: {
+        #         state: false,
+        #         message: "No Plane Selected"
+        #     }
         else
 
             response = Footprint.prepare_import footprint_params, current_user
@@ -51,6 +51,6 @@ class FootprintsController < ApplicationController
     end
 
     def footprint_params
-        params.require(:footprints).permit(:project, :flown_by_id, :camera_id, :plane_id, files: [])
+        params.require(:footprints).permit(:project, :flown_by_id, files: [])
     end
 end

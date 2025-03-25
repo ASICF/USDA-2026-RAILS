@@ -351,6 +351,9 @@ class FinalDelivery < ApplicationRecord
                     raise Exception, "Tile (#{tile.poly_id}) does not have the Ortho Processing Date set" if !tile.ortho_processing
                     raise Exception, "Tile (#{tile.poly_id}) does not have the Tile Dump Date set" if !tile.dumped
 
+                    # skip if there are missing tifs where the delivery type is pre-production
+                    next if !File.file?("#{path}/#{tile.filename}.tif") && delivery_type == "Pre-Production"
+
                     # Throw error if tile's file is not found in folder
                     raise Exception, "File #{tile.filename}.tif does not exist in folder #{params[:input_directory]}" if !File.file?("#{path}/#{tile.filename}.tif")
 

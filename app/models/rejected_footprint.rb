@@ -10,6 +10,7 @@ class RejectedFootprint < ApplicationRecord
     belongs_to :vector_metadatum, optional: true
     belongs_to :flown_by, class_name: 'Company', optional: true
     has_one :rejected_frame_center
+    belongs_to :photo_index, optional: true
     has_many :historic_assocs, as: :historicable, dependent: :destroy
     has_many :histories, through: :historic_assocs
     has_many :tile_footprints

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2025_03_21_003357) do
+ActiveRecord::Schema.define(version: 2025_03_23_184646) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -363,10 +363,12 @@ ActiveRecord::Schema.define(version: 2025_03_21_003357) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.boolean "has_pi", default: false, null: false
+    t.bigint "photo_index_id"
     t.index ["camera_id"], name: "index_footprints_on_camera_id"
     t.index ["county_id"], name: "index_footprints_on_county_id"
     t.index ["flown_by_id"], name: "index_footprints_on_flown_by_id"
     t.index ["geom"], name: "index_footprints_on_geom", using: :gist
+    t.index ["photo_index_id"], name: "index_footprints_on_photo_index_id"
     t.index ["plane_id"], name: "index_footprints_on_plane_id"
     t.index ["project"], name: "index_footprints_on_project"
     t.index ["project_state_id"], name: "index_footprints_on_project_state_id"
@@ -678,10 +680,12 @@ ActiveRecord::Schema.define(version: 2025_03_21_003357) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.boolean "has_pi", default: false, null: false
+    t.bigint "photo_index_id"
     t.index ["camera_id"], name: "index_rejected_footprints_on_camera_id"
     t.index ["county_id"], name: "index_rejected_footprints_on_county_id"
     t.index ["flown_by_id"], name: "index_rejected_footprints_on_flown_by_id"
     t.index ["geom"], name: "index_rejected_footprints_on_geom", using: :gist
+    t.index ["photo_index_id"], name: "index_rejected_footprints_on_photo_index_id"
     t.index ["plane_id"], name: "index_rejected_footprints_on_plane_id"
     t.index ["project"], name: "index_rejected_footprints_on_project"
     t.index ["project_state_id"], name: "index_rejected_footprints_on_project_state_id"

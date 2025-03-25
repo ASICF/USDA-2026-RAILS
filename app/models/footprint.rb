@@ -11,8 +11,9 @@ class Footprint < ApplicationRecord
     belongs_to :project_state, class_name: 'State', optional: true
     belongs_to :utm, optional: true
     belongs_to :flown_by, class_name: 'Company', optional: true
+    belongs_to :photo_index, optional: true
     has_one :frame_center
-    has_one :photo_index
+    # has_one :photo_index
     has_many :imagery_paths, as: :pathable
     has_many :historic_assocs, as: :historicable, dependent: :destroy
     has_many :histories, through: :historic_assocs
@@ -23,7 +24,7 @@ class Footprint < ApplicationRecord
 
     # Validations
     validates :strip_frame, uniqueness: { message: "(%{value}) found with the same Strip Frame already existing in Database"}
-    validates :strip_frame, uniqueness: { scope: [:centroid_latitude, :centroid_longitude, :project, :project_state_name], message: "(%{value}) and centroid geometry found in Database for Footprints. Likely Duplicate." }, on: :create
+    # validates :strip_frame, uniqueness: { scope: [:centroid_latitude, :centroid_longitude, :project, :project_state_name], message: "(%{value}) and centroid geometry found in Database for Footprints. Likely Duplicate." }, on: :create
     validates :geom, :flight_date, :centroid_latitude, :centroid_longitude, presence: true
 
     # Callbacks
@@ -289,6 +290,8 @@ class Footprint < ApplicationRecord
     def self.import params, company, shapefile_filename, path, user
 
         count = 0
+        dup_count = 0
+        reject_count = 0
 
         # Query out the Delayed Job
         # => Should be the first Delayed Job that is active that isnt' already assigned to an existing Job
@@ -417,20 +420,17 @@ class Footprint < ApplicationRecord
                         end
 
                         # p modified_strip_frame
+                        # p project
+                        # p Footprint.where(strip_frame: modified_strip_frame).count
 
-
-                        # if project === "NAIP"
-                        #     # Check if the strip frame has already been used with the same flight date
-                        #     if Footprint.naip.where(strip_frame: modified_strip_frame, camera_id: camera.id, flown_by_id: company.id, project_state_name: state.name).count > 0
-                        #         raise Exception, "Strip Frame (Original: #{original_strip_frame}, Modified: #{modified_strip_frame}) already exists with the same Flight Date (#{params[:flight_date]}), Camera (#{camera.serial_number}), and Flown By Company (#{company.name}) for NAIP Project within #{state.name}"
-                        #     end
-                        # else
-                            # Check if the strip frame has already been used with the same flight date
-                            if Footprint.nri_sl.where(strip_frame: modified_strip_frame).count > 0
-                                # next
-                                raise Exception, "Strip Frame (Original: #{original_strip_frame}, Modified: #{modified_strip_frame}) already exists!"
-                            end
-                        # end
+                        # Check if the strip frame has already been used with the same flight date
+                        if Footprint.where(strip_frame: modified_strip_frame).count > 0
+                            p "Duplicate Strip Frame: #{modified_strip_frame}. Skipping."
+                            # sleep(1.seconds)
+                            dup_count += 1
+                            next
+                            # raise Exception, "Strip Frame (Original: #{original_strip_frame}, Modified: #{modified_strip_frame}) already exists!"
+                        end
 
                         footprint = Footprint.new(
                             project: project,
@@ -498,11 +498,6 @@ class Footprint < ApplicationRecord
                             footprint.state_abv = results[0]["state_abv"]
                         end
 
-                        if project == "NAIP"
-                            footprint.project_state_name = state.name
-                            footprint.project_state_id = state.id
-                        end
-
                         # Find Photo Index
                         # => Find Photo Index that matches the strip frame and camera (and the photo index is contained within the footprint)
 
@@ -519,7 +514,8 @@ class Footprint < ApplicationRecord
                             footprint.plane = photo_index.plane
 
                             footprint.camera_name = "#{photo_index.camera.model} | #{photo_index.camera.name}"
-                            footprint.plane_name = photo_index.plane.name
+                            footprint.plane_name = photo_index.plane_name
+                            footprint.photo_index = photo_index
 
                             upload_key = "#{photo_index.flight_date.to_s}#{footprint.camera_id}"
 
@@ -536,12 +532,22 @@ class Footprint < ApplicationRecord
                             p "------------"
                             p "Photo Index: #{modified_strip_frame}"
                             # p result[0]
-                            p photo_index
+                            p footprint
                             p "------------"
 
                             if footprint.save
+                                p "++++++++++"
+                                p footprint.project
+                                p "++++++++++"
+
                                 if photo_index
                                     photo_index.update(footprint: footprint)
+
+                                    if photo_index.sun_angle_error
+                                        rejected_footprint = RejectedFootprint.reject footprint, "Photo Index Reject"
+                                        uploads[upload_key].rejected_footprints << rejected_footprint
+                                        reject_count += 1
+                                    end
                                 end
                             else
                                 raise Exception, footprint.errors.full_messages.to_sentence
@@ -557,11 +563,20 @@ class Footprint < ApplicationRecord
                 histories = {}
                 uploads.each do |key, upload|
 
+                    message = "Uploaded #{upload.footprints.count} Footprints in #{upload.footprints.order(:state_name).pluck(:state_name).uniq.to_sentence}"
+                    if dup_count > 0
+                        message += " and skipped #{dup_count} duplicate Footprints with existing strip_frames"
+                    end
+                    if reject_count > 0
+                        message += " and rejected #{reject_count} Footprints due to Photo Index Sun Angles"
+                    end
+                    message += " from #{shapefile_filename}.shp"
+
                     # Create a new History record
                     history = History.new
                     history.action_type = "Upload Footprints (#{project})"
                     history.creator = user
-                    history.message = "Uploaded #{upload.footprints.count} Footprints in #{upload.footprints.order(:state_name).pluck(:state_name).uniq.to_sentence} from #{shapefile_filename}.shp"
+                    history.message = message
                     history.save
 
                     histories[key] = history
@@ -652,8 +667,8 @@ class Footprint < ApplicationRecord
                         histories[key].uploads << upload
                         histories[key].footprints = upload.footprints
                     end
-                elsif output[:count] == 0
-                    raise Exception, "No Footprint Features were uploaded, please check the shapefile for a valid projection and try again."
+                elsif count == 0
+                    raise Exception, "No Footprint Features were uploaded, either data has already been imported or there are no records in Shapefile."
                 else
                     raise Exception, "Something went wrong"
                 end
@@ -703,7 +718,7 @@ class Footprint < ApplicationRecord
 
                 # Delete the Upload and History
                 # upload.destroy if upload
-                history.destroy if history
+                # history.destroy if history
 
                 # Delete the files
                 FileUtils.rm_rf("#{path}/") if path

@@ -6,7 +6,7 @@ class PhotoIndex < ApplicationRecord
     belongs_to :upload
     belongs_to :camera
     belongs_to :plane
-    belongs_to :footprint, optional: true
+    has_one :footprint
     belongs_to :rejected_footprint, optional: true
     belongs_to :flown_by, class_name: 'Company'
     has_many :historic_assocs, as: :historicable, dependent: :destroy
@@ -268,8 +268,8 @@ class PhotoIndex < ApplicationRecord
                         #     raise Exception, "Filename flight date does not match record flight date"
                         # end
 
-                        free_shot = arr[2].downcase == "free shot" ? true : false
-                        
+                        free_shot = arr[2].downcase.include?("free")
+
                         # if free shot skip it
                         if free_shot
                             # strip = "FREE_SHOT"

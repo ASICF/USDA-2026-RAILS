@@ -1,8 +1,64 @@
-ContractRate.all.update(start_date: "2025-03-01", end_date: "2026-03-09")
+# Delete all free shots that got through
+PhotoIndex.where(strip_frame: "FREE_SHOT").destroy_all
 
-Tile.flown.where(production_rate_id: nil).each {|tile| tile.set_contract_rate }
+PhotoIndex.all.each do |pi|
+    fp = Footprint.find_by(id: pi.footprint_id)
+    if fp
+        fp.update(photo_index: pi)
+        pi.update(
+            plane: fp.plane,
+            plane_name: fp.plane_name,
+            camera: fp.camera,
+            camera_name: "#{fp.camera.model} | #{fp.camera.name}"
+        )
+    else
+        rfp = Footprint.find_by(id: pi.footprint_id)
+        if rfp
+            rfp.update(photo_index: pi)
+            pi.update(
+                plane: rfp.plane,
+                plane_name: rfp.plane_name,
+                camera: rfp.camera,
+                camera_name: "#{rfp.camera.model} | #{rfp.camera.name}"
+            )
+        end
+    end
+end
+
+camera = Camera.find(4)
+plane = Plane.find(1)
+Upload.find(10).photo_indices.update_all({
+    camera_id: camera.id, 
+    camera_name: camera.name, 
+    plane_id: plane.id,
+    plane_name: plane.name
+})
+Upload.find(50).photo_indices.update_all({
+    camera_id: camera.id, 
+    camera_name: camera.name, 
+    plane_id: plane.id,
+    plane_name: plane.name
+})
+Upload.find(46).photo_indices.update_all({
+    camera_id: camera.id, 
+    camera_name: camera.name, 
+    plane_id: plane.id,
+    plane_name: plane.name
+})
+Upload.find(107).photo_indices.update_all({
+    camera_id: camera.id, 
+    camera_name: camera.name, 
+    plane_id: plane.id,
+    plane_name: plane.name
+})
 
 return
+
+# ContractRate.all.update(start_date: "2025-03-01", end_date: "2026-03-09")
+
+# Tile.flown.where(production_rate_id: nil).each {|tile| tile.set_contract_rate }
+
+# return
 
 # update nri contract awards
 

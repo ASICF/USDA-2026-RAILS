@@ -11,6 +11,7 @@ import {
   Icon,
   List,
   ButtonContent,
+  Segment,
 } from "semantic-ui-react";
 import _ from "lodash";
 
@@ -27,7 +28,9 @@ import axios from "axios";
 export default function PhotoIndexImport({
   companies,
   cameras,
+  planes,
   projects,
+  loadouts,
   token,
 }) {
   const [message, setMessage] = useState(null);
@@ -35,6 +38,32 @@ export default function PhotoIndexImport({
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   // const fileRef = useRef()
+
+  const [loadoutOnePlane, setLoadoutOnePlane] = useState(null);
+  const [loadoutOneCamera, setLoadoutOneCamera] = useState(null);
+  const [loadoutTwoPlane, setLoadoutTwoPlane] = useState(null);
+  const [loadoutTwoCamera, setLoadoutTwoCamera] = useState(null);
+
+  console.log({
+    loadoutOnePlane,
+    loadoutOneCamera,
+    loadoutTwoPlane,
+    loadoutTwoCamera,
+    cameras,
+    planes,
+  });
+
+  useEffect(() => {
+    console.log({ loadouts });
+
+    const underscore = loadouts.find((record) => record.name === "Underscore");
+    setLoadoutOnePlane(underscore.plane_id);
+    setLoadoutOneCamera(underscore.camera_id);
+
+    const other = loadouts.find((record) => record.name === "No Underscore");
+    setLoadoutTwoPlane(other.plane_id);
+    setLoadoutTwoCamera(other.camera_id);
+  }, []);
 
   const {
     handleSubmit,
@@ -295,139 +324,170 @@ export default function PhotoIndexImport({
               />
             )}
           />
-        {/* </Form.Group>
-        <Form.Group widths="equal"> */}
-          {/* <Form.Field error={errors.hasOwnProperty("flight_date")}>
-            <div className="calendar-input">
-              <Controller
-                name={"flight_date"}
-                control={control}
-                rules={{
-                  required: "Required",
-                }}
-                render={({ field: { name, value, defaultValue } }) => (
-                  <DateInput
-                    closable
-                    clearable
-                    name={name}
-                    label={"Flight Date"}
-                    required={true}
-                    value={value || ""}
-                    dateFormat="MM/DD/YYYY"
-                    iconPosition="left"
-                    onChange={handleChange}
-                    autoComplete="off"
-                  />
-                )}
-              />
-            </div>
-            {errors[`flight_date`] && (
-              <Label pointing prompt>
-                {errors[`flight_date`].message}
-              </Label>
-            )}
-          </Form.Field> */}
-          <Controller
-            name={"camera_id"}
-            control={control}
-            rules={{ required: "Required" }}
-            defaultValue={"auto"}
-            render={({ field: { name, value } }) => (
-              <Form.Select
-                fluid
-                search
-                selection
-                clearable
-                name={name}
-                data-value={value}
-                label={"Camera"}
-                required={true}
-                value={value || ""}
-                onChange={handleChange}
-                autoComplete="off"
-                options={cameras.map((record) => {
-                  return {
-                    key: record.id,
-                    text: record.label,
-                    value: record.id,
-                  };
-                })}
-                error={
-                  errors["camera_id"]
-                    ? {
-                        content: errors["camera_id"].message,
-                        pointing: "above",
-                      }
-                    : false
-                }
-              />
-            )}
-          />
-          {/* <Form.Field error={errors.hasOwnProperty("flight_date")}>
-            <div className="calendar-input">
-              <Controller
-                name={"flight_date"}
-                control={control}
-                rules={{
-                  required: "Required",
-                }}
-                render={({ field: { name, value, defaultValue } }) => (
-                  <DateInput
-                    closable
-                    clearable
-                    name={name}
-                    label={"Flight Date"}
-                    required={true}
-                    value={value || ""}
-                    dateFormat="MM/DD/YYYY"
-                    iconPosition="left"
-                    onChange={handleChange}
-                    autoComplete="off"
-                  />
-                )}
-              />
-            </div>
-            {errors[`flight_date`] && (
-              <Label pointing prompt>
-                {errors[`flight_date`].message}
-              </Label>
-            )}
-          </Form.Field> */}
-          {/* <Controller
-            name={"state_id"}
-            control={control}
-            rules={{ required: "Required" }}
-            render={({ field: { name, value } }) => (
-              <Form.Select
-                fluid
-                search
-                selection
-                name={name}
-                required={true}
-                data-value={value}
-                label={"State"}
-                value={value || ""}
-                onChange={handleChange}
-                autoComplete="off"
-                options={states.map((record) => {
-                  return {
-                    key: record.id,
-                    text: record.name,
-                    value: record.id,
-                  };
-                })}
-                error={
-                  errors["state_id"]
-                    ? {
-                        content: errors["state_id"].message,
-                        pointing: "above",
-                      }
-                    : false
-                }
-              />
-            )}
-          /> */}
         </Form.Group>
+
+        <Divider />
+
+        <div className="ui grid">
+          <div className="eight wide column">
+            <Segment>
+              <h4>Loadout One (Underscore)</h4>
+              <Divider />
+              <Controller
+                name={"loadout_underscore_plane"}
+                control={control}
+                rules={{ required: "Required" }}
+                defaultValue={loadoutOnePlane}
+                render={({ field: { name, value, defaultValue } }) => (
+                  <Form.Select
+                    fluid
+                    search
+                    selection
+                    name={name}
+                    data-value={value}
+                    label={"Plane"}
+                    required={true}
+                    value={loadoutOnePlane || ""}
+                    defaultValue={defaultValue}
+                    onChange={handleChange}
+                    autoComplete="off"
+                    options={planes.map((record) => {
+                      return {
+                        key: record.id,
+                        text: record.label,
+                        value: record.id,
+                      };
+                    })}
+                    error={
+                      errors["loadout_underscore_plane"]
+                        ? {
+                            content: errors["loadout_underscore_plane"].message,
+                            pointing: "above",
+                          }
+                        : false
+                    }
+                  />
+                )}
+              />
+              <Controller
+                name={"loadout_underscore_camera"}
+                control={control}
+                rules={{ required: "Required" }}
+                defaultValue={loadoutOneCamera}
+                render={({ field: { name, value, defaultValue } }) => (
+                  <Form.Select
+                    fluid
+                    search
+                    selection
+                    name={name}
+                    data-value={value}
+                    label={"Camera"}
+                    required={true}
+                    value={loadoutOneCamera || ""}
+                    defaultValue={defaultValue}
+                    onChange={handleChange}
+                    autoComplete="off"
+                    options={cameras.map((record) => {
+                      return {
+                        key: record.id,
+                        text: record.label,
+                        value: record.id,
+                      };
+                    })}
+                    error={
+                      errors["loadoutOneCamera"]
+                        ? {
+                            content: errors["loadoutOneCamera"].message,
+                            pointing: "above",
+                          }
+                        : false
+                    }
+                  />
+                )}
+              />
+            </Segment>
+          </div>
+          <div className="eight wide column">
+            <Segment>
+              <h4>Loadout Two (No Underscore)</h4>
+              <Divider />
+              <Controller
+                name={"loadout_other_plane"}
+                control={control}
+                rules={{ required: "Required" }}
+                defaultValue={loadoutTwoPlane}
+                render={({ field: { name, value, defaultValue } }) => (
+                  <Form.Select
+                    fluid
+                    search
+                    selection
+                    name={name}
+                    data-value={value}
+                    label={"Plane"}
+                    required={true}
+                    value={loadoutTwoPlane || ""}
+                    defaultValue={defaultValue}
+                    onChange={handleChange}
+                    autoComplete="off"
+                    options={planes.map((record) => {
+                      return {
+                        key: record.id,
+                        text: record.label,
+                        value: record.id,
+                      };
+                    })}
+                    error={
+                      errors["loadout_other_plane"]
+                        ? {
+                            content: errors["loadout_other_plane"].message,
+                            pointing: "above",
+                          }
+                        : false
+                    }
+                  />
+                )}
+              />
+              <Controller
+                name={"loadout_other_camera"}
+                control={control}
+                rules={{ required: "Required" }}
+                defaultValue={loadoutTwoCamera}
+                render={({ field: { name, value, defaultValue } }) => (
+                  <Form.Select
+                    fluid
+                    search
+                    selection
+                    name={name}
+                    data-value={value}
+                    label={"Camera"}
+                    required={true}
+                    value={loadoutTwoCamera || ""}
+                    defaultValue={defaultValue}
+                    onChange={handleChange}
+                    autoComplete="off"
+                    options={cameras.map((record) => {
+                      return {
+                        key: record.id,
+                        text: record.label,
+                        value: record.id,
+                      };
+                    })}
+                    error={
+                      errors["loadout_other_camera"]
+                        ? {
+                            content: errors["loadout_other_camera"].message,
+                            pointing: "above",
+                          }
+                        : false
+                    }
+                  />
+                )}
+              />
+            </Segment>
+          </div>
+        </div>
+
+        <Divider />
 
         <Form.Field
           required

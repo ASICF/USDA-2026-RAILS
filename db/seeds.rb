@@ -52,6 +52,24 @@ Upload.find(107).photo_indices.update_all({
     plane_name: plane.name
 })
 
+camera = Camera.find(24)
+plane = Plane.find(4)
+Loadout.create(
+    id: 1,
+    name: "Underscore",
+    plane: plane,
+    camera: camera
+)
+
+camera = Camera.find(4)
+plane = Plane.find(1)
+Loadout.create(
+    id: 2,
+    name: "No Underscore",
+    plane: plane,
+    camera: camera
+)
+
 return
 
 # ContractRate.all.update(start_date: "2025-03-01", end_date: "2026-03-09")

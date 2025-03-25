@@ -1,7 +1,9 @@
 class PhotoIndexController < ApplicationController
   def index
+    @loadouts = Loadout.all
     @companies = Company.all.select(:id, :name, :alias).order(:name)
-    @cameras = [{id: "auto", label: "ASI Auto Detect", company_id: 1}] + Camera.all.order(:name).map { |c| {id: c.id, label: "#{c.company.alias} | #{c.name} | #{c.serial_number}", company_id: c.company_id} }
+    @cameras = Camera.all.order(:name).map { |c| {id: c.id, label: "#{c.company.alias} | #{c.name} | #{c.serial_number}", company_id: c.company_id} }
+    @planes = Plane.all.order(:name).map { |c| {id: c.id, label: "#{c.company.alias} | #{c.name}", company_id: c.company_id, naip: c.naip, sl: c.sl} }
     @projects = ["NRI/SL"]
   end
 

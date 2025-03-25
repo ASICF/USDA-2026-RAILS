@@ -628,17 +628,17 @@ class FinalDelivery < ApplicationRecord
             )
         else
             # pass to the final delivery validation
-            FinalDelivery.validate_deliverable validation_path, psn, current_user
+            FinalDelivery.validate_deliverable validation_path, psn, project, current_user
 
             # Check for splits
-            FinalDelivery.check_for_splits params[:input_directory], psn, current_user
+            FinalDelivery.check_for_splits params[:input_directory], psn, project, current_user
         end
 
         output
 
     end
 
-    def self.validate_deliverable input_directory, packing_slip, current_user
+    def self.validate_deliverable input_directory, packing_slip, project, current_user
 
         # Verify the path
         # iterate all xml files
@@ -649,7 +649,7 @@ class FinalDelivery < ApplicationRecord
 
         # get the path from the input directory
         path = Task.build input_directory
-        project = packing_slip.project
+        # project = packing_slip.project
         
         # if no path is built then abort the process and send email
         if !path
@@ -940,7 +940,7 @@ class FinalDelivery < ApplicationRecord
 
     end
 
-    def self.check_for_splits tile_dump_path, packing_slip, current_user
+    def self.check_for_splits tile_dump_path, packing_slip, project, current_user
 
         # Takes the path and the packing slip
         # Checks for a "Big_Tiles" folder
@@ -953,7 +953,8 @@ class FinalDelivery < ApplicationRecord
 
         # get the path from the input directory
         path = Task.build tile_dump_path
-        project = packing_slip.project
+        # project = packing_slip.project
+        packing_slip_name = packing_slip ? packing_slip.name : "PPS"
         
         # if no path is built then abort the process and send email
         if !path
@@ -1065,23 +1066,23 @@ class FinalDelivery < ApplicationRecord
 
         # No splits and not validation errors
         if need_to_be_split.size == 0 && validation_errors.size == 0
-            message = "No Splits or Validation Errors found in #{tile_dump_path} for #{packing_slip.name}"
+            message = "No Splits or Validation Errors found in #{tile_dump_path} for #{packing_slip_name}"
 
         # Has splits to be made and no validation errors
         elsif need_to_be_split.size > 0 && validation_errors.size == 0
-            message = "#{need_to_be_split.size} Splits Found and no Validation Errors found in #{tile_dump_path} for #{packing_slip.name}"
+            message = "#{need_to_be_split.size} Splits Found and no Validation Errors found in #{tile_dump_path} for #{packing_slip_name}"
             message += "<hr/>"
             message += needs_to_be_split_html
 
         # Has no splits to be made and has validation errors
         elsif need_to_be_split.size == 0 && validation_errors.size > 0
-            message = "No Splits Found but #{validation_errors.size} Validation Errors found in #{tile_dump_path} for #{packing_slip.name}"
+            message = "No Splits Found but #{validation_errors.size} Validation Errors found in #{tile_dump_path} for #{packing_slip_name}"
             message += "<hr/>"
             message += validation_error_html
 
         # Has splits to be made and has validation errors
         elsif need_to_be_split.size > 0 && validation_errors.size > 0
-            message = "#{need_to_be_split.size} Splits Found and #{validation_errors.size} Validation Errors found in #{tile_dump_path} for #{packing_slip.name}"
+            message = "#{need_to_be_split.size} Splits Found and #{validation_errors.size} Validation Errors found in #{tile_dump_path} for #{packing_slip_name}"
             message += "<hr/>"
             message += needs_to_be_split_html
             message += "<br/>"
@@ -1109,7 +1110,7 @@ class FinalDelivery < ApplicationRecord
         current_user = User.admins.first
 
         # Pass to validator
-        FinalDelivery.validate_deliverable input_directory, packing_slip, current_user
+        FinalDelivery.validate_deliverable input_directory, packing_slip, project, current_user
 
     end
 
@@ -1347,7 +1348,7 @@ class FinalDelivery < ApplicationRecord
         end
 
         # pass to the final delivery validation
-        # FinalDelivery.validate_deliverable final_delivery_folder, packing_slip, current_user
+        # FinalDelivery.validate_deliverable final_delivery_folder, packing_slip, project, current_user
 
         p "done"
 

@@ -1,56 +1,7 @@
+ActiveRecord::Base.connection.execute("TRUNCATE loadouts RESTART IDENTITY")
+
 # Delete all free shots that got through
 PhotoIndex.where(strip_frame: "FREE_SHOT").destroy_all
-
-PhotoIndex.all.each do |pi|
-    fp = Footprint.find_by(id: pi.footprint_id)
-    if fp
-        fp.update(photo_index: pi)
-        pi.update(
-            plane: fp.plane,
-            plane_name: fp.plane_name,
-            camera: fp.camera,
-            camera_name: "#{fp.camera.model} | #{fp.camera.name}"
-        )
-    else
-        rfp = Footprint.find_by(id: pi.footprint_id)
-        if rfp
-            rfp.update(photo_index: pi)
-            pi.update(
-                plane: rfp.plane,
-                plane_name: rfp.plane_name,
-                camera: rfp.camera,
-                camera_name: "#{rfp.camera.model} | #{rfp.camera.name}"
-            )
-        end
-    end
-end
-
-camera = Camera.find(4)
-plane = Plane.find(1)
-Upload.find(10).photo_indices.update_all({
-    camera_id: camera.id, 
-    camera_name: camera.name, 
-    plane_id: plane.id,
-    plane_name: plane.name
-})
-Upload.find(50).photo_indices.update_all({
-    camera_id: camera.id, 
-    camera_name: camera.name, 
-    plane_id: plane.id,
-    plane_name: plane.name
-})
-Upload.find(46).photo_indices.update_all({
-    camera_id: camera.id, 
-    camera_name: camera.name, 
-    plane_id: plane.id,
-    plane_name: plane.name
-})
-Upload.find(107).photo_indices.update_all({
-    camera_id: camera.id, 
-    camera_name: camera.name, 
-    plane_id: plane.id,
-    plane_name: plane.name
-})
 
 camera = Camera.find(24)
 plane = Plane.find(4)
@@ -69,6 +20,73 @@ Loadout.create(
     plane: plane,
     camera: camera
 )
+
+PhotoIndex.all.each do |pi|
+    p pi.id
+
+    loadout = Loadout.find_by(camera_id: pi.camera_id)
+
+    pi.update(
+        camera_id: loadout.camera_id,
+        plane_id: loadout.plane_id
+    )
+
+    fp = Footprint.find_by(id: pi.footprint_id)
+    if fp
+        fp.update(photo_index: pi)
+    else
+        rfp = RejectedFootprint.find_by(original_id: pi.footprint_id)
+        if rfp
+            rfp.update(photo_index: pi)
+        end
+    end
+end
+
+# dups = []
+# RejectedFootprint.where(photo_index_id: nil).each do |rfp|
+
+#     fp = Footprint.find_by(strip_frame: rfp.strip_frame)
+
+#     if fp
+#         # dups << {
+#         #     strip_frame: rfp.strip_frame,
+#         #     rfp_flight_date: rfp.flight_date.strftime("%F"),
+#         #     fp_flight_date: fp.flight_date.strftime("%F")
+#         # }
+
+#         dups << "strip_frame: #{rfp.strip_frame}, rfp_flight_date: #{rfp.flight_date.strftime("%F")}, fp_flight_date: #{fp.flight_date.strftime("%F")}"
+#     end
+
+# end
+# pp dups
+# p dups.count
+
+# camera = Camera.find(4)
+# plane = Plane.find(1)
+# Upload.find(10).photo_indices.update_all({
+#     camera_id: camera.id, 
+#     camera_name: camera.name, 
+#     plane_id: plane.id,
+#     plane_name: plane.name
+# })
+# Upload.find(50).photo_indices.update_all({
+#     camera_id: camera.id, 
+#     camera_name: camera.name, 
+#     plane_id: plane.id,
+#     plane_name: plane.name
+# })
+# Upload.find(46).photo_indices.update_all({
+#     camera_id: camera.id, 
+#     camera_name: camera.name, 
+#     plane_id: plane.id,
+#     plane_name: plane.name
+# })
+# Upload.find(107).photo_indices.update_all({
+#     camera_id: camera.id, 
+#     camera_name: camera.name, 
+#     plane_id: plane.id,
+#     plane_name: plane.name
+# })
 
 return
 

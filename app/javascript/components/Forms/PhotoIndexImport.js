@@ -101,6 +101,19 @@ export default function PhotoIndexImport({
     setLoading(true);
     const form = new FormData();
 
+    if (loadoutOnePlane === loadoutTwoPlane) {
+      alert("Loadout planes cannot be the same")
+    }
+
+    if (loadoutOneCamera === loadoutTwoCamera) {
+      alert("Loadout cameras cannot be the same")
+    }
+
+    form.append("photo_index[loadout_underscore_camera]", loadoutOneCamera);
+    form.append("photo_index[loadout_underscore_plane]", loadoutOnePlane);
+    form.append("photo_index[loadout_other_camera]", loadoutTwoCamera);
+    form.append("photo_index[loadout_other_plane]", loadoutTwoPlane);
+
     form.append("authenticity_token", token);
     form.append("photo_index[project]", data.project);
     form.append("photo_index[flown_by_id]", data.flown_by_id);
@@ -333,77 +346,46 @@ export default function PhotoIndexImport({
             <Segment>
               <h4>Loadout One (Underscore)</h4>
               <Divider />
-              <Controller
+
+              <Form.Select
+                fluid
+                search
+                selection
                 name={"loadout_underscore_plane"}
-                control={control}
-                rules={{ required: "Required" }}
+                data-value={loadoutOnePlane}
+                label={"Plane"}
+                required={true}
+                value={loadoutOnePlane || ""}
                 defaultValue={loadoutOnePlane}
-                render={({ field: { name, value, defaultValue } }) => (
-                  <Form.Select
-                    fluid
-                    search
-                    selection
-                    name={name}
-                    data-value={value}
-                    label={"Plane"}
-                    required={true}
-                    value={loadoutOnePlane || ""}
-                    defaultValue={defaultValue}
-                    onChange={handleChange}
-                    autoComplete="off"
-                    options={planes.map((record) => {
-                      return {
-                        key: record.id,
-                        text: record.label,
-                        value: record.id,
-                      };
-                    })}
-                    error={
-                      errors["loadout_underscore_plane"]
-                        ? {
-                            content: errors["loadout_underscore_plane"].message,
-                            pointing: "above",
-                          }
-                        : false
-                    }
-                  />
-                )}
+                onChange={(e, i) => setLoadoutOnePlane(i.value)}
+                autoComplete="off"
+                options={planes.map((record) => {
+                  return {
+                    key: record.id,
+                    text: record.label,
+                    value: record.id,
+                  };
+                })}
               />
-              <Controller
+              <Form.Select
+                fluid
+                search
+                selection
                 name={"loadout_underscore_camera"}
-                control={control}
-                rules={{ required: "Required" }}
+                data-value={loadoutOneCamera}
+                label={"Camera"}
+                required={true}
+                value={loadoutOneCamera || ""}
                 defaultValue={loadoutOneCamera}
-                render={({ field: { name, value, defaultValue } }) => (
-                  <Form.Select
-                    fluid
-                    search
-                    selection
-                    name={name}
-                    data-value={value}
-                    label={"Camera"}
-                    required={true}
-                    value={loadoutOneCamera || ""}
-                    defaultValue={defaultValue}
-                    onChange={handleChange}
-                    autoComplete="off"
-                    options={cameras.map((record) => {
-                      return {
-                        key: record.id,
-                        text: record.label,
-                        value: record.id,
-                      };
-                    })}
-                    error={
-                      errors["loadoutOneCamera"]
-                        ? {
-                            content: errors["loadoutOneCamera"].message,
-                            pointing: "above",
-                          }
-                        : false
-                    }
-                  />
-                )}
+                onChange={(e, i) => setLoadoutOneCamera(i.value)}
+                autoComplete="off"
+                options={cameras.map((record) => {
+                  return {
+                    key: record.id,
+                    text: record.label,
+                    value: record.id,
+                  };
+                })}
               />
             </Segment>
           </div>
@@ -411,77 +393,48 @@ export default function PhotoIndexImport({
             <Segment>
               <h4>Loadout Two (No Underscore)</h4>
               <Divider />
-              <Controller
+              <Form.Select
+                fluid
+                search
+                selection
                 name={"loadout_other_plane"}
-                control={control}
-                rules={{ required: "Required" }}
+                data-value={loadoutTwoPlane}
+                label={"Plane"}
+                required={true}
+                value={loadoutTwoPlane || ""}
                 defaultValue={loadoutTwoPlane}
-                render={({ field: { name, value, defaultValue } }) => (
-                  <Form.Select
-                    fluid
-                    search
-                    selection
-                    name={name}
-                    data-value={value}
-                    label={"Plane"}
-                    required={true}
-                    value={loadoutTwoPlane || ""}
-                    defaultValue={defaultValue}
-                    onChange={handleChange}
-                    autoComplete="off"
-                    options={planes.map((record) => {
-                      return {
-                        key: record.id,
-                        text: record.label,
-                        value: record.id,
-                      };
-                    })}
-                    error={
-                      errors["loadout_other_plane"]
-                        ? {
-                            content: errors["loadout_other_plane"].message,
-                            pointing: "above",
-                          }
-                        : false
-                    }
-                  />
-                )}
+                // onChange={handleChange}
+                onChange={(e, i) => setLoadoutTwoPlane(i.value)}
+                autoComplete="off"
+                options={planes.map((record) => {
+                  return {
+                    key: record.id,
+                    text: record.label,
+                    value: record.id,
+                  };
+                })}
               />
-              <Controller
+
+              <Form.Select
+                fluid
+                search
+                selection
                 name={"loadout_other_camera"}
-                control={control}
-                rules={{ required: "Required" }}
+                data-value={loadoutTwoCamera}
+                label={"Camera"}
+                required={true}
+                value={loadoutTwoCamera || ""}
                 defaultValue={loadoutTwoCamera}
-                render={({ field: { name, value, defaultValue } }) => (
-                  <Form.Select
-                    fluid
-                    search
-                    selection
-                    name={name}
-                    data-value={value}
-                    label={"Camera"}
-                    required={true}
-                    value={loadoutTwoCamera || ""}
-                    defaultValue={defaultValue}
-                    onChange={handleChange}
-                    autoComplete="off"
-                    options={cameras.map((record) => {
-                      return {
-                        key: record.id,
-                        text: record.label,
-                        value: record.id,
-                      };
-                    })}
-                    error={
-                      errors["loadout_other_camera"]
-                        ? {
-                            content: errors["loadout_other_camera"].message,
-                            pointing: "above",
-                          }
-                        : false
-                    }
-                  />
-                )}
+                // onChange={handleChange}
+                onChange={(e, i) => setLoadoutTwoCamera(i.value)}
+                autoComplete="off"
+                options={cameras.map((record) => {
+                  return {
+                    key: record.id,
+                    text: record.label,
+                    value: record.id,
+                  };
+                })}
               />
             </Segment>
           </div>

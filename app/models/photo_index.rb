@@ -77,15 +77,28 @@ class PhotoIndex < ApplicationRecord
                     raise Exception, "Contractor does not exist in application"
                 end
 
-                # Check the Camera
-                if params[:camera_id] == "auto"
-                    camera = "auto"
-                else
-                    camera = Camera.find_by(id: params[:camera_id])
-                    if camera.nil?
-                        raise Exception, "Camera extract from Filename does not match the Camera supplied by the form"
-                    end
-                end
+                # # Check the Camera
+                # if params[:camera_id] == "auto"
+                #     camera = "auto"
+                # else
+                #     camera = Camera.find_by(id: params[:camera_id])
+                #     if camera.nil?
+                #         raise Exception, "Camera extract from Filename does not match the Camera supplied by the form"
+                #     end
+                # end
+
+                loadout_underscore_camera = Camera.find_by(id: params[:loadout_underscore_camera])
+                loadout_underscore_plane = Plane.find_by(id: params[:loadout_underscore_plane])
+                loadout_other_camera = Camera.find_by(id: params[:loadout_other_camera])
+                loadout_other_plane = Plane.find_by(id: params[:loadout_other_plane])
+
+                raise Exception, "Loadout One Camera does not exist" if loadout_underscore_camera.nil?
+                raise Exception, "Loadout One Plane does not exist" if loadout_underscore_plane.nil?
+                raise Exception, "Loadout Two Camera does not exist" if loadout_other_camera.nil?
+                raise Exception, "Loadout Two Plane does not exist" if loadout_other_plane.nil?
+
+                raise Exception, "Loadout Cameras cannot be the same" if loadout_underscore_camera.id === loadout_other_camera.id
+                raise Exception, "Loadout Planes cannot be the same" if loadout_underscore_plane.id === loadout_other_plane.id
 
                 # Copy the file to the server
                 # Get the folder name by converting the current time to seconds
@@ -171,16 +184,16 @@ class PhotoIndex < ApplicationRecord
                 # get the camera parameter
                 # => if it's "auto" then it should only be the ASI cameras
 
-                if params[:camera_id] == "auto"
-                    camera = "auto"
-                else
-                    # Check the Camera
-                    camera = Camera.find_by(id: params[:camera_id])
-                    if camera.nil?
-                        raise Exception, "Camera extract from Filename does not match the Camera supplied by the form"
-                    end
-                    auto_detect_camera = false
-                end
+                # if params[:camera_id] == "auto"
+                #     camera = "auto"
+                # else
+                #     # Check the Camera
+                #     camera = Camera.find_by(id: params[:camera_id])
+                #     if camera.nil?
+                #         raise Exception, "Camera extract from Filename does not match the Camera supplied by the form"
+                #     end
+                #     auto_detect_camera = false
+                # end
 
                 company = Company.find_by(id: params[:flown_by_id].to_i)
                 if company.nil? 
@@ -214,6 +227,21 @@ class PhotoIndex < ApplicationRecord
                 footprints_to_be_rejected = []
 
                 skipped = 0
+
+                loadout_underscore_camera = Camera.find_by(id: params[:loadout_underscore_camera])
+                loadout_underscore_plane = Plane.find_by(id: params[:loadout_underscore_plane])
+                loadout_other_camera = Camera.find_by(id: params[:loadout_other_camera])
+                loadout_other_plane = Plane.find_by(id: params[:loadout_other_plane])
+
+                # Update the loadout
+                Loadout.find_by(name: "Underscore").update(
+                    camera: loadout_underscore_camera,
+                    plane: loadout_underscore_plane
+                )
+                Loadout.find_by(name: "No Underscore").update(
+                    camera: loadout_other_camera,
+                    plane: loadout_other_plane
+                )
 
                 File.open(file, "r") do |f|
 
@@ -300,11 +328,15 @@ class PhotoIndex < ApplicationRecord
 
                         if auto_detect_camera
                             if arr[7].include? "_"
-                                camera = Camera.find(24)
-                                plane = Plane.find(4)
+                                # camera = Camera.find(24)
+                                # plane = Plane.find(4)
+                                camera = loadout_underscore_camera
+                                plane = loadout_underscore_plane
                             else
-                                camera = Camera.find(4)
-                                plane = Plane.find(1)
+                                # camera = Camera.find(4)
+                                # plane = Plane.find(1)
+                                camera = loadout_other_camera
+                                plane = loadout_other_plane
                             end
                         end
 

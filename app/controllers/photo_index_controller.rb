@@ -9,7 +9,9 @@ class PhotoIndexController < ApplicationController
 
   def upload
     p params
+    p "==================="
     p strong_params
+    p "==================="
 
     # if strong_params[:project].blank? || strong_params[:file].blank? || strong_params[:flown_by_id].blank? || strong_params[:camera_id].blank? || strong_params[:flight_date].blank?
 
@@ -29,11 +31,11 @@ class PhotoIndexController < ApplicationController
             state: false,
             message: "No Company specified"
         }
-    elsif strong_params[:camera_id].blank?
-        render json: {
-            state: false,
-            message: "No Company specified"
-        }
+    # elsif strong_params[:camera_id].blank?
+    #     render json: {
+    #         state: false,
+    #         message: "No Company specified"
+    #     }
     # elsif strong_params[:flight_date].blank?
     #     render json: {
     #         state: false,
@@ -80,7 +82,7 @@ class PhotoIndexController < ApplicationController
   end
 
   def strong_params
-    params.require(:photo_index).permit(:project, :flown_by_id, :camera_id, :file)
+    params.require(:photo_index).permit(:project, :flown_by_id, :camera_id, :loadout_underscore_camera, :loadout_underscore_plane, :loadout_other_camera, :loadout_other_plane, :file)
   end
 
 end

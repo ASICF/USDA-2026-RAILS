@@ -7,14 +7,15 @@ class PhotoIndex < ApplicationRecord
     belongs_to :camera
     belongs_to :plane
     has_one :footprint
-    belongs_to :rejected_footprint, optional: true
+    has_one :rejected_footprint
+    # belongs_to :rejected_footprint, optional: true
     belongs_to :flown_by, class_name: 'Company'
     has_many :historic_assocs, as: :historicable, dependent: :destroy
     has_many :histories, through: :historic_assocs
 
     # Validations
-    validates :strip, :frame, :strip_frame, :flown_by_name, :camera_name, :flight_date, :flight_date_time, :gpstime, :sun_angle, :latitude, :longitude, :geom, presence: true
-    validates :footprint_id, :rejected_footprint_id, uniqueness: true, allow_nil: true
+    validates :strip, :frame, :strip_frame, :flown_by_name, :camera_name, :flight_date, :flight_date_time, :gpstime, :sun_angle, :latitude, :longitude, :camera_id, :plane_id, :geom, presence: true
+    # validates :footprint_id, :rejected_footprint_id, uniqueness: true, allow_nil: true
 
     # Scopes
     scope :sl,                      -> { where(sl: true) }
@@ -435,7 +436,11 @@ class PhotoIndex < ApplicationRecord
 
                 end
 
-                message = "Successfully imported #{count} Photo Indices from #{params[:file].original_filename}. #{history.photo_indices.approved.count} contained valid sun angles."
+                if count > 0
+                    message = "Successfully imported #{count} Photo Indices from #{params[:file].original_filename}. #{history.photo_indices.approved.count} contained valid sun angles."
+                else
+                    raise Exception, "No features imported from from #{params[:file].original_filename}. #{history.photo_indices.approved.count} contained valid sun angles. #{skipped} Photo Indices were skipped because of duplicates or Free Shots."
+                end
 
                 if skipped > 0
                     message += " #{skipped} Photo Indices were skipped because of duplicates or Free Shots."

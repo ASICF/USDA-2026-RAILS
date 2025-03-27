@@ -146,52 +146,11 @@ class Footprint < ApplicationRecord
                     # p "Camera: #{arr[3]}"
                     # p "-----------------"
 
-                    # Check the Flight Dates
-                    # file_date = Date.parse(arr[0])
-                    # if file_date != Date.parse(params[:flight_date])
-                    #     raise Exception, "Filename Flight Date does not match the Form supplied Flight Date"
-                    # end
-                    # file_date = Date.parse(params[:flight_date])
-
                     # Check the Flown By Company
-                    company = Company.find(params[:flown_by_id])
-                    # company_filename = Company.find_by(alias: arr[1])
-                    # if company.id != company_filename.id
-                    #     raise Exception, "Company extract from Filename does not match the Company supplied by the form"
-                    # end
-
-                    # Check the plane
-                    # p "Plane ID: #{params[:plane_id]}"
-                    # plane = Plane.find_by(id: params[:plane_id])
-                    # # plane_filename = Plane.find_by(name: arr[2])
-                    # if plane.nil?
-                    #     raise Exception, "Plane extract from Filename does not match the Plane supplied by the form"
-                    # end
-
-                    # Check if the plane is valid for the project
-                    # if params[:project] === "NAIP" && !plane.naip
-                    #     raise Exception, "Plane is not approved for NAIP Project"
-                    # end
-                    # if params[:project] === "SL" && !plane.sl
-                    #     raise Exception, "Plane is not approved for SL Project"
-                    # end
-
-                    # Check the Camera
-                    # p "Camera ID: #{params[:camera_id]}"
-                    # camera = Camera.find_by(id: params[:camera_id])
-                    # if camera.nil?
-                    #     raise Exception, "Camera extract from Filename does not match the Camera supplied by the form"
-                    # end
-
-                    # # Check if the camera is valid for the project
-                    # # if (["All", "NAIP"].include? params[:project]) && !camera.naip
-                    # if params[:project] === "NAIP" && !camera.naip
-                    #     raise Exception, "Camera is not approved for NAIP Project"
-                    # end
-                    # # if (["All", "SL"].include? params[:project]) && !camera.sl
-                    # if params[:project] === "SL" && !camera.sl
-                    #     raise Exception, "Camera is not approved for SL Project"
-                    # end
+                    company = Company.find_by(id: params[:flown_by_id])
+                    if company.nil?
+                        raise Exception, "Company extract from Filename does not match the Company supplied by the form"
+                    end
 
                     # Call ogr2ogr to reproject the shapefile to 4326
                     # => Footprints should be in 4326, might be overkill but don't want to have to add later
@@ -291,6 +250,7 @@ class Footprint < ApplicationRecord
 
         count = 0
         dup_count = 0
+        reject_dup_count = 0
         reject_count = 0
 
         # Query out the Delayed Job
@@ -432,6 +392,13 @@ class Footprint < ApplicationRecord
                             # raise Exception, "Strip Frame (Original: #{original_strip_frame}, Modified: #{modified_strip_frame}) already exists!"
                         end
 
+                        if RejectedFootprint.where(strip_frame: modified_strip_frame).count > 0
+                            p "Duplicate Strip Frame: #{modified_strip_frame}. Skipping."
+                            # sleep(1.seconds)
+                            reject_dup_count += 1
+                            next
+                        end
+
                         footprint = Footprint.new(
                             project: project,
                             original_strip_frame: original_strip_frame,
@@ -464,23 +431,6 @@ class Footprint < ApplicationRecord
 
                         footprint.utm_id = result[0]["id"]
                         footprint.utm_zone = "#{result[0]["zone"]}N"
-
-                        # Get the footprint County
-                        # Skip if Doqq
-
-                        # get the states by project
-                        # if project == "SL"
-                        #     abvs = Rails.application.secrets.active_sl_states
-                        # elsif project == "NRI"
-                        #     abvs = Rails.application.secrets.active_nri_states
-                        # elsif project == "NAIP"
-                        #     abvs = Rails.application.secrets.active_naip_states
-                        # end
-
-                        # Query out the county the most majority is in and also include the state info
-                        # sql = "select c.id as county_id, c.name as county_name, s.id as state_id, s.abv as state_abv, s.name as state_name from counties c INNER JOIN states s ON c.state_id = s.id
-                        #     where st_intersects(ST_GeomFromText('#{footprint.geom.to_s}'), c.geom) and s.abv in ('#{abvs.join("', '")}') 
-                        #     order by (st_area(st_intersection(ST_GeomFromText('#{footprint.geom.to_s}'), c.geom))/st_area(ST_GeomFromText('#{footprint.geom.to_s}'))) DESC"
 
                         sql = "select c.id as county_id, c.name as county_name, s.id as state_id, s.abv as state_abv, s.name as state_name from counties c INNER JOIN states s ON c.state_id = s.id
                             where st_intersects(ST_GeomFromText('#{footprint.geom.to_s}'), c.geom) 
@@ -566,6 +516,9 @@ class Footprint < ApplicationRecord
                     message = "Uploaded #{upload.footprints.count} Footprints in #{upload.footprints.order(:state_name).pluck(:state_name).uniq.to_sentence}"
                     if dup_count > 0
                         message += " and skipped #{dup_count} duplicate Footprints with existing strip_frames"
+                    end
+                    if reject_dup_count > 0
+                        message += " and skipped #{reject_dup_count} duplicate Rejected Footprints with existing strip_frames"
                     end
                     if reject_count > 0
                         message += " and rejected #{reject_count} Footprints due to Photo Index Sun Angles"

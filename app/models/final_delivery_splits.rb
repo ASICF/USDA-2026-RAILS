@@ -403,6 +403,9 @@ class FinalDeliverySplits
                 # start the migration process
                 FinalDeliverySplits.migration final_delivery_folder, project, migration_arr
 
+                # validation
+                FinalDelivery.validate_deliverable input_directory, packing_slip, project, current_user
+
                 p "Back in Processing"
 
                 message = "Moved #{migration_arr.count} to Final Delivery folder at #{input_directory}"
@@ -417,7 +420,7 @@ class FinalDeliverySplits
                     message: message
                 )
 
-                # process_success = true
+                process_success = true
 
             rescue Exception => exception
                 Rails.logger.error "Final Delivery Error: #{exception.message}"

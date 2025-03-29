@@ -31,10 +31,23 @@ class Task
         elsif path.include? Rails.application.secrets.vol5_required
             split = path.strip.gsub('\\','/').split(Rails.application.secrets.vol5_required)
             path = "#{Rails.application.secrets.vol5_folder}#{split[1]}"
-            File.directory?(path) && split.size > 1 ? path : false 
+             File.directory?(path) && split.size > 1 ? path : false
         else
             false
         end
+    end
+
+    def self.build_windows_path(unix_path)
+        input_path = Pathname.new(unix_path).to_s.gsub('/', '\\')
+
+        p Pathname.new(unix_path).to_s.split("/")
+
+        if input_path.include? "vol1"
+            split = input_path.strip.gsub('/','\\').split("vol1")
+            path = "P:\\Vol_1#{split[1]}"
+            return path
+        end
+
     end
 
     def self.update_flight_times

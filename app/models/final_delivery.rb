@@ -1105,15 +1105,15 @@ class FinalDelivery < ApplicationRecord
     def self.pass_to_validation
 
         # input_directory, packing_slip, current_user
-        input_directory = "P:\\Vol_3\\24-6567_USDA_NRI\\03_FrameBase\\HI\\Tiles_Dump\\Final_Delivery_20240923_HI"
+        input_directory = "P:\\Vol_1\\25-6567_USDA_SL\\03_FrameBase\\IL\\Tiles_Dump\\Final_Delivery_20250329_IL"
         # P:\Vol_3\24-6567_USDA_NRI\03_FrameBase\HI\Tiles_Dump\Final_Delivery_20240923_HI
 
-        packing_slip = PackingSlip.find_by(name: "20240923_HI")
+        packing_slip = PackingSlip.find_by(name: "20250329_IL")
 
         current_user = User.admins.first
 
         # Pass to validator
-        FinalDelivery.validate_deliverable input_directory, packing_slip, project, current_user
+        FinalDelivery.validate_deliverable input_directory, packing_slip, "SL", current_user
 
     end
 

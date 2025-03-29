@@ -275,15 +275,15 @@ class PhotoIndex < ApplicationRecord
 
                         record_flight_date = Date.strptime(arr[4], "%m/%d/%Y")
 
-                        p "======"
-                        p "gpstime: #{arr[1]}"
-                        p "strip: #{arr[2]}"
-                        p "frame: #{arr[3]}"
-                        # p "flight_date: #{arr[4]}"
-                        p "flight_date: #{record_flight_date}"
-                        p "latitude: #{arr[6]}"
-                        p "longitude: #{arr[5]}"
-                        p "Camera: #{arr[7]}"
+                        # p "======"
+                        # p "gpstime: #{arr[1]}"
+                        # p "strip: #{arr[2]}"
+                        # p "frame: #{arr[3]}"
+                        # # p "flight_date: #{arr[4]}"
+                        # p "flight_date: #{record_flight_date}"
+                        # p "latitude: #{arr[6]}"
+                        # p "longitude: #{arr[5]}"
+                        # p "Camera: #{arr[7]}"
 
                         # next
 
@@ -341,9 +341,9 @@ class PhotoIndex < ApplicationRecord
                             end
                         end
 
-                        p "-------"
-                        p camera
-                        p "-------"
+                        # p "-------"
+                        # p camera
+                        # p "-------"
 
                         # If Free Shot then check if it's a dup based on the gpstime, lat, and long
 
@@ -462,8 +462,11 @@ class PhotoIndex < ApplicationRecord
                 uploads.each do |key, upload|
                     history.uploads << upload
 
-                    # Build the Export of Photo ID
-                    PhotoIndex.build_export_file upload
+                    if upload.photo_indices.count > 0
+
+                        # Build the Export of Photo ID
+                        PhotoIndex.build_export_file upload
+                    end
                 end
 
                 # Log and send email

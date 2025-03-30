@@ -152,10 +152,16 @@ Rails.application.routes.draw do
   get '/eo_tracker/download/:history_id', to: 'eo_tracker#download', as: :download_eo_tracker_footprints
 
   # => Photo Index Tracker
-  get '/photo_index_tracker', to: 'photo_index_tracker#index', as: :photo_index_tracker
-  post '/query_photo_index_tracker', to: 'photo_index_tracker#query', as: :query_photo_index_tracker
-  post '/photo_index_tracker/generate', to: 'photo_index_tracker#generate_shapefile', as: :photo_index_tracker_generate_shapefile
-  get '/photo_index_tracker/download/:history_id', to: 'photo_index_tracker#download', as: :download_photo_index_tracker_footprints
+  # get '/photo_index_tracker', to: 'photo_index_tracker#index', as: :photo_index_tracker
+  # post '/query_photo_index_tracker', to: 'photo_index_tracker#query', as: :query_photo_index_tracker
+  # post '/photo_index_tracker/generate', to: 'photo_index_tracker#generate_shapefile', as: :photo_index_tracker_generate_shapefile
+  # get '/photo_index_tracker/download/:history_id', to: 'photo_index_tracker#download', as: :download_photo_index_tracker_footprints
+
+  # => Footprint Tracker
+  get '/footprint_tracker', to: 'footprint_tracker#index', as: :footprint_tracker
+  post '/query_footprint_tracker', to: 'footprint_tracker#query', as: :query_footprint_tracker
+  post '/footprint_tracker/generate', to: 'footprint_tracker#generate_shapefile', as: :footprint_trackerr_generate_shapefile
+  # get '/footprint_tracker/download/:history_id', to: 'footprint_tracker#download', as: :download_footprint_tracker_tracker_footprints
 
   # => Total Delivery
   get '/total_delivery', to: 'total_delivery#index', as: :total_delivery

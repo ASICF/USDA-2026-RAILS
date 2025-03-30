@@ -1,46 +1,170 @@
-ActiveRecord::Base.connection.execute("TRUNCATE loadouts RESTART IDENTITY")
-
-# Delete all free shots that got through
-PhotoIndex.where(strip_frame: "FREE_SHOT").destroy_all
-
-camera = Camera.find(24)
-plane = Plane.find(4)
-Loadout.create(
-    id: 1,
-    name: "Underscore",
-    plane: plane,
-    camera: camera
-)
-
-camera = Camera.find(4)
-plane = Plane.find(1)
-Loadout.create(
-    id: 2,
-    name: "No Underscore",
-    plane: plane,
-    camera: camera
-)
+ids = []
+count = 0
 
 PhotoIndex.all.each do |pi|
-    p pi.id
 
-    loadout = Loadout.find_by(camera_id: pi.camera_id)
+    obj = {
+        flown_by_alias: pi.flown_by.alias,
+        plane_name: pi.plane.name,
+    }
 
-    pi.update(
-        camera_id: loadout.camera_id,
-        plane_id: loadout.plane_id
-    )
+    if pi.footprint
+        ids << pi.id
+        obj[:utm_id] = pi.footprint.utm_id
+        obj[:utm_zone] = pi.footprint.utm_zone
+        obj[:county_id] = pi.footprint.county_id
+        obj[:county_name] = pi.footprint.county_name
+        obj[:state_id] = pi.footprint.state_id
+        obj[:state_name] = pi.footprint.state_name
+    end
 
-    fp = Footprint.find_by(id: pi.footprint_id)
+    if pi.rejected_footprint
+        ids << pi.id
+        obj[:utm_id] = pi.rejected_footprint.utm_id
+        obj[:utm_zone] = pi.rejected_footprint.utm_zone
+        obj[:county_id] = pi.rejected_footprint.county_id
+        obj[:county_name] = pi.rejected_footprint.county_name
+        obj[:state_id] = pi.rejected_footprint.state_id
+        obj[:state_name] = pi.rejected_footprint.state_name
+    end
+
+    # if pi.utm.nil? && !obj[:utm_id]
+    #     utm = Utm.exclude_geom.find_by("st_contains(utms.geom::geometry, ST_SetSRID(ST_Point(#{pi.longitude}, #{pi.latitude}),4326))")
+    #     if utm
+    #         obj[:utm_id] = utm.id
+    #         obj[:utm_zone] = "#{utm.zone}N"
+    #     end
+    # end
+
+    # if pi.county.nil? && !obj[:county_id]
+    #     county = County.includes(:state).exclude_geom.find_by("st_contains(counties.geom::geometry, ST_SetSRID(ST_Point(#{pi.longitude}, #{pi.latitude}),4326))")
+    #     if county
+    #         obj[:county_id] = county.id
+    #         obj[:county_name] = county.name
+    #         obj[:state_id] = county.state.id
+    #         obj[:state_name] = county.state.name
+    #     end
+    # end
+
+    # p obj
+
+    pi.update(obj)
+end
+PhotoIndex.where(id: ids).update_all(has_footprint: true)
+
+count = 0
+uploads = []
+flight_dates = []
+
+PhotoIndex.no_footprints.each do |pi|
+
+    fp = Footprint.find_by("photo_index_id is null AND strip_frame = '#{pi.strip_frame}' AND st_intersects(geom, ST_GeomFromText('#{pi.geom.to_s}'))")
     if fp
+        p fp.id
+        
         fp.update(photo_index: pi)
-    else
-        rfp = RejectedFootprint.find_by(original_id: pi.footprint_id)
-        if rfp
-            rfp.update(photo_index: pi)
-        end
+        pi.update(
+            has_footprint: true,
+            county: fp.county,
+            county_name: fp.county_name,
+            state: fp.state,
+            state_name: fp.state_name,
+        )
+
+        count += 1
+        uploads |= [fp.upload_id]
+        flight_dates |= [fp.flight_date]
+    end
+
+    # fp = Footprint.find_by(photo_index_id: nil, strip_frame: pi.strip_frame)
+    rfp = RejectedFootprint.find_by("strip_frame = '#{pi.strip_frame}' AND st_intersects(geom, ST_GeomFromText('#{pi.geom.to_s}'))")
+    if rfp
+        p rfp.id
+        
+        rfp.update(photo_index: pi)
+        pi.update(
+            has_footprint: true,
+            county: rfp.county,
+            county_name: rfp.county_name,
+            state: rfp.state,
+            state_name: rfp.state_name,
+        )
+
+        count += 1
+        uploads |= [rfp.upload_id]
+        flight_dates |= [rfp.flight_date]
     end
 end
+
+p count
+p "Upload ID: #{uploads.sort}"
+p "Flight Dates: #{flight_dates.sort}"
+
+# fp_match = []
+# rfp_match = []
+# PhotoIndex.no_footprints.each do |pi|
+
+#     fp = Footprint.find_by(strip_frame: pi.strip_frame)
+#     rfp = RejectedFootprint.find_by(strip_frame: pi.strip_frame)
+
+#     if fp
+#         match << fp.id
+#     end
+
+#     if rfp
+#         rfp_match << rfp.id
+#     end
+
+# end
+
+# p fp_match
+# p rfp_match
+
+return
+
+# ActiveRecord::Base.connection.execute("TRUNCATE loadouts RESTART IDENTITY")
+
+# # Delete all free shots that got through
+# PhotoIndex.where(strip_frame: "FREE_SHOT").destroy_all
+
+# camera = Camera.find(24)
+# plane = Plane.find(4)
+# Loadout.create(
+#     id: 1,
+#     name: "Underscore",
+#     plane: plane,
+#     camera: camera
+# )
+
+# camera = Camera.find(4)
+# plane = Plane.find(1)
+# Loadout.create(
+#     id: 2,
+#     name: "No Underscore",
+#     plane: plane,
+#     camera: camera
+# )
+
+# PhotoIndex.all.each do |pi|
+#     p pi.id
+
+#     loadout = Loadout.find_by(camera_id: pi.camera_id)
+
+#     pi.update(
+#         camera_id: loadout.camera_id,
+#         plane_id: loadout.plane_id
+#     )
+
+#     fp = Footprint.find_by(id: pi.footprint_id)
+#     if fp
+#         fp.update(photo_index: pi)
+#     else
+#         rfp = RejectedFootprint.find_by(original_id: pi.footprint_id)
+#         if rfp
+#             rfp.update(photo_index: pi)
+#         end
+#     end
+# end
 
 # dups = []
 # RejectedFootprint.where(photo_index_id: nil).each do |rfp|

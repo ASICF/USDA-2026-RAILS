@@ -491,7 +491,13 @@ class Footprint < ApplicationRecord
                                 p "++++++++++"
 
                                 if photo_index
-                                    photo_index.update(footprint: footprint)
+                                    photo_index.update(
+                                        footprint: footprint,
+                                        county: footprint.county,
+                                        county_name: footprint.county_name,
+                                        state: footprint.state,
+                                        state_name: footprint.state_name,
+                                    )
 
                                     if photo_index.sun_angle_error
                                         rejected_footprint = RejectedFootprint.reject footprint, "Photo Index Reject"

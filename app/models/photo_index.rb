@@ -8,6 +8,9 @@ class PhotoIndex < ApplicationRecord
     belongs_to :plane
     has_one :footprint
     has_one :rejected_footprint
+    belongs_to :county, optional: true
+    belongs_to :state, optional: true
+    belongs_to :utm, optional: true
     # belongs_to :rejected_footprint, optional: true
     belongs_to :flown_by, class_name: 'Company'
     has_many :historic_assocs, as: :historicable, dependent: :destroy
@@ -24,10 +27,10 @@ class PhotoIndex < ApplicationRecord
     scope :nri_sl,                  -> { where(sl: true, nri: true) }
     scope :rejected,                -> { where(sun_angle_error: true) }
     scope :approved,                -> { where(sun_angle_error: false) }
-    scope :has_footprints,          -> { where.not(footprint_id: nil) }
-    scope :no_footprints,           -> { where(footprint_id: nil) }
-    scope :has_rejected_footprints, -> { where.not(rejected_footprint_id: nil) }
-    scope :no_rejected_footprints,  -> { where(rejected_footprint_id: nil) }
+    scope :has_footprints,          -> { where(has_footprint: true) }
+    scope :no_footprints,           -> { where(has_footprint: false) }
+    # scope :has_rejected_footprints, -> { where.not(rejected_footprint_id: nil) }
+    # scope :no_rejected_footprints,  -> { where(rejected_footprint_id: nil) }
 
     def self.prepare_import params, user
 
@@ -353,6 +356,9 @@ class PhotoIndex < ApplicationRecord
                             next
                         end
 
+                        utm = Utm.exclude_geom.find_by("st_contains(utms.geom::geometry, ST_SetSRID(ST_Point(#{longitude}, #{latitude}),4326))")
+                        county = County.includes(:state).exclude_geom.find_by("st_contains(counties.geom::geometry, ST_SetSRID(ST_Point(#{longitude}, #{latitude}),4326))")
+
                         # start building the PhotoIndex
                         record = PhotoIndex.new(
                             project: params[:project],
@@ -372,7 +378,13 @@ class PhotoIndex < ApplicationRecord
                             plane: plane,
                             # upload: upload,
                             flown_by: company,
-                            free_shot: free_shot
+                            free_shot: free_shot,
+                            utm: utm,
+                            utm_zone: "#{utm.zone}N",
+                            county: county,
+                            county_name: county ? county.name : nil,
+                            state_name: county ? county.state.name : nil,
+                            state_id: county ? county.state.id : nil
                         )
 
                         upload_key = "#{record_flight_date.to_s}#{record.camera_id}"

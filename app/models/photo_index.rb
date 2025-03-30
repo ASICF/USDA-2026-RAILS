@@ -365,7 +365,8 @@ class PhotoIndex < ApplicationRecord
                             strip: strip,
                             frame: frame,
                             strip_frame: strip_frame,
-                            flown_by_name: company.alias,
+                            flown_by_name: company.name,
+                            flown_by_alias: company.alias,
                             camera_name: camera.name,
                             plane_name: plane.name,
                             flight_date: record_flight_date,
@@ -399,7 +400,7 @@ class PhotoIndex < ApplicationRecord
                         end
                         record.upload = uploads[upload_key]
 
-                        pp record
+                        # pp record
 
                         # p record.flight_date
 

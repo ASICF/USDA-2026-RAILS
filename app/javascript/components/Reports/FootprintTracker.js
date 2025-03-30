@@ -166,7 +166,7 @@ export default function FootprintTracker({ uploads, token }) {
                   })
                 }
               >
-                Missing PIs
+                Missing
               </Table.HeaderCell>
               <Table.HeaderCell
                 sorted={column === "pis_with_footprints" ? direction : null}
@@ -177,7 +177,7 @@ export default function FootprintTracker({ uploads, token }) {
                   })
                 }
               >
-                Have PIs
+                Match
               </Table.HeaderCell>
               <Table.HeaderCell
                 sorted={column === "total_photo_indices" ? direction : null}

@@ -5,9 +5,6 @@ class FootprintTrackerController < ApplicationController
 
     Upload.includes(:photo_indices).where(upload_type: "PhotoIndex", photo_indices: {has_footprint: false}).order(id: :ASC).each do |upload|
 
-      p upload.id
-      p upload.photo_indices.first.state_name
-
       first_photo_index = upload.photo_indices.first
 
       @uploads << {

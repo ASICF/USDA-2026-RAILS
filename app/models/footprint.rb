@@ -462,6 +462,7 @@ class Footprint < ApplicationRecord
                             footprint.flight_date = photo_index.flight_date
                             footprint.camera = photo_index.camera
                             footprint.plane = photo_index.plane
+                            footprint.has_pi = true
 
                             footprint.camera_name = "#{photo_index.camera.model} | #{photo_index.camera.name}"
                             footprint.plane_name = photo_index.plane_name
@@ -479,19 +480,20 @@ class Footprint < ApplicationRecord
 
                             footprint.upload = uploads[upload_key]
 
-                            p "------------"
-                            p "Photo Index: #{modified_strip_frame}"
-                            # p result[0]
-                            p footprint
-                            p "------------"
+                            # p "------------"
+                            # p "Photo Index: #{modified_strip_frame}"
+                            # # p result[0]
+                            # p footprint
+                            # p "------------"
 
                             if footprint.save
-                                p "++++++++++"
-                                p footprint.project
-                                p "++++++++++"
+                                # p "++++++++++"
+                                # p footprint.project
+                                # p "++++++++++"
 
                                 if photo_index
                                     photo_index.update(
+                                        has_footprint: true,
                                         footprint: footprint,
                                         county: footprint.county,
                                         county_name: footprint.county_name,
@@ -560,7 +562,7 @@ class Footprint < ApplicationRecord
                         p "----------"
                         p "upload loop"
                         p upload
-                        p upload.footprints
+                        # p upload.footprints
                         p "----------"
 
                         flight_date = upload.footprints.first.flight_date.to_s
@@ -925,6 +927,7 @@ class Footprint < ApplicationRecord
 
     # Should only run after the dissolved footprint has been built
     def self.update_tiles upload, history, flight_date, plane, camera, company, project
+        p "Update Tiles"
 
         tiles = []
         footprints = []
@@ -1022,8 +1025,17 @@ class Footprint < ApplicationRecord
                             obj[:sl] = true
                         end
 
+                        p "::::::::::::::"
+                        p obj
+
                         # update the footprint
                         footprint.update(obj)
+                        if footprint.photo_index
+                            footprint.photo_index.update(
+                                sl: obj[:sl] ? true : false,
+                                nri: obj[:nri] ? true : false,
+                            )
+                        end
 
                         # Add the Footprint to the tiles and the vectormetadatum
                         tile.footprints << footprint

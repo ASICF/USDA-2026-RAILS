@@ -156,63 +156,122 @@ class Footprint < ApplicationRecord
                     # => Footprints should be in 4326, might be overkill but don't want to have to add later
                     `ogr2ogr -f "ESRI Shapefile" -t_srs EPSG:4326 #{path}/projected/footprints.shp "#{path}/original/#{shapefile_filename}.shp" -dim 2`
 
-                    # strip_frames = []
-                    # dup_strip_frames = []
+                    strip_frames = []
+                    dup_strip_frames = []
 
-                    # # Iterate the shapefile and check for duplicates
-                    # RGeo::Shapefile::Reader.open("#{path}/projected/footprints.shp") do |file|
-                    #     # puts "File contains #{file.num_records} records."
-                    #     # p file
-                    #     # p "--------------------"
-                    #     file.each do |record|
+                    # Iterate the shapefile and check for duplicates
+                    RGeo::Shapefile::Reader.open("#{path}/projected/footprints.shp") do |file|
+                        # puts "File contains #{file.num_records} records."
+                        # p file
+                        # p "--------------------"
+                        file.each do |record|
 
-                    #         # default the original strip frame variable to nil
-                    #         original_strip_frame = nil
+                            # default the original strip frame variable to nil
+                            original_strip_frame = nil
 
-                    #         # Check the attributes for the Name field either proper case or capitialized
-                    #         if record.attributes["Name"]
-                    #             original_strip_frame = record.attributes["Name"]
-                    #         elsif record.attributes["NAME"]
-                    #             original_strip_frame = record.attributes["NAME"]
-                    #         else
-                    #             raise Exception, "No \"Name\" Column found for Strip Frame"
-                    #         end
+                            # Check the attributes for the Name field either proper case or capitialized
+                            if record.attributes["Name"]
+                                original_strip_frame = record.attributes["Name"]
+                            elsif record.attributes["NAME"]
+                                original_strip_frame = record.attributes["NAME"]
+                            else
+                                raise Exception, "No \"Name\" Column found for Strip Frame"
+                            end
                         
-                    #         puts "Record number #{original_strip_frame}:"
+                            # puts "Record number #{original_strip_frame}:"
 
-                    #         if strip_frames.include? original_strip_frame
-                    #             dup_strip_frames |= [original_strip_frame]
-                    #         else
-                    #             strip_frames << original_strip_frame
-                    #         end
+                            # Split the strip frame
+                            arr = original_strip_frame.split("-")
 
-                    #     end
+                            # check the Name field to see if it needs to be modified
+                            if arr.count == 1
+                                arr = original_strip_frame.split("_")
 
-                    # end
+                                # If it's valid it should be similar to "1234_7890"
+                                if arr.count == 2 && arr[0].size == 4 && arr[1].size == 4 
+                                    modified_strip_frame = original_strip_frame
+                                else
+                                    raise Exception, "Invalid Strip Frame: #{original_strip_frame}"
+                                end
+                            else
+                                # strip frame segment might not include the third portion (segment)
+                                if arr.count < 2 || arr.count > 3
+                                    raise Exception, "Invalid Strip Frame: #{original_strip_frame}"
+                                end
+
+                                if arr.count == 3
+                                    # Remove the last array (segment)
+                                    arr.pop
+                                end
+
+                                if arr[0].length < 4
+                                    # Buffer the second array with "0" to be 4 digits
+                                    arr[0] = "#{"0" * (4 - arr[0].length)}#{arr[0]}"
+                                end
+
+                                # if the frame is greater than 5 digits then return the last 4 digits off 
+                                if arr[1].length > 4
+                                    arr[1] = arr[1][-4..-1]
+                                end
+
+                                # Buffer the second array with "0" to be 4 digits
+                                if arr[1].length < 4 
+                                    arr[1] = "#{"0" * (4 - arr[1].length)}#{arr[1]}"
+                                end
+
+                                # Join with an underscore
+                                modified_strip_frame = arr.join("_")
+                            end
+
+                            # p modified_strip_frame
+
+                            # # if the strip frame exists then skip it
+                            if Footprint.find_by(strip_frame: modified_strip_frame)
+                                # p "- Footprint already exists"
+                                next
+                            end
+
+                            # if the strip frame is within the strip_frame array then log as dup within upload
+                            if strip_frames.include? modified_strip_frame
+                                # p "previous fooptrint in import matched"
+                                dup_strip_frames << modified_strip_frame
+                                next
+                            end
+
+                            # p " - adding to strip_frames"
+                            strip_frames << modified_strip_frame
+
+                        end
+
+                    end
+
+                    p "---------"
+                    p dup_strip_frames
+                    p "---------"
 
                     # if there are dups then send an email
-                    # if dup_strip_frames.count > 0
+                    if dup_strip_frames.count > 0
                         
-                    #     response = {
-                    #         pass: false,
-                    #         message: "Duplicates were found in the Footprint Import validation process. Please check your email to see a list of Strip Frames to resolve and try again."
-                    #     }
+                        response = {
+                            pass: false,
+                            message: "Duplicates were found within the shapefile in the Footprint Import validation process. Please check your email to see a list of Strip Frames to resolve and try again."
+                        }
 
-                    #     html = "Duplicates found while validating the Footprint Import. Review and remove the following strip frames."
-                    #     html += "<hr />"
-                    #     html += '<ul>'
-                    #     dup_strip_frames.each do |sf|
-                    #         html += "<li>#{sf}</li>"
-                    #     end
-                    #     html += '</ul>'
+                        html = "Duplicates found while validating the Footprint Import. Review and remove the following strip frames."
+                        html += "<hr />"
+                        html += '<ul>'
+                        dup_strip_frames.each do |sf|
+                            html += "<li>#{sf}</li>"
+                        end
+                        html += '</ul>'
 
-                    #     # Log and send email
-                    #     Mailbox.ship({
-                    #         users: MailGroup.find_by(name: "Footprints").users | [user],
-                    #         subject: "#{params[:project]} Footprint Import Duplicates Found",
-                    #         message: html
-                    #     })
-                    # end
+                        # Log and send email
+                        Mailbox.ship({
+                            users: MailGroup.find_by(name: "Footprints").users | [user],
+                            subject: "#{params[:project]} Footprint Import Duplicates Found",
+                            message: html
+                        })
+                    end
                 end
 
 

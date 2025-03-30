@@ -46,8 +46,8 @@ export default function FootprintTracker({ uploads, token }) {
       <Divider />
 
       {renderTable()}
-      {/* <RenderUpload upload={upload} setUpload={setUpload} token={token} /> */}
-      {/* {renderMessage()} */}
+      <RenderUpload upload={upload} setUpload={setUpload} token={token} />
+      {renderMessage()}
     </div>
   );
 
@@ -57,9 +57,9 @@ export default function FootprintTracker({ uploads, token }) {
     return (
       <MessageBox
         status={"Success"}
-        title={"No delayed Photo Index files found"}
+        title={"No delayed Footprints found"}
         message={
-          "Any Footprints that have been uploaded and have not received any Photo Index files will appear on this list. No Footprints currently meet this requirement."
+          "Any Photo Indices that have been uploaded and have not received any Footprints will appear on this list. No Footprints currently meet this requirement."
         }
       />
     );
@@ -229,37 +229,30 @@ export default function FootprintTracker({ uploads, token }) {
   }
 
   function RenderUpload({ upload, setUpload, token }) {
-    const [records, setRecords] = useState(null);
+    // const [records, setRecords] = useState(null);
     const [stripFrames, setStripFrames] = useState(null);
     const [message, setMessage] = useState(null);
 
-    console.error({ records, stripFrames, message });
+    console.error({ stripFrames, message });
 
     if (!upload) return null;
 
     useEffect(() => {
       axios
-        .post("/query_photo_index_tracker", {
+        .post("/query_footprint_tracker", {
           upload_id: upload.upload_id,
           authenticity_token: token,
         })
         .then((res) => {
-          console.log("query_photo_index_tracker", res);
+          console.log("query_footprint_tracker", res);
           if (res.data.strip_frames.length) {
             setStripFrames(res.data.strip_frames);
           } else {
             setStripFrames([]);
           }
-
-          if (res.data.poly_ids.length) {
-            setRecords(res.data.poly_ids);
-          } else {
-            setRecords([]);
-          }
         })
         .catch((err) => {
           console.error("Error Response", err);
-          setRecords([]);
           setMessage({
             status: "Error",
             title: "Error Processing request",
@@ -278,9 +271,9 @@ export default function FootprintTracker({ uploads, token }) {
   Plane: ${upload.plane}%0D%0A%0D%0A
   The following sites are still awaiting the matching Photo Index file.%0D%0A`;
 
-      records.forEach((item) => {
-        html += `- ${item.poly_id} (${item.project})%0D%0A`;
-      });
+      // records.forEach((item) => {
+      //   html += `- ${item.poly_id} (${item.project})%0D%0A`;
+      // });
 
       window.open(
         `mailto:?subject=Missing%20Photo%20Index%20Files%20for%20Flight%20Date%20${moment(
@@ -298,7 +291,7 @@ export default function FootprintTracker({ uploads, token }) {
 
       // Build the shapefile
       axios
-        .post(`/photo_index_tracker/generate`, {
+        .post(`/footprint_tracker/generate`, {
           authenticity_token: token,
           upload_id: upload.upload_id,
           strip_frames: stripFrames,
@@ -307,7 +300,7 @@ export default function FootprintTracker({ uploads, token }) {
           console.log("submit response", data);
 
           if (data.state) {
-            window.open(`/photo_index_tracker/download/${data.history_id}`, "_blank");
+            window.open(`/footprint_tracker/download/${data.history_id}`, "_blank");
           } else {
             console.error(data);
             setMessage({
@@ -349,9 +342,9 @@ export default function FootprintTracker({ uploads, token }) {
           {`Upload ID: ${upload.upload_id}`}
 
           <Button.Group floated="right">
-            {records && records.length > 0 && records.length <= 30 && (
+            {/* {records && records.length > 0 && records.length <= 30 && (
               <Button onClick={handleEmail}>Email</Button>
-            )}
+            )} */}
           </Button.Group>
         </Modal.Header>
         <Modal.Content>
@@ -364,7 +357,7 @@ export default function FootprintTracker({ uploads, token }) {
               />
             )}
 
-            {records && (records.length > 0 || stripFrames.length > 0) && (
+            {stripFrames && stripFrames.length > 0 && (
               <Fragment>
                 <p>
                   <b>Company</b>: {upload.flown_by}
@@ -384,32 +377,32 @@ export default function FootprintTracker({ uploads, token }) {
               </Fragment>
             )}
 
-            {records && records.length === 0 && (
+            {/* {records && records.length === 0 && (
               <MessageBox
                 title={"No Easements Found"}
                 message={
                   "No flown Easements were found that are associated with footprints that have no Frame Centers."
                 }
               />
-            )}
-            {records && stripFrames.length === 0 && (
+            )} */}
+            {stripFrames && stripFrames.length === 0 && (
               <MessageBox
-                title={"No Footprints Found"}
-                message={"No Footprints were found."}
+                title={"No Photo Indices Found"}
+                message={"No Photo Indices were found."}
               />
             )}
 
-            {!records && (
+            {!stripFrames && (
               <MessageBox
                 status="loading"
                 title={"Loading"}
                 message={
-                  "Querying associated Footprints and Easements from Upload"
+                  "Querying missing Footprints from Photo Indices Upload"
                 }
               />
             )}
 
-            {records && records.length > 0 && (
+            {/* {records && records.length > 0 && (
               <Fragment>
                 <p>
                   The following Easements are still awaiting the matching Photo Index
@@ -425,14 +418,12 @@ export default function FootprintTracker({ uploads, token }) {
                   })}
                 </ul>
               </Fragment>
-            )}
+            )} */}
 
-            {records && stripFrames.length > 0 && (
+            {stripFrames && stripFrames.length > 0 && (
               <Fragment>
                 <p>
-                  The following Strip Frames are from Footprints are missing a
-                  Frame Center
-                </p>
+                  The following Strip Frames are from Photo Indices that are missing Footprints                </p>
                 <ul>
                   {stripFrames.map((item, index) => {
                     return <li key={index}>{item}</li>;
@@ -443,7 +434,7 @@ export default function FootprintTracker({ uploads, token }) {
           </Modal.Description>
         </Modal.Content>
         <Modal.Actions>
-          <Button
+          {/* <Button
             animated="fade"
             as="a"
             floated="left"
@@ -453,7 +444,7 @@ export default function FootprintTracker({ uploads, token }) {
             <ButtonContent hidden>
               <Icon name="download" />
             </ButtonContent>
-          </Button>
+          </Button> */}
 
           <Button
             animated="fade"

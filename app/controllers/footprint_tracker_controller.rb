@@ -30,4 +30,23 @@ class FootprintTrackerController < ApplicationController
 
     @uploads
   end
+
+  def query
+
+    p params
+
+    strip_frames = []
+
+    # Get the upload
+    upload = Upload.find_by(id: params["upload_id"])
+
+    # iterate the footprints and find tiles that meet the requirements
+    upload.photo_indices.where(has_footprint: false).each do |pi|
+      strip_frames |= [pi.strip_frame]
+    end
+
+    render json: {
+      strip_frames: strip_frames
+    }
+  end
 end

@@ -686,6 +686,24 @@ class Easement < ApplicationRecord
                 # Get all the unflown easements within the state
                 easements.each do |record|
 
+                    rejected_tiles = record.rejected_tiles.order(:rejected_date)
+
+                    p "------"
+                    p record.poly_id
+                    p rejected_tiles.count
+
+                    rej_msg = nil
+                    last_flight = nil
+                    last_rej = nil
+                    num_rej = rejected_tiles.count
+
+                    # check for rejections
+                    if rejected_tiles.count > 0
+                        rej_msg = rejected_tiles.last.rejection_type
+                        last_flight = rejected_tiles.last.flight_date
+                        last_rej = rejected_tiles.last.rejected_date
+                    end
+
                     obj = {
                         EasementNo: record.poly_id,
                         acres: record.acres,
@@ -697,7 +715,11 @@ class Easement < ApplicationRecord
                         longitude: record.longitude,
                         multi_geom: record.multiple_geom ? "True" : "False",
                         priority: record.priority,
-                        min_sun_angle: Rails.application.secrets.min_sun_angle
+                        min_sun_angle: Rails.application.secrets.min_sun_angle,
+                        rej_msg: rej_msg,
+                        last_flight: last_flight,
+                        last_rej: last_rej,
+                        num_rej: num_rej,
                     }
 
                     FlightTime.where(tile_id: record.tiles.pluck(:id)).order(:flight_date).each do |ft|

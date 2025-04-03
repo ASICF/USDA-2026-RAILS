@@ -22,12 +22,14 @@ class DailyProgressReport
                         header: flight_date.strftime("%d-%^b-%g"),
                         flight_date: flight_date.strftime("%m/%d/%Y"),
                         accepted: [],
+                        covered: [],
                         rejected: []
                     },
                     nri: {
                         header: flight_date.strftime("%d-%^b-%g"),
                         flight_date: flight_date.strftime("%m/%d/%Y"),
                         accepted: [],
+                        covered: [],
                         rejected: []
                     }
                 }
@@ -44,9 +46,15 @@ class DailyProgressReport
                 sl_associated_tiles_not_reported |= Tile.sl.flown.where(flight_date: flight_date.strftime("%F")).order(:poly_id)
                 nri_associated_tiles_not_reported |= Tile.nri.flown.where(flight_date: flight_date.strftime("%F")).order(:poly_id)
 
-                # find the tiles that were recently associated by the easements with multiple coverages 
-                # nri_associated_tiles_not_reported = Tile.nri.flown.where(associate_date: flight_date.strftime("%F")).order(:poly_id)
-                # sl_associated_tiles_not_reported = Tile.sl.flown.where(associate_date: flight_date.strftime("%F")).order(:poly_id)
+                sl_covered_tiles = DailyProgressReport.sl_find_coverages flight_date.strftime("%F")
+                nri_covered_tiles = DailyProgressReport.nri_find_coverages flight_date.strftime("%F")
+
+                p "-------"
+                p "sl_covered_tiles"
+                p sl_covered_tiles
+                p "nri_covered_tiles"
+                p nri_covered_tiles
+                p "-------"
 
                 # p "-------"
                 # p "NRI: #{nri_associated_tiles_not_reported.count}"
@@ -78,7 +86,7 @@ class DailyProgressReport
                     # out_file.close
 
                     # Check if there are NRI tiles to report
-                    if nri_associated_tiles_not_reported.count > 0
+                    if nri_associated_tiles_not_reported.count > 0 || nri_covered_tiles.count > 0
 
                         # Get the Tiles that match the flight date, even if they have been reported
                         # => Also check the rejected tiles 
@@ -98,10 +106,23 @@ class DailyProgressReport
                         out_file.puts("")
                         out_file.puts("NRI Sites Acquired:")
                         out_file.puts("")
-                        out_file.close
 
-                        # Build the NRI Report
-                        obj[:nri][:accepted] = DailyProgressReport.build_project_report flight_date, nri_associated_tiles_not_reported, nri_tiles_not_reported, file_path
+                        if nri_associated_tiles_not_reported.count > 0
+
+                            # Build the NRI Report
+                            obj[:nri][:accepted] = DailyProgressReport.build_project_report flight_date, nri_associated_tiles_not_reported, nri_tiles_not_reported, file_path
+                        end
+
+                        if nri_covered_tiles.count > 0
+                            nri_covered_tiles.each do |tile|
+                                if obj[:nri][:accepted].include?(tile)
+                                    out_file.puts(tile)
+                                    obj[:nri][:covered] << tile
+                                end
+                            end
+                            # obj[:nri][:covered] = nri_covered_tiles
+                            history.tiles << Tile.where(poly_id: nri_covered_tiles)
+                        end
 
                         # push the tiles to the history obj
                         history.tiles << nri_tiles_not_reported
@@ -114,7 +135,7 @@ class DailyProgressReport
                     end
 
                     # Check if there are SL tiles to report
-                    if sl_associated_tiles_not_reported.count > 0
+                    if sl_associated_tiles_not_reported.count > 0 || sl_covered_tiles.count > 0
 
                         # Get the Tiles that match the flight date, even if they have been reported
                         # => Also check the rejected tiles 
@@ -134,10 +155,28 @@ class DailyProgressReport
                         out_file.puts("")
                         out_file.puts("Easements Acquired:")
                         out_file.puts("")
-                        out_file.close
 
-                        # Build the SL Report
-                        obj[:sl][:accepted] = DailyProgressReport.build_project_report flight_date, sl_associated_tiles_not_reported, sl_tiles_not_reported, file_path
+                        if sl_associated_tiles_not_reported.count > 0
+
+                            # Build the SL Report
+                            obj[:sl][:accepted] = DailyProgressReport.build_project_report flight_date, sl_associated_tiles_not_reported, sl_tiles_not_reported, file_path
+                        end
+
+                        if sl_covered_tiles.count > 0
+                            # out_file.puts("Date Covered: #{flight_date.strftime("%d-%^b-%g")}")
+                            # out_file.puts("")
+                            # out_file.puts("SL Easements fully covered but already flown")
+                            sl_covered_tiles.each do |tile|
+                                # out_file.puts(tile) if !obj[:sl][:accepted].include? tile
+                                if !obj[:sl][:accepted].include?(tile)
+                                    out_file.puts(tile)
+                                    obj[:sl][:covered] << tile
+                                end
+                            end
+                            # out_file.puts("")
+                            # obj[:sl][:covered] = sl_covered_tiles
+                            history.tiles << Tile.where(poly_id: sl_covered_tiles)
+                        end
 
                         # push the tiles to the history obj
                         history.tiles << sl_tiles_not_reported
@@ -146,7 +185,6 @@ class DailyProgressReport
                         out_file.puts("")
                         out_file.puts("=======================")
                         out_file.close
-
                     end
 
                     out_file.close
@@ -182,9 +220,21 @@ class DailyProgressReport
                         html +="<br/>"
                     end
 
+                    if obj[:nri][:covered].size > 0
+                        html += "<p>NRI Sites Already Covered:</p>"
+                        obj[:nri][:covered].each {|item| html += "<pre style='margin: 0;'>#{item}</pre>"}
+                        html +="<br/>"
+                    end
+
                     if obj[:sl][:accepted].size > 0
                         html += "<p>Easements Acquired:</p>"
                         obj[:sl][:accepted].each {|item| html += "<pre style='margin: 0;'>#{item}</pre>"}
+                        html +="<br/>"
+                    end
+
+                    if obj[:sl][:covered].size > 0
+                        html += "<p>SL Sites Already Covered:</p>"
+                        obj[:sl][:covered].each {|item| html += "<pre style='margin: 0;'>#{item}</pre>"}
                         html +="<br/>"
                     end
 
@@ -311,6 +361,54 @@ class DailyProgressReport
             return file_name
         end 
 
+    end
+
+    def self.sl_find_coverages flight_date="2025-03-11"
+        poly_ids = []
+        p flight_date
+
+        Tile.sl.covered.not_ortho_processed.each do |tile|
+            results = tile.find_covered
+            
+            if results 
+                pp results
+                match = results[:result].select { |coverage| coverage[:flight_date] == flight_date }
+                p match
+
+                if match.size > 0
+                    poly_ids << tile.poly_id
+                end
+            end
+
+        end
+        # p poly_ids
+        # p "done"
+
+        poly_ids
+    end
+
+    def self.nri_find_coverages flight_date="2025-03-11"
+        poly_ids = []
+        p flight_date
+
+        Tile.nri.covered.not_ortho_processed.each do |tile|
+            results = tile.find_covered
+            
+            if results 
+                pp results
+                match = results[:result].select { |coverage| coverage[:flight_date] == flight_date }
+                p match
+
+                if match.size > 0
+                    poly_ids << tile.poly_id
+                end
+            end
+
+        end
+        # p poly_ids
+        # p "done"
+
+        poly_ids
     end
 
 end

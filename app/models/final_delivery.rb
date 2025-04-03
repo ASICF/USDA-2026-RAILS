@@ -449,7 +449,7 @@ class FinalDelivery < ApplicationRecord
                     FinalDelivery.build_gtf gtf_file, filename_without_extension, tile.utm.zone, tile.poly_id
 
                     # Update the Tiff tags and copy to the county folder
-                    geotif_response = system("geotifcp -8 -g '#{gtf_file}' '#{path}/#{filename}' '#{county_path}/#{filename}'")
+                    geotif_response = system("geotifcp -g '#{gtf_file}' '#{path}/#{filename}' '#{county_path}/#{filename}'")
 
                     # Copy the tfw file
                     FileUtils.cp("#{path}/#{filename_without_extension}.tfw", "#{county_path}/#{filename_without_extension}.tfw")
@@ -1105,10 +1105,10 @@ class FinalDelivery < ApplicationRecord
     def self.pass_to_validation
 
         # input_directory, packing_slip, current_user
-        input_directory = "P:\\Vol_1\\25-6567_USDA_SL\\03_FrameBase\\IL\\Tiles_Dump\\Final_Delivery_20250329_IL"
+        input_directory = "P:\\Vol_1\\25-6567_USDA_SL\\03_FrameBase\\AZ\\Tiles_Dump\\Final_Delivery_20250401_AZ"
         # P:\Vol_3\24-6567_USDA_NRI\03_FrameBase\HI\Tiles_Dump\Final_Delivery_20240923_HI
 
-        packing_slip = PackingSlip.find_by(name: "20250329_IL")
+        packing_slip = PackingSlip.find_by(name: "20250401_AZ")
 
         current_user = User.admins.first
 
@@ -1322,7 +1322,7 @@ class FinalDelivery < ApplicationRecord
             FinalDelivery.build_gtf gtf_file, filename_without_extension, tile.utm.zone, final_poly_id
 
             # Update the Tiff tags and copy to the county folder
-            geotif_response = system("geotifcp -8 -g '#{gtf_file}' '#{original_path}/#{county_fips}/#{filename_without_extension}.tif' '#{to_move_path}/#{county_fips}/#{filename_without_extension}.tif'")
+            geotif_response = system("geotifcp -g '#{gtf_file}' '#{original_path}/#{county_fips}/#{filename_without_extension}.tif' '#{to_move_path}/#{county_fips}/#{filename_without_extension}.tif'")
 
             FileUtils.cp("#{original_path}/#{county_fips}/#{filename_without_extension}.tfw", "#{to_move_path}/#{county_fips}/#{filename_without_extension}.tfw")
             FileUtils.cp("#{original_path}/#{county_fips}/#{filename_without_extension}.xml", "#{to_move_path}/#{county_fips}/#{filename_without_extension}.xml")

@@ -371,7 +371,7 @@ class FinalDeliverySplits
                     FinalDelivery.build_gtf gtf_file, filename_without_extension, tile.utm.zone, parsed_poly_id[:split_poly_id]
 
                     # Update the Tiff tags and copy to the county folder
-                    geotif_response = system("geotifcp -8 -g '#{gtf_file}' '#{original_path}/#{county_fips}/#{filename_without_extension}.tif' '#{to_move_path}/#{county_fips}/#{filename_without_extension}.tif'")
+                    geotif_response = system("geotifcp -g '#{gtf_file}' '#{original_path}/#{county_fips}/#{filename_without_extension}.tif' '#{to_move_path}/#{county_fips}/#{filename_without_extension}.tif'")
 
                     FileUtils.cp("#{original_path}/#{county_fips}/#{filename_without_extension}.tfw", "#{to_move_path}/#{county_fips}/#{filename_without_extension}.tfw")
                     FileUtils.cp("#{original_path}/#{county_fips}/#{filename_without_extension}.xml", "#{to_move_path}/#{county_fips}/#{filename_without_extension}.xml")

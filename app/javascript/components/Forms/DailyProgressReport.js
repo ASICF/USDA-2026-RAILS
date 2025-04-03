@@ -81,9 +81,7 @@ function DailyProgressReport(props) {
     }
 
     // Launch the email handler
-    location.href = `mailto:${props.to}?subject=${
-      result.header
-    }&body=${html}`;
+    location.href = `mailto:${props.to}?subject=${result.header}&body=${html}`;
   };
 
   return (
@@ -221,11 +219,13 @@ function DailyProgressReport(props) {
         </Message>
 
         <Segment.Group>
-          {result.nri && result.nri.accepted.length > 0 && (
-            <>
-              <Segment tertiary>
-                <b>NRI</b>
-                {/* <Button
+          {result.nri &&
+            (result.nri.accepted.length > 0 ||
+              result.sl.covered.length > 0) && (
+              <>
+                <Segment tertiary>
+                  <b>NRI</b>
+                  {/* <Button
                   secondary
                   floated="right"
                   style={emailBtnStyle}
@@ -233,30 +233,45 @@ function DailyProgressReport(props) {
                 >
                   Email
                 </Button> */}
-              </Segment>
-              <Segment>
-                <Header as="h5">Subject</Header>
-                <p>{result.sl.header}</p>
-              </Segment>
-              <Segment>
-                <Header as="h5">Body</Header>
-                <p>Date Acquired: {result.nri.header}</p>
-
-                <p>NRI Sites Acquired:</p>
-                <List
-                  style={{ whiteSpace: "pre" }}
-                  items={result.nri.accepted.map((item) => (
-                    <pre style={{ margin: 0 }}>{item}</pre>
-                  ))}
-                />
-              </Segment>
-            </>
-          )}
-          {result.sl && result.sl.accepted.length > 0 && (
-            <>
-              <Segment tertiary>
-                <b>SL Project</b>
-                {/* <Button
+                </Segment>
+                <Segment>
+                  <Header as="h5">Subject</Header>
+                  <p>{result.sl.header}</p>
+                </Segment>
+                <Segment>
+                  <Header as="h5">Body</Header>
+                  <p>Date Acquired: {result.nri.header}</p>
+                  {result.nri.accepted.length > 0 && (
+                    <>
+                      <p>Easements Acquired:</p>
+                      <List
+                        style={{ whiteSpace: "pre" }}
+                        items={result.nri.accepted.map((item) => (
+                          <pre style={{ margin: 0 }}>{item}</pre>
+                        ))}
+                      />
+                    </>
+                  )}
+                  {result.nri.covered.length > 0 && (
+                    <>
+                      <p>Easements Already Covered:</p>
+                      <List
+                        style={{ whiteSpace: "pre" }}
+                        items={result.nri.covered.map((item) => (
+                          <pre style={{ margin: 0 }}>{item}</pre>
+                        ))}
+                      />
+                    </>
+                  )}
+                </Segment>
+              </>
+            )}
+          {result.sl &&
+            (result.sl.accepted.length > 0 || result.sl.covered.length > 0) && (
+              <>
+                <Segment tertiary>
+                  <b>SL Project</b>
+                  {/* <Button
                   secondary
                   floated="right"
                   style={emailBtnStyle}
@@ -264,25 +279,38 @@ function DailyProgressReport(props) {
                 >
                   Email
                 </Button> */}
-              </Segment>
-              <Segment>
-                <Header as="h5">Subject</Header>
-                <p>SL {result.sl.header}</p>
-              </Segment>
-              <Segment>
-                <Header as="h5">Body</Header>
-                <p>Date Acquired: {result.sl.header}</p>
-
-                <p>Easements Acquired:</p>
-                <List
-                  style={{ whiteSpace: "pre" }}
-                  items={result.sl.accepted.map((item) => (
-                    <pre style={{ margin: 0 }}>{item}</pre>
-                  ))}
-                />
-              </Segment>
-            </>
-          )}
+                </Segment>
+                <Segment>
+                  <Header as="h5">Subject</Header>
+                  <p>SL {result.sl.header}</p>
+                </Segment>
+                <Segment>
+                  <Header as="h5">Body</Header>
+                  <p>Date Acquired: {result.sl.header}</p>
+                  {result.sl.accepted.length > 0 && (
+                    <>
+                      <p>Easements Acquired:</p>
+                      <List
+                        style={{ whiteSpace: "pre" }}
+                        items={result.sl.accepted.map((item) => (
+                          <pre style={{ margin: 0 }}>{item}</pre>
+                        ))}
+                      />
+                    </>
+                  )}
+                  {result.sl.covered.length > 0 && (
+                    <>
+                      <List
+                        style={{ whiteSpace: "pre" }}
+                        items={result.sl.covered.map((item) => (
+                          <pre style={{ margin: 0 }}>{item}</pre>
+                        ))}
+                      />
+                    </>
+                  )}
+                </Segment>
+              </>
+            )}
         </Segment.Group>
       </Fragment>
     );

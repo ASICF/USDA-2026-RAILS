@@ -1544,6 +1544,8 @@ class Tile < ApplicationRecord
 
         results = ActiveRecord::Base.connection.execute(sql)
 
+        p results
+
         footprints = {}
 
         results.each do |result|

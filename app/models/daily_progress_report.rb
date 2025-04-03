@@ -214,29 +214,31 @@ class DailyProgressReport
 
                     html += "<p>Date Acquired: #{flight_date.strftime("%d-%^b-%g")}</p>"
 
-                    if obj[:nri][:accepted].size > 0
+                    if obj[:nri][:accepted].size > 0 || obj[:nri][:covered].size > 0
                         html += "<p>NRI Sites Acquired:</p>"
                         obj[:nri][:accepted].each {|item| html += "<pre style='margin: 0;'>#{item}</pre>"}
-                        html +="<br/>"
-                    end
-
-                    if obj[:nri][:covered].size > 0
-                        html += "<p>NRI Sites Already Covered:</p>"
                         obj[:nri][:covered].each {|item| html += "<pre style='margin: 0;'>#{item}</pre>"}
                         html +="<br/>"
                     end
 
-                    if obj[:sl][:accepted].size > 0
+                    # if obj[:nri][:covered].size > 0
+                    #     html += "<p>NRI Sites Already Covered:</p>"
+                    #     obj[:nri][:covered].each {|item| html += "<pre style='margin: 0;'>#{item}</pre>"}
+                    #     html +="<br/>"
+                    # end
+
+                    if obj[:sl][:accepted].size > 0 || obj[:sl][:covered].size > 0
                         html += "<p>Easements Acquired:</p>"
                         obj[:sl][:accepted].each {|item| html += "<pre style='margin: 0;'>#{item}</pre>"}
-                        html +="<br/>"
-                    end
-
-                    if obj[:sl][:covered].size > 0
-                        html += "<p>SL Sites Already Covered:</p>"
                         obj[:sl][:covered].each {|item| html += "<pre style='margin: 0;'>#{item}</pre>"}
                         html +="<br/>"
                     end
+
+                    # if obj[:sl][:covered].size > 0
+                    #     html += "<p>SL Sites Already Covered:</p>"
+                    #     obj[:sl][:covered].each {|item| html += "<pre style='margin: 0;'>#{item}</pre>"}
+                    #     html +="<br/>"
+                    # end
 
                     # Log and send email
                     Mailbox.ship({

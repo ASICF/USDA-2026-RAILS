@@ -370,6 +370,7 @@ export default function SitesToAcquire({ sl, nri, naip, token }) {
           authenticity_token: token,
           project: "NRI",
           states: states,
+          export_rejection: exportRejection
         })
         .then(({ data }) => {
           console.log("submit response", data);
@@ -594,6 +595,7 @@ export default function SitesToAcquire({ sl, nri, naip, token }) {
           authenticity_token: token,
           project: "NAIP",
           states: states,
+          export_rejection: exportRejection
         })
         .then(({ data }) => {
           console.log("submit response", data);
@@ -736,6 +738,12 @@ export default function SitesToAcquire({ sl, nri, naip, token }) {
         >
           Download Selected States
         </Button>
+        <Checkbox
+          checked={exportRejection}
+          onChange={(e, i) => setExportRejection(i.checked)}
+          style={{ float: "right", padding: "0.75em" }}
+          label="Export Rejections Ready to Fly"
+        />
         <br />
         <br />
       </Fragment>

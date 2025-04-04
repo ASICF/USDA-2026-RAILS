@@ -638,6 +638,150 @@ class Easement < ApplicationRecord
 
     end
 
+    def self.generate_rejected_ready_to_fly params
+        # Create GeoJSON of easements still remaining to fly
+        # Convert to Shapefile 
+        # Zip Shapefiles
+        # Download to client
+
+        # set the path variable in case of failure
+        path = nil
+
+        project = params[:project]
+
+        begin
+
+            # Get the folder name by converting the current time to seconds
+            folder = Time.now.to_i
+
+            path = "#{Rails.root}/assets/rejected_easements_left_to_fly/#{folder}"
+
+            # Create a folder if it doesn't exist
+            FileUtils.mkdir_p("#{path}") unless File.directory?(path)
+            FileUtils.mkdir_p("#{path}/json")
+            FileUtils.mkdir_p("#{path}/shapefile")
+            FileUtils.mkdir_p("#{path}/zipped")
+
+            # Set the formated date to a string to be reused
+            time_string = Time.now.strftime("%y%m%d")
+
+            shapefiles = []
+
+            factory = RGeo::GeoJSON::EntityFactory.instance
+
+            # Set the file name
+            file_name = "rejected_easements_left_to_fly_#{project}_#{time_string}"
+
+            features = Array.new
+
+            # Get State
+            State.where(id: params[:states]).each do |state|
+
+                if project == "SL"
+                    easements = state.easements.sl.not_flown.includes(:tiles, :time_zone)
+                elsif project == "NRI"
+                    easements = state.easements.nri.not_flown.includes(:tiles, :time_zone)
+                end
+
+                # Get all the unflown easements within the state
+                easements.each do |record|
+
+                    rejected_tiles = record.rejected_tiles.order(:rejected_date)
+
+                    p "------"
+                    p record.poly_id
+                    p rejected_tiles.count
+
+                    next if rejected_tiles.count === 0
+
+                    rej_msg = nil
+                    last_flight = nil
+                    last_rej = nil
+                    num_rej = rejected_tiles.count
+
+                    # check for rejections
+                    if rejected_tiles.count > 0
+                        rej_msg = rejected_tiles.last.rejection_type
+                        last_flight = rejected_tiles.last.flight_date
+                        last_rej = rejected_tiles.last.rejected_date
+                    end
+
+                    obj = {
+                        EasementNo: record.poly_id,
+                        acres: record.acres,
+                        block: record.asi_block,
+                        county_name: record.county_name,
+                        state_abv: state.abv,
+                        state_name: record.state_name,
+                        latitude: record.latitude,
+                        longitude: record.longitude,
+                        multi_geom: record.multiple_geom ? "True" : "False",
+                        priority: record.priority,
+                        # min_sun_angle: Rails.application.secrets.min_sun_angle,
+                        rej_msg: rej_msg,
+                        last_flight: last_flight,
+                        last_rej: last_rej,
+                        num_rej: num_rej,
+                    }
+
+                    FlightTime.where(tile_id: record.tiles.pluck(:id)).order(:flight_date).each do |ft|
+                        # obj[ft.start_date.strftime("%m_%d_start").to_sym] = ft.start_date.in_time_zone(record.time_zone.name).strftime("%H:%M").to_s
+                        # obj[ft.end_date.strftime("%m_%d_end").to_sym] = ft.end_date.in_time_zone(record.time_zone.name).strftime("%H:%M").to_s
+
+                        obj[ft.flight_date.strftime("%A").to_sym] = "#{ft.flight_date.strftime("%m/%d")} #{ft.start_date.strftime('%H:%M')} - #{ft.end_date.strftime('%H:%M')}"
+                    end
+
+                    features << factory.feature(record.geom, record.id, obj)
+                end
+
+            end
+
+            # Creates a text file and saves it to the report directory
+            File.open("#{path}/json/#{file_name}.json", "w+") do |f|
+                f.puts(RGeo::GeoJSON.encode(factory.feature_collection(features)).to_json)
+            end
+
+            # Convert GeoJSON to Shapefile with ogr2ogr
+            `ogr2ogr -f "ESRI Shapefile" -fieldTypeToString Date,Time #{path}/shapefile/#{file_name}.shp "#{path}/json/#{file_name}.json"`
+
+            shapefiles << file_name
+
+            # Zip the files
+            Zip::File.open("#{path}/zipped/#{project}_rejected_easements_to_fly_#{time_string}.zip", Zip::File::CREATE) do |zipfile|
+                shapefiles.each do |shapefile|
+                    [".shp", ".shx", ".dbf", ".prj"].each do |ext|
+                        zipfile.add("#{shapefile}#{ext}", File.join("#{path}/shapefile/", "#{shapefile}#{ext}"))
+                    end
+                end
+            end
+
+            # output[:file] = "#{path}/zipped/easements_left_to_fly_#{time_string}.zip"
+            # output[:file_name] = "easements_left_to_fly_#{time_string}.zip"
+
+            # Create a new History record
+            history = History.new
+            history.message = "Generated Shapefile of #{project} Easements to Fly"
+            history.action_type = "Exported Easements to Fly Shapefile"
+            history.url = "#{path}/zipped/#{project}_rejected_easements_to_fly_#{time_string}.zip"
+            history.creator = params[:user]
+            history.save
+
+            return {
+                state: true,
+                history_id: history.id
+            }
+          
+        rescue StandardError => e
+            FileUtils.rm_rf(path) if File.directory?(path)
+            return {
+                state: false,
+                message: "Error: #{e.message}"
+            }
+
+        end
+
+    end
+
     def self.generate_shapefile params
         # Create GeoJSON of easements still remaining to fly
         # Convert to Shapefile 

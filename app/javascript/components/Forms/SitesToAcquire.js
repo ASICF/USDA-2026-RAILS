@@ -30,6 +30,8 @@ export default function SitesToAcquire({ sl, nri, naip, token }) {
     naip,
   });
 
+  const [exportRejection, setExportRejection] = useState(false);
+
   const onExport = (data) => {
     console.error("onExport", data);
 
@@ -120,6 +122,9 @@ export default function SitesToAcquire({ sl, nri, naip, token }) {
     const onSubmit = (data) => {
       console.error("onSubmit", data);
 
+      // alert(exportType);
+      // return;
+
       setSubmitted(true);
 
       if (states.length === 0) {
@@ -138,6 +143,7 @@ export default function SitesToAcquire({ sl, nri, naip, token }) {
           authenticity_token: token,
           project: "SL",
           states: states,
+          export_rejection: exportRejection
         })
         .then(({ data }) => {
           console.log("submit response", data);
@@ -279,6 +285,7 @@ export default function SitesToAcquire({ sl, nri, naip, token }) {
             UnCheck All
           </Button>
         </Button.Group>
+
         <Button
           primary
           floated="right"
@@ -289,6 +296,12 @@ export default function SitesToAcquire({ sl, nri, naip, token }) {
         >
           Download Selected States
         </Button>
+        <Checkbox
+          checked={exportRejection}
+          onChange={(e, i) => setExportRejection(i.checked)}
+          style={{ float: "right", padding: "0.75em" }}
+          label="Export Rejections Ready to Fly"
+        />
         <br />
         <br />
       </Fragment>
@@ -508,6 +521,12 @@ export default function SitesToAcquire({ sl, nri, naip, token }) {
         >
           Download Selected States
         </Button>
+        <Checkbox
+          checked={exportRejection}
+          onChange={(e, i) => setExportRejection(i.checked)}
+          style={{ float: "right", padding: "0.75em" }}
+          label="Export Rejections Ready to Fly"
+        />
         <br />
         <br />
       </Fragment>

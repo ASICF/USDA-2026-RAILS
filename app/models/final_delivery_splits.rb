@@ -370,16 +370,24 @@ class FinalDeliverySplits
                     # update the gtf file
                     FinalDelivery.build_gtf gtf_file, filename_without_extension, tile.utm.zone, parsed_poly_id[:split_poly_id]
 
+                    # iterate the delete arr and extract the final delivery county folder name
+                    match_delete = delete_arr.find {|delArr| delArr[:filename] === tile.filename}
+
+                    p "match_delete[:from]"
+                    p match_delete[:from]
+
                     # Update the Tiff tags and copy to the county folder
                     geotif_response = system("geotifcp -g '#{gtf_file}' '#{original_path}/#{county_fips}/#{filename_without_extension}.tif' '#{to_move_path}/#{county_fips}/#{filename_without_extension}.tif'")
+                    geotif_response = system("geotifcp -g '#{gtf_file}' '#{original_path}/#{county_fips}/#{filename_without_extension}.tif' '#{match_delete[:from]}/#{filename_without_extension}.tif'")
+
 
                     FileUtils.cp("#{original_path}/#{county_fips}/#{filename_without_extension}.tfw", "#{to_move_path}/#{county_fips}/#{filename_without_extension}.tfw")
                     FileUtils.cp("#{original_path}/#{county_fips}/#{filename_without_extension}.xml", "#{to_move_path}/#{county_fips}/#{filename_without_extension}.xml")
 
-                    move_arr << {filename: filename_without_extension, from: "#{original_path}/#{county_fips}/", to: "#{to_move_path}/#{county_fips}/"}
+                    FileUtils.cp("#{original_path}/#{county_fips}/#{filename_without_extension}.tfw", "#{match_delete[:from]}/#{filename_without_extension}.tfw")
+                    FileUtils.cp("#{original_path}/#{county_fips}/#{filename_without_extension}.xml", "#{match_delete[:from]}/#{filename_without_extension}.xml")
 
-                    # iterate the delete arr and extract the final delivery county folder name
-                    match_delete = delete_arr.find {|delArr| delArr[:filename] === tile.filename}
+                    move_arr << {filename: filename_without_extension, from: "#{original_path}/#{county_fips}/", to: "#{to_move_path}/#{county_fips}/"}
 
                     migration_arr << {
                         filename: filename_without_extension,
@@ -521,16 +529,16 @@ class FinalDeliverySplits
         pp migration_arr
         p "-------------------"
 
-        migration_arr.each do |obj|
+        # migration_arr.each do |obj|
 
-            p "Copying #{obj[:filename]}"
-            p " - tif"
-            FileUtils.cp("#{obj[:from]}/#{obj[:filename]}.tif", "#{obj[:to]}/#{obj[:filename]}.tif")
-            p " - tfw"
-            FileUtils.cp("#{obj[:from]}/#{obj[:filename]}.tfw", "#{obj[:to]}/#{obj[:filename]}.tfw")
-            p " - xml"
-            FileUtils.cp("#{obj[:from]}/#{obj[:filename]}.xml", "#{obj[:to]}/#{obj[:filename]}.xml")
-        end
+        #     p "Copying #{obj[:filename]}"
+        #     p " - tif"
+        #     FileUtils.cp("#{obj[:from]}/#{obj[:filename]}.tif", "#{obj[:to]}/#{obj[:filename]}.tif")
+        #     p " - tfw"
+        #     FileUtils.cp("#{obj[:from]}/#{obj[:filename]}.tfw", "#{obj[:to]}/#{obj[:filename]}.tfw")
+        #     p " - xml"
+        #     FileUtils.cp("#{obj[:from]}/#{obj[:filename]}.xml", "#{obj[:to]}/#{obj[:filename]}.xml")
+        # end
 
         # build the Tile Index once completed
         self.build_tile_index final_delivery_folder, project

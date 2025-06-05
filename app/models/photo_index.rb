@@ -17,6 +17,7 @@ class PhotoIndex < ApplicationRecord
     has_many :histories, through: :historic_assocs
 
     # Validations
+    validates :strip_frame, uniqueness: { message: "(%{value}) found with the same Strip Frame already existing in Database"}
     validates :strip, :frame, :strip_frame, :flown_by_name, :camera_name, :flight_date, :flight_date_time, :gpstime, :sun_angle, :latitude, :longitude, :camera_id, :plane_id, :geom, presence: true
     # validates :footprint_id, :rejected_footprint_id, uniqueness: true, allow_nil: true
 

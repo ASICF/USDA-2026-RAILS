@@ -621,8 +621,11 @@ class Footprint < ApplicationRecord
                         p "----------"
                         p "upload loop"
                         p upload
-                        # p upload.footprints
+                        # p upload.rejected_footprints.count
+                        # p upload.footprints.count
                         p "----------"
+
+                        next if upload.footprints.count === 0
 
                         flight_date = upload.footprints.first.flight_date.to_s
                         plane = upload.footprints.first.plane

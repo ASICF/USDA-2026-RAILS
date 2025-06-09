@@ -1033,4 +1033,75 @@ class PhotoIndex < ApplicationRecord
 
     # end
 
+    def self.fix_dups
+        #  PhotoIndex.select(:strip_frame).group(:strip_frame).having("count(*) > 1")
+        dups = ["5799_6503","4673_0205","7602_0318","4673_0206","0361_0001","4673_0202","4673_0207","5279_0001","4673_0201","3424_3867","4673_0204","7602_0319","5801_6472","4673_0203","5801_6473"]
+
+
+        # ["4673_0201", "4673_0202", "4673_0203", "4673_0204", "4673_0205", "4673_0206", "4673_0207"]
+
+        # delete_ids = [24774, 11383, 11384, 11380, 11385, 11379, 11382, 11381, 14983, 24773, 15495, 22723, 14984, 14985, 28103]
+
+        delete_ids = []
+        matched_ids = []
+        dup_flight_dates = []
+        no_match = []
+
+        dups.each do |sf|
+            p sf
+
+            matched = false
+            flight_dates = []
+            to_delete = []
+
+            PhotoIndex.where(strip_frame: sf).each do |pi|
+                flight_dates << pi.flight_date
+
+                if pi.footprint_id
+                    matched = pi.id
+                else
+                    to_delete << pi.id
+                end
+            end
+
+            p flight_dates.uniq
+
+            if flight_dates.uniq.count > 1
+                dup_flight_dates << sf
+            end
+
+            if matched
+                matched_ids << matched
+                delete_ids = delete_ids + to_delete
+            else
+                no_match << sf
+            end
+
+        end
+
+        p "---------------"
+        p matched_ids
+        p delete_ids
+        p dup_flight_dates
+        p no_match
+        p "---------------"
+
+
+        # missed, duplicate strip frames with no footprints with different lat/longs but in same state
+        dups = "5799_6503", "7602_0318", "5279_0001", "3424_3867", "5801_6472", "5801_6473"
+        to_delete = []
+
+        dups.each do |sf|
+            pis = PhotoIndex.where(strip_frame: sf).order(:upload_id)
+
+            p pis.pluck(:upload_id)
+            to_delete << pis.last.id
+
+        end
+
+        p "---------------"
+        p to_delete
+
+    end
+
 end

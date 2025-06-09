@@ -53,7 +53,6 @@ class InvoiceNestidReportController < ApplicationController
           
           send_data invoice.nestid_export, filename: "Invoice #{invoice.number} NestID Report (#{Time.now.in_time_zone("Central Time (US & Canada)").strftime('%Y-%m-%d_%H-%M-%S')}).csv" 
 
-
         end
 
       end

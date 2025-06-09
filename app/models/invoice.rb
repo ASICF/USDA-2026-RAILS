@@ -611,12 +611,12 @@ class Invoice < ApplicationRecord
 
         CSV.generate(headers: true) do |csv|
 
-            csv << ["state", "county", "fips", "total_number_of_easements", "number_of_easements_delivered", "date_delivered", "nestid"]
+            csv << ["state", "county", "fips", "total_number_of_easements", "number_of_easements_delivered", "date_delivered", "nestid", "flight_date", ]
 
             ps_ids = packing_slips.pluck(:id)
 
             Tile.includes(:county).shipped.where(packing_slip_id: ps_ids).order(:state_abv, :county_name).each do |tile|
-                csv << [tile.state_abv, tile.county_name, tile.county.full_fips, tile.county.tiles.count, tile.county.tiles.shipped.count, tile.ship_date.strftime("%m/%d/%Y"), tile.poly_id]
+                csv << [tile.state_abv, tile.county_name, tile.county.full_fips, tile.county.tiles.count, tile.county.tiles.shipped.count, tile.ship_date.strftime("%m/%d/%Y"), tile.poly_id, tile.flight_date.strftime("%m/%d/%Y")]
             end
         end
 

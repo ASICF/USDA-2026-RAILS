@@ -274,6 +274,10 @@ class Rejection
                         p "message: #{message}"
                         p "flight_date: #{flight_date}"
 
+                        # Destroy all foootprints that are not associated to a tile
+                        # => Rejected associated tiles which then reject all associated footprints
+                        # ==> Do not reject anything past time
+
                         # Get the tile, only should be one
                         footprint = Footprint.not_associated.find_by(
                             strip_frame: strip_frame, 
@@ -286,35 +290,41 @@ class Rejection
                         # If present then push the Tile id to an array
                         if footprint.present?
 
-                            # get the frame center before deleting the footprint
-                            framecenter = footprint.frame_center
-
-                            # Reject the Footprint
-                            rejected_footprint = RejectedFootprint.reject footprint, message
-
-                            if !rejected_footprint
-                                # raise "Footprint could not be rejected!"
-                                # raise ActiveRecord::Rollback
-                                raise Exception, "Footprint could not be rejected!"
+                            if footprint.frame_center
+                                footprint.frame_center.destroy
                             end
 
-                            # Reject the associated Frame Center of the footprint
-                            if framecenter
+                            footprint.destroy
 
-                                # Find the rejected frame center
-                                rejected_frame_center = RejectedFrameCenter.reject framecenter, message
+                            # # get the frame center before deleting the footprint
+                            # framecenter = footprint.frame_center
 
-                                # 
-                                if !rejected_frame_center
-                                    raise Exception, "Frame Center #{fc.id} could not be rejected!"
-                                end
+                            # # Reject the Footprint
+                            # rejected_footprint = RejectedFootprint.reject footprint, message
 
-                                # Add the rejected frame centers to history
-                                history.rejected_frame_centers << rejected_frame_center
-                            end
+                            # if !rejected_footprint
+                            #     # raise "Footprint could not be rejected!"
+                            #     # raise ActiveRecord::Rollback
+                            #     raise Exception, "Footprint could not be rejected!"
+                            # end
 
-                            # Add rejected footprints to history
-                            history.rejected_footprints << rejected_footprint
+                            # # Reject the associated Frame Center of the footprint
+                            # if framecenter
+
+                            #     # Find the rejected frame center
+                            #     rejected_frame_center = RejectedFrameCenter.reject framecenter, message
+
+                            #     # 
+                            #     if !rejected_frame_center
+                            #         raise Exception, "Frame Center #{fc.id} could not be rejected!"
+                            #     end
+
+                            #     # Add the rejected frame centers to history
+                            #     history.rejected_frame_centers << rejected_frame_center
+                            # end
+
+                            # # Add rejected footprints to history
+                            # history.rejected_footprints << rejected_footprint
                             
                             # Set the count
                             output[:count] += 1

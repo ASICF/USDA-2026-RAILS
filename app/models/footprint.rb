@@ -438,9 +438,10 @@ class Footprint < ApplicationRecord
                             modified_strip_frame = arr.join("_")
                         end
 
-                        # p modified_strip_frame
-                        # p project
-                        # p Footprint.where(strip_frame: modified_strip_frame).count
+                        p modified_strip_frame
+                        p project
+                        p Footprint.where(strip_frame: modified_strip_frame).count
+                        p RejectedFootprint.where(strip_frame: modified_strip_frame).count
 
                         # Check if the strip frame has already been used with the same flight date
                         if Footprint.where(strip_frame: modified_strip_frame).count > 0
@@ -452,7 +453,7 @@ class Footprint < ApplicationRecord
                         end
 
                         if RejectedFootprint.where(strip_frame: modified_strip_frame).count > 0
-                            p "Duplicate Strip Frame: #{modified_strip_frame}. Skipping."
+                            p "Duplicate Rejected Strip Frame: #{modified_strip_frame}. Skipping."
                             # sleep(1.seconds)
                             reject_dup_count += 1
                             next
@@ -516,6 +517,8 @@ class Footprint < ApplicationRecord
                         # Match the photo index
                         # => TODO: Chat with nathan about requiring the camera or not
                         photo_index = PhotoIndex.find_by("strip_frame = '#{modified_strip_frame}' AND st_intersects(ST_GeomFromText('#{record.geometry.to_s}'), geom)")
+
+                        p "photo_index: #{photo_index.id}"
 
                         if photo_index
                             footprint.flight_date = photo_index.flight_date
@@ -1014,6 +1017,7 @@ class Footprint < ApplicationRecord
             Easement.not_flown.joins("INNER JOIN dissolved_footprints ON dissolved_footprints.name='scoped' AND st_contains(dissolved_footprints.geom::geometry, easements.geom::geometry)").each do |easement|
                 easement.update(flight_date: flight_date)
                 easement.tiles.not_flown.each do |tile|
+                    p "tile_assoc: #{tile.poly_id}"
 
                     # # Find the associated vector metadatum
                     # vm = VectorMetadatum.find_or_create_by(
@@ -1799,5 +1803,124 @@ class Footprint < ApplicationRecord
 
         p result.size
         pp result
+    end
+
+    def self.find_and_destroy
+
+        RejectedFootprint.left_outer_joins(:rejected_tile_footprints).where(rejected_tile_footprints: { rejected_tile_id: nil }).destroy_all
+        upload = Upload.find(1166)
+        rejected_tiles = []
+        delete_footprint_ids = []
+
+        rt = RejectedTile.find(880)
+        rt.rejected_footprints.each do |rfp|
+            rfp.rejected_frame_center.destroy
+            rfp.destroy
+        end
+        rt.destroy
+
+        rt = RejectedTile.find(881)
+        rt.rejected_footprints.each do |rfp|
+            rfp.rejected_frame_center.destroy
+            rfp.destroy
+        end
+        rt.destroy
+
+        # 1. Iterate all footprints
+        upload.footprints.each do |fp|
+            # 2. Reject Tiles and destroy rejected_tiles
+            fp.tiles.each do |tile|
+                tile.easement.update(flight_date: nil)
+                rejected_tile = RejectedTile.reject tile
+                rejected_tiles << rejected_tile
+            end
+
+            fp.photo_index.update(has_footprint: false)
+
+            # 3. Destroy assocaited Frame Center
+            fp.frame_center.destroy if fp.frame_center
+
+            # 4. Destroy Footprint
+            fp.destroy
+        end
+
+        # 5. Iterate Rejected Footprints in upload id
+        upload.rejected_footprints.each do |rfp|
+
+            # 6. Destroy rejected Tiles and Rejected Frame centers
+            rfp.rejected_tiles.each do |rt|
+                rt.destroy
+            end
+            rfp.rejected_frame_center.destroy if rfp.rejected_frame_center
+            rfp.destroy
+        end
+
+        rejected_tiles.each do |rt|
+            rt.destroy
+        end
+
+        # return 
+
+        # poly_ids = ['5505462201X7HA01X7J', '5405461701HMPA01K4R', '7305460200H8LA055FLP0000e', '7305460200H8LA078FLP', '73054611016XBB0161X', '7305460200H8LA039FLP0003', '66054699001LR']
+
+        # rejected_tiles = []
+        # delete_footprint_ids = []
+
+        # # 1. iterate poly_id and find all overlapping footprints
+        # Easement.where(poly_id: poly_ids).each do |easement|
+
+        #     # 2. Check if those footprints have associated tiles
+        #     tiles_to_reject = []
+
+        #     # footprint_ids = easement.tiles.footprints.plcuk(:id)
+        #     # footprint_ids = TileFootprint.where(tile_id: easement.tiles.first.id).pluck(:footprint_id)
+        #     footprint_ids = Footprint.where("flight_date = '2025-06-03' AND st_intersects(ST_GeomFromText('#{easement.geom.to_s}'), geom)").pluck(:id)
+
+        #     tiles_to_reject = TileFootprint.where(footprint_id: footprint_ids).where.not(tile_id: easement.tiles.first.id).pluck(:tile_id)
+
+        #     p "----------"
+        #     p easement.poly_id
+        #     p footprint_ids
+        #     p tiles_to_reject
+
+        #     # easement.tiles.footprints.each do |footprint|
+        #     #     footprint.tiles.where.not(poly_id: poly_ids).
+        #     # end
+
+        #     # 3. Reject those tiles but track which ones were rejected
+        #     Tile.where(id: tiles_to_reject).each do |tile|
+        #         tile.footprints.each do |fp|
+        #             delete_footprint_ids << fp.id
+        #         end
+        #         rejected_tile = RejectedTile.reject tile
+        #         rejected_tiles << rejected_tile
+        #     end
+
+        # end
+
+        # # 4. Find all the rejected tiles and destroy the associated rejected footprints/frame centers
+        # # => HERE!!! Need to find and isolate all the footprints because rejecting tiles does not auto reject footprints
+
+        # p "--------"
+        # p delete_footprint_ids
+        # p "--------"
+
+
+        # Footprint.where(id: delete_footprint_ids).each do |fp|
+        #     p "Delete #{fp.id}"
+        #     fp.frame_center.destroy if fp.frame_center
+        #     fp.destroy
+        # end
+
+        # # rejected_tiles.each do |rt|
+        # #     rt.rejected_footprints.each do |rf|
+        # #         rf.rejected_frame_center.destroyq
+        # #         rf.destroy
+        # #     end
+        # # end
+
+        # # 5. import the footprints again and make sure all tiles are covered. 
+
+
     end
 end

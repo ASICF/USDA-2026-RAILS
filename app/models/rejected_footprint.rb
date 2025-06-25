@@ -228,4 +228,8 @@ class RejectedFootprint < ApplicationRecord
 
     end
 
+    # def self.cleanup 
+    #     RejectedFootprint.left_outer_joins(:rejected_tile_footprints).where(rejected_tile_footprints: { rejected_tile_id: nil }).destroy_all
+    # end
+
 end

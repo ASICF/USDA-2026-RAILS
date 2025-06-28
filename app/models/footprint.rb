@@ -133,6 +133,17 @@ class Footprint < ApplicationRecord
                         message: "Form Data and Shapefile has been uploaded to the server and validated. Import process has been added to Job Queue. You will receive a message when it is completed."
                     }
 
+                    prj_content = File.read("#{path}/original/#{shapefile_filename}.prj")
+
+                    p "-------------"
+                    p prj_content
+                    p prj_content.include? "GCS_WGS_1984"
+                    p "-------------"
+
+                    if !prj_content.include? "GCS_WGS_1984"
+                        raise Exception, "Shapefile is not projected in WGS84"
+                    end
+
                     # Split filename into an array
                     # arr = shapefile_filename.split("_")
 

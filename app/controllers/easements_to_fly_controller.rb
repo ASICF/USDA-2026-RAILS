@@ -32,7 +32,9 @@ class EasementsToFlyController < ApplicationController
             params[:user] = @current_user
 
             if params[:project] == "SL" || params[:project] == "NRI"
-                if params[:export_rejection]
+                if params[:export_both]
+                    response = Easement.generate_shapefile_and_rejected_ready_to_fly(params)
+                elsif params[:export_rejection]
                     response = Easement.generate_rejected_ready_to_fly(params)
                 else
                     response = Easement.generate_shapefile(params)

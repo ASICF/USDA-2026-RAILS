@@ -638,6 +638,58 @@ class Easement < ApplicationRecord
 
     end
 
+    def self.generate_shapefile_and_rejected_ready_to_fly params
+        rejected = self.generate_rejected_ready_to_fly params
+        shp = self.generate_shapefile params
+
+        p "DONE"
+        p "---------"
+        p rejected
+        p shp
+        p "---------"
+
+        # Extract the history ids and zip the files into the shp history
+        rejected_history = History.find(rejected[:history_id])
+        rejected_path = File.dirname(File.dirname(rejected_history.url))
+
+        shp_history = History.find(shp[:history_id])
+        shp_path = File.dirname(File.dirname(shp_history.url))
+        shp_filename = File.basename(shp_history.url)
+
+        # p "#{rejected_path}/shapefile/."
+        # p "#{shp_path}/shapfile"
+        # p shp_filename
+
+        FileUtils.cp_r("#{rejected_path}/shapefile/.", "#{shp_path}/shapefile")
+
+        File.delete(shp_history.url)
+
+        # Get all entries in the folder
+        filenames = Dir.entries("#{shp_path}/shapefile").select do |entry|
+            File.file?(File.join("#{shp_path}/shapefile", entry))
+        end
+        
+        # Remove extensions and get unique names
+        shapefiles = filenames.map do |name|
+            File.basename(name, File.extname(name))
+        end.uniq
+
+        # Zip the files
+        Zip::File.open(shp_history.url, Zip::File::CREATE) do |zipfile|
+            shapefiles.each do |shapefile|
+                [".shp", ".shx", ".dbf", ".prj"].each do |ext|
+                    zipfile.add("#{shapefile}#{ext}", File.join("#{shp_path}/shapefile/", "#{shapefile}#{ext}"))
+                end
+            end
+        end
+
+        return {
+            state: true,
+            history_id: shp_history.id
+        }
+
+    end
+
     def self.generate_rejected_ready_to_fly params
         # Create GeoJSON of easements still remaining to fly
         # Convert to Shapefile 

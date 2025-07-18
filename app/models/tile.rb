@@ -1682,9 +1682,14 @@ class Tile < ApplicationRecord
             history.creator = user
             history.save
 
+            report_date = nil
+
             # Check if the tile needs to be rejected or not
             # if the tile doesn't have a flight date then don't reject it
             if tile.flown
+
+                report_date = tile.report_date
+
                 # Reject the tile
                 Rejection.reject_tiles [tile.poly_id], tile.flight_date, history, true
 
@@ -1714,7 +1719,8 @@ class Tile < ApplicationRecord
                 covered: false,
                 filename: tile.build_filename,
                 vector_metadatum_id: first.vector_metadatum_id,
-                associate_date: Date.today
+                associate_date: Date.today,
+                report_date: report_date
             )
 
             # update the contract rates
@@ -2017,5 +2023,110 @@ class Tile < ApplicationRecord
         tile.generate_median_flight_date_time
 
     end
+
+    # def self.fix_prev_report_dates
+
+    #     match = []
+    #     never_flown = []
+
+    #     Tile.flown.not_reported.each do |tile|
+    #         # check if the tile has a rejection already
+    #         # if so then update the report date with that report date. 
+
+    #         if tile.rejected_tiles.count > 0
+
+    #             rts = tile.rejected_tiles.where.not(report_date: nil).order(:flight_date)
+
+    #             if rts.count > 0
+    #                 tile.update(report_date: rts.last.report_date)
+    #                 match << tile.poly_id
+    #             end
+    #         else
+    #             never_flown << tile.poly_id
+    #         end
+    #     end
+
+    #     p match.size
+    #     p never_flown.size
+    #     p "-------"
+    #     p never_flown
+    # end
+
+    # def self.check_rejected_tiles
+    #     match = []
+    #     Tile.flown.not_reported.each do |tile|
+    #         match << "#{tile.poly_id} - #{tile.rejected_tiles.count}" if tile.rejected_tiles.count > 0
+    #     end
+
+    #     pp match
+    # end
+
+
+    # def self.search_dpr
+
+    #     folder_path = "/vol1/Programming_USDA_App/Reports/DailyProgressReports/"
+
+    #     match = []
+    #     no_match = []
+
+    #     Tile.flown.not_reported.each do |tile|
+
+    #         search_term = tile.poly_id
+    #         p search_term
+            
+    #         Dir.glob("#{folder_path}/**/*").each do |file|
+    #         next unless File.file?(file)
+            
+    #         begin
+    #             contents = File.read(file)
+    #             if contents.include?(search_term)
+    #                 puts " - Match found in: #{file}"
+    #                 match << tile.poly_id
+    #                 tile.update(report_date: tile.flight_date)
+    #             end
+    #             rescue => e
+    #                 puts " - Could not read #{file}: #{e.message}"
+    #                 no_match << tile.poly_id
+    #             end
+    #         end
+    #     end
+
+    #     p match.count
+    #     p no_match.count
+    #     p "-------"
+    #     p match
+    #     p no_match
+    # end
+
+    # def self.missing_report_date_counts
+    #     match = []
+    #     Tile.flown.not_reported.order(:flight_date).pluck(:flight_date).uniq.each do |flight_date|
+    #         match << "#{flight_date} - #{Tile.flown.not_reported.where(flight_date: flight_date).count}"
+    #     end
+
+    #     pp match
+    # end
+
+    # def self.show_footprint_flight_dates
+    #     output = ""
+
+
+    #     Tile.flown.not_reported.order(:flight_date).pluck(:flight_date).uniq.each do |flight_date|
+
+    #         output += "Date Acquired: #{flight_date.strftime("%d-%^b-%g")} \n"
+    #         output += " \n "
+    #         output += "Easements Acquired: \n"
+    #         output += " \n "
+
+    #         Tile.flown.not_reported.where(flight_date: flight_date).each do |tile|
+    #             output += "#{tile.poly_id} \n"
+    #         end
+
+
+    #         output += " \n "
+    #     end
+
+    #     pp output
+    # end
 
 end

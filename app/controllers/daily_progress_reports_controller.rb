@@ -56,13 +56,16 @@ class DailyProgressReportsController < ApplicationController
 
         # Get the non-reported tiles and rejected tiles that were older or equal to yesterday
         # associate_dates = Tile.sl.flown.not_reported.where.not(associate_date: nil).pluck(:associate_date).uniq
-        associate_dates = Tile.flown.not_reported.where("associate_date <= '#{yesterday}'").order(:associate_date).pluck(:associate_date).uniq
-        flight_dates = Tile.flown.not_reported.where("flight_date <= '#{yesterday}' AND associate_date is NULL").order(:flight_date).pluck(:flight_date).uniq
+        # associate_dates = Tile.flown.not_reported.where("associate_date <= '#{yesterday}'").order(:associate_date).pluck(:associate_date).uniq
+        # flight_dates = Tile.flown.not_reported.where("flight_date <= '#{yesterday}' AND report_date is NULL").order(:flight_date).pluck(:flight_date).uniq
         # rejected_dates = RejectedTile.sl.flown.reported.rejection_not_reported.where("rejected_date <= '#{yesterday}'").order(:rejected_date).pluck(:rejected_date).uniq
+
+        flight_dates = Tile.flown.not_reported.order(:flight_date).pluck(:flight_date).uniq
 
         # Get only the unique flight dates
         # dates = flight_dates | rejected_dates | associate_dates
-        dates = flight_dates | associate_dates
+        # dates = flight_dates | associate_dates
+        dates = flight_dates
 
         return dates.sort.map {|flight_date| {value: flight_date.strftime("%F"), label: flight_date.strftime("%m/%d/%Y")}}
     end

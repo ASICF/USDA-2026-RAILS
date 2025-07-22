@@ -529,7 +529,7 @@ class Footprint < ApplicationRecord
                         # => TODO: Chat with nathan about requiring the camera or not
                         photo_index = PhotoIndex.find_by("strip_frame = '#{modified_strip_frame}' AND st_intersects(ST_GeomFromText('#{record.geometry.to_s}'), geom)")
 
-                        p "photo_index: #{photo_index.id}"
+                        # p "photo_index: #{photo_index.id}"
 
                         if photo_index
                             footprint.flight_date = photo_index.flight_date

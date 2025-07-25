@@ -232,4 +232,24 @@ class RejectedFootprint < ApplicationRecord
     #     RejectedFootprint.left_outer_joins(:rejected_tile_footprints).where(rejected_tile_footprints: { rejected_tile_id: nil }).destroy_all
     # end
 
+    def self.remove_many
+
+        upload = Upload.find(1580)
+
+        rejected_tile_ids = []
+
+        upload.rejected_footprints.each do |rfp|
+            rejected_tile_ids |= rfp.rejected_tiles.pluck(:id)
+        end
+
+        p rejected_tile_ids.count
+
+        # return rejected_tile_ids
+
+        upload.rejected_footprints.destroy_all
+
+        RejectedTile.where(id: rejected_tile_ids).destroy_all()
+
+    end
+
 end

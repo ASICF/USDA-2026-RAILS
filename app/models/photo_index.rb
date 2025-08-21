@@ -351,7 +351,8 @@ class PhotoIndex < ApplicationRecord
 
                         # If Free Shot then check if it's a dup based on the gpstime, lat, and long
 
-                        if PhotoIndex.where(strip_frame: strip_frame, flight_date: record_flight_date, gpstime: gpstime).count > 0
+                        # if PhotoIndex.where(strip_frame: strip_frame, flight_date: record_flight_date, gpstime: gpstime).count > 0
+                        if PhotoIndex.where(strip_frame: strip_frame).count > 0
                             p "Found duplicate strip frame: #{strip_frame}. Skipping"
                             skipped += 1
                             next

@@ -261,28 +261,28 @@ class Footprint < ApplicationRecord
                     p "---------"
 
                     # if there are dups then send an email
-                    if dup_strip_frames.count > 0
+                    # if dup_strip_frames.count > 0
                         
-                        response = {
-                            pass: false,
-                            message: "Duplicates were found within the shapefile in the Footprint Import validation process. Please check your email to see a list of Strip Frames to resolve and try again."
-                        }
+                    #     response = {
+                    #         pass: false,
+                    #         message: "Duplicates were found within the shapefile in the Footprint Import validation process. Please check your email to see a list of Strip Frames to resolve and try again."
+                    #     }
 
-                        html = "Duplicates found while validating the Footprint Import. Review and remove the following strip frames."
-                        html += "<hr />"
-                        html += '<ul>'
-                        dup_strip_frames.each do |sf|
-                            html += "<li>#{sf}</li>"
-                        end
-                        html += '</ul>'
+                    #     html = "Duplicates found while validating the Footprint Import. Review and remove the following strip frames."
+                    #     html += "<hr />"
+                    #     html += '<ul>'
+                    #     dup_strip_frames.each do |sf|
+                    #         html += "<li>#{sf}</li>"
+                    #     end
+                    #     html += '</ul>'
 
-                        # Log and send email
-                        Mailbox.ship({
-                            users: MailGroup.find_by(name: "Footprints").users | [user],
-                            subject: "#{params[:project]} Footprint Import Duplicates Found",
-                            message: html
-                        })
-                    end
+                    #     # Log and send email
+                    #     Mailbox.ship({
+                    #         users: MailGroup.find_by(name: "Footprints").users | [user],
+                    #         subject: "#{params[:project]} Footprint Import Duplicates Found",
+                    #         message: html
+                    #     })
+                    # end
                 end
 
 

@@ -11,7 +11,7 @@ module Nrisli
     # Initialize configuration defaults for originally generated Rails version.
     config.load_defaults 5.1
 
-    config.active_job.queue_adapter = :delayed_job
+    # config.active_job.queue_adapter = :delayed_job
     # Delayed::Worker.delay_jobs = false if Rails.env.development?
 
     config.action_mailer.default_url_options = { host: Rails.application.secrets.host }

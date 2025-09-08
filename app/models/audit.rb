@@ -147,43 +147,43 @@ class Audit
 
         # Check if the delayed job is running or not
         # => If it is not and rails is in production mode, then start it up
-        if !system('ps -ef | grep "\bdelayed_job\b"') && Rails.env.production?
-            begin
-                system('RAILS_ENV=production bin/delayed_job start')
+        # if !system('ps -ef | grep "\bdelayed_job\b"') && Rails.env.production?
+        #     begin
+        #         system('RAILS_ENV=production bin/delayed_job start')
 
-                # Create a new History record
-                history = History.new
-                history.message = "Started backend Delayed Job Service"
-                history.action_type = "System Routines"
-                history.creator = User.admins.first
-                history.save
+        #         # Create a new History record
+        #         history = History.new
+        #         history.message = "Started backend Delayed Job Service"
+        #         history.action_type = "System Routines"
+        #         history.creator = User.admins.first
+        #         history.save
                 
-                # Log and send email
-                Mailbox.ship({
-                    users: MailGroup.find_by(name: "Errors").users,
-                    subject: "Started Delayed Job Service",
-                    message: "Delayed Job Service was not running, it has been started automatically by the App."
-                })
+        #         # Log and send email
+        #         Mailbox.ship({
+        #             users: MailGroup.find_by(name: "Errors").users,
+        #             subject: "Started Delayed Job Service",
+        #             message: "Delayed Job Service was not running, it has been started automatically by the App."
+        #         })
 
-                # # Email
-                # User.admins.each do |user|
-                #     PostmasterMailer.notify(user, "Delayed Job Service was not running, it has been started automatically by the App.", "USDA #{Rails.application.secrets.project_year}: Started Delayed Job Service").deliver
-                # end
+        #         # # Email
+        #         # User.admins.each do |user|
+        #         #     PostmasterMailer.notify(user, "Delayed Job Service was not running, it has been started automatically by the App.", "USDA #{Rails.application.secrets.project_year}: Started Delayed Job Service").deliver
+        #         # end
 
-            rescue => exception
-                # Log and send email
-                Mailbox.ship({
-                    users: MailGroup.find_by(name: "Errors").users,
-                    subject: "Error starting Delayed Job Service",
-                    message: "Delayed Job is not actively running and could not start the service automatically from app."
-                })
+        #     rescue => exception
+        #         # Log and send email
+        #         Mailbox.ship({
+        #             users: MailGroup.find_by(name: "Errors").users,
+        #             subject: "Error starting Delayed Job Service",
+        #             message: "Delayed Job is not actively running and could not start the service automatically from app."
+        #         })
 
-                # # Email
-                # User.admins.each do |user|
-                #     PostmasterMailer.notify(user, "Delayed Job is not actively running and could not start the service automatically from app.", "USDA #{Rails.application.secrets.project_year}: Error Starting Delayed Job Service").deliver
-                # end
-            end
-        end
+        #         # # Email
+        #         # User.admins.each do |user|
+        #         #     PostmasterMailer.notify(user, "Delayed Job is not actively running and could not start the service automatically from app.", "USDA #{Rails.application.secrets.project_year}: Error Starting Delayed Job Service").deliver
+        #         # end
+        #     end
+        # end
 
         # Only send the mail between 6am and 10pm
         from = Time.parse("7am")

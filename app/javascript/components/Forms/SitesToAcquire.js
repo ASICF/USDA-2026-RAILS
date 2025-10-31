@@ -313,6 +313,7 @@ export default function SitesToAcquire({ sl, nri, naip, token }) {
   function RenderNRI({ records, token }) {
     const [states, setStates] = useState([]);
     const [message, setMessage] = useState(null);
+    const [submitted, setSubmitted] = useState(false);
 
     console.log("RenderNRI", { records, states });
 
@@ -354,11 +355,14 @@ export default function SitesToAcquire({ sl, nri, naip, token }) {
     const onSubmit = (data) => {
       console.error("onSubmit", data);
 
+      setSubmitted(true);
+
       if (states.length === 0) {
         setMessage({
           status: "Error",
           text: "Select one or more states to export shapefile",
         });
+        setSubmitted(false);
       }
 
       setMessage(null);
@@ -369,6 +373,8 @@ export default function SitesToAcquire({ sl, nri, naip, token }) {
           authenticity_token: token,
           project: "NRI",
           states: states,
+          export_rejection: exportRejection,
+          export_both: exportBoth,
         })
         .then(({ data }) => {
           console.log("submit response", data);
@@ -384,6 +390,7 @@ export default function SitesToAcquire({ sl, nri, naip, token }) {
               text: data.message,
             });
           }
+          setSubmitted(false);
         })
         .catch((err) => {
           console.log(err);
@@ -392,6 +399,7 @@ export default function SitesToAcquire({ sl, nri, naip, token }) {
             text: "Something went wrong",
           });
           window.onbeforeunload = null;
+          setSubmitted(false);
         });
 
       // window.open(
@@ -508,9 +516,29 @@ export default function SitesToAcquire({ sl, nri, naip, token }) {
             UnCheck All
           </Button>
         </Button.Group>
-        <Button primary floated="right" type="button" onClick={onSubmit}>
+
+        <Button
+          primary
+          floated="right"
+          type="button"
+          disabled={states.length === 0}
+          loading={submitted}
+          onClick={onSubmit}
+        >
           Download Selected States
         </Button>
+        <Checkbox
+          checked={exportRejection}
+          onChange={(e, i) => setExportRejection(i.checked)}
+          style={{ float: "right", padding: "0.75em" }}
+          label="Export Rejections Ready to Fly"
+        />
+        <Checkbox
+          checked={exportBoth}
+          onChange={(e, i) => setExportBoth(i.checked)}
+          style={{ float: "right", padding: "0.75em" }}
+          label="Export Both"
+        />
         <br />
         <br />
       </Fragment>

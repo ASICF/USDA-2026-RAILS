@@ -758,6 +758,8 @@ class Easement < ApplicationRecord
                         last_rej = rejected_tiles.last.rejected_date
                     end
 
+                    p rej_msg
+
                     obj = {
                         EasementNo: record.poly_id,
                         acres: record.acres,
@@ -775,6 +777,8 @@ class Easement < ApplicationRecord
                         last_rej: last_rej,
                         num_rej: num_rej,
                     }
+
+                    pp obj
 
                     FlightTime.where(tile_id: record.tiles.pluck(:id)).order(:flight_date).each do |ft|
                         # obj[ft.start_date.strftime("%m_%d_start").to_sym] = ft.start_date.in_time_zone(record.time_zone.name).strftime("%H:%M").to_s

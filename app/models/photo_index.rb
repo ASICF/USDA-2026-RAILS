@@ -917,6 +917,128 @@ class PhotoIndex < ApplicationRecord
 
     end
 
+    def self.sun_angle_adjustment
+        # find all NRI photo indices that were rejected due to sun angle
+        # Check for their associated footprints and delete them
+
+        counties = []
+
+        PhotoIndex.where(state_id: nil).each do |pi|
+
+            p "Photo Index ID: #{pi.id}"
+
+            utm = Utm.exclude_geom.find_by("st_contains(utms.geom::geometry, ST_SetSRID(ST_Point(#{pi.longitude}, #{pi.latitude}),4326))")
+            county = County.includes(:state).exclude_geom.find_by("st_contains(counties.geom::geometry, ST_SetSRID(ST_Point(#{pi.longitude}, #{pi.latitude}),4326))")
+
+            next if county.nil?
+
+            pi.update(
+                utm: utm,
+                utm_zone: "#{utm.zone}N",
+                county: county,
+                county_name: county ? county.name : nil,
+                state_name: county ? county.state.name : nil,
+                state_id: county ? county.state.id : nil,
+                nri: ["HI", "PR"].include?(county.state.abv)
+            )
+
+        end
+
+        FrameCenter.where(state_id: nil).each do |fp|
+
+            p "Frame Center ID: #{fp.id}"
+
+            utm = Utm.exclude_geom.find_by("st_contains(utms.geom::geometry, ST_SetSRID(ST_Point(#{fp.longitude}, #{fp.latitude}),4326))")
+            county = County.includes(:state).exclude_geom.find_by("st_contains(counties.geom::geometry, ST_SetSRID(ST_Point(#{fp.longitude}, #{fp.latitude}),4326))")
+
+            next if county.nil?
+
+            fp.update(
+                utm: utm,
+                utm_zone: "#{utm.zone}N",
+                county: county,
+                county_name: county ? county.name : nil,
+                state_name: county ? county.state.name : nil,
+                state_id: county ? county.state.id : nil,
+            )
+
+        end
+
+        RejectedFrameCenter.where(state_id: nil).each do |fp|
+
+            p "Rejected Frame Center ID: #{fp.id}"
+
+            utm = Utm.exclude_geom.find_by("st_contains(utms.geom::geometry, ST_SetSRID(ST_Point(#{fp.longitude}, #{fp.latitude}),4326))")
+            county = County.includes(:state).exclude_geom.find_by("st_contains(counties.geom::geometry, ST_SetSRID(ST_Point(#{fp.longitude}, #{fp.latitude}),4326))")
+
+            next if county.nil?
+
+            fp.update(
+                utm: utm,
+                utm_zone: "#{utm.zone}N",
+                county: county,
+                county_name: county ? county.name : nil,
+                state_name: county ? county.state.name : nil,
+                state_id: county ? county.state.id : nil,
+            )
+
+        end
+
+        Footprint.where(state_id: nil).each do |fp|
+
+            p "Footprint ID: #{fp.id}"
+
+            utm = Utm.exclude_geom.find_by("st_contains(utms.geom::geometry, ST_SetSRID(ST_Point(#{fp.centroid_longitude}, #{fp.centroid_latitude}),4326))")
+            county = County.includes(:state).exclude_geom.find_by("st_contains(counties.geom::geometry, ST_SetSRID(ST_Point(#{fp.centroid_longitude}, #{fp.centroid_latitude}),4326))")
+
+            next if county.nil?
+
+            fp.update(
+                utm: utm,
+                utm_zone: "#{utm.zone}N",
+                county: county,
+                county_name: county ? county.name : nil,
+                state_name: county ? county.state.name : nil,
+                state_id: county ? county.state.id : nil,
+            )
+
+        end
+
+        RejectedFootprint.where(state_id: nil).each do |fp|
+
+            p "Rejected Footprint ID: #{fp.id}"
+
+            utm = Utm.exclude_geom.find_by("st_contains(utms.geom::geometry, ST_SetSRID(ST_Point(#{fp.centroid_longitude}, #{fp.centroid_latitude}),4326))")
+            county = County.includes(:state).exclude_geom.find_by("st_contains(counties.geom::geometry, ST_SetSRID(ST_Point(#{fp.centroid_longitude}, #{fp.centroid_latitude}),4326))")
+
+            next if county.nil?
+
+            fp.update(
+                utm: utm,
+                utm_zone: "#{utm.zone}N",
+                county: county,
+                county_name: county ? county.name : nil,
+                state_name: county ? county.state.name : nil,
+                state_id: county ? county.state.id : nil,
+            )
+
+        end
+
+        PhotoIndex.nri.rejected.where("sun_angle >= #{Rails.application.secrets.min_sun_angle} AND sun_angle <= 30").each do |pi|
+
+            # clear the error state
+            pi.update(
+                sun_angle_error: false
+            )
+
+            pi.rejected_footprint.destroy
+        end
+
+        # State.find_by(abv: ["PR"]).each do |state|
+        #     state.photo_in
+        # end
+
+    end
 
     # def self.auto_reject_tiles footprints, project, user=User.first
 

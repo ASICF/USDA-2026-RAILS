@@ -1,18 +1,63 @@
-PhotoIndex.all.each do |pi|
-    if pi.footprint
-        pi.update(
-            sl: pi.footprint.sl,
-            nri: pi.footprint.nri,
-        )
+# Upload Shapefiles
+require 'rgeo/shapefile'
+
+# Import the States
+RGeo::Shapefile::Reader.open(
+    "/media/sf_SharedFolder/boundary/dissolved_pr.shp"
+  ) do |file|
+    file.each do |record|
+        # Convert geometry to WKT, remove newlines, escape quotes
+        new_geom_wkt = record.geometry.as_text.gsub(/\s+/, ' ').strip.gsub("'", "''")
+    
+        # County
+        update_sql = <<~SQL
+          UPDATE counties
+          SET geom = ST_Multi(
+              ST_Union(
+                  geom::geometry,
+                  ST_GeomFromText('#{new_geom_wkt}', 4326)
+              )
+          )::geography
+          WHERE id = 849;
+        SQL
+    
+        ActiveRecord::Base.connection.execute(update_sql)
+
+        # state
+        update_sql = <<~SQL
+          UPDATE states
+          SET geom = ST_Multi(
+              ST_Union(
+                  geom::geometry,
+                  ST_GeomFromText('#{new_geom_wkt}', 4326)
+              )
+          )::geography
+          WHERE id = 28;
+        SQL
+    
+        ActiveRecord::Base.connection.execute(update_sql)
+      end
     end
 
-    if pi.rejected_footprint
-        pi.update(
-            sl: pi.rejected_footprint.sl,
-            nri: pi.rejected_footprint.nri,
-        )
-    end
-end
+
+
+
+
+# PhotoIndex.all.each do |pi|
+#     if pi.footprint
+#         pi.update(
+#             sl: pi.footprint.sl,
+#             nri: pi.footprint.nri,
+#         )
+#     end
+
+#     if pi.rejected_footprint
+#         pi.update(
+#             sl: pi.rejected_footprint.sl,
+#             nri: pi.rejected_footprint.nri,
+#         )
+#     end
+# end
 
 # ids = []
 # count = 0

@@ -6,6 +6,7 @@ class Invoice < ApplicationRecord
 
     # Associations
     has_many :packing_slips
+    # has_many :billings
 
     # Validations
     # validate :check_projects
@@ -302,6 +303,8 @@ class Invoice < ApplicationRecord
                     obj[:previously_delivered][:acres] += ps.tiles.sum(:easements_acres).round(0)
 
                     obj[:previously_billed][:easements] += ps.tiles.count
+
+                    # TACO -> Needs to reference previous invoiced by state
                     obj[:previously_billed][:acres] += ps.tiles.sum(:easements_acres)
                 end
 
@@ -402,6 +405,9 @@ class Invoice < ApplicationRecord
 
                 unit_price = 0
                 if self.project == "SL"
+
+                    # TACO
+
                     unit_price = tile.easements_acres.round(2) * tile.contract_award.ppa
                 elsif self.project == "NRI"
                     unit_price = tile.contract_award.pps
@@ -548,13 +554,23 @@ class Invoice < ApplicationRecord
 
     def calculate_total
 
+
+        # total shipped - past invoiced
+
+        # all shipped tiles / invoiced tiles
+
         result, totals = build_contract_total
+
+        p "-----------"
+        p result
+        p totals
+        p "-----------"
 
         acres = 0
         amount = 0.0
         totals.each do |total, obj|
-            # p total
-            # p obj
+            p total
+            p obj
             acres += obj[:this_billing][:acres]
             amount += obj[:this_billing][:total]
         end
@@ -622,52 +638,52 @@ class Invoice < ApplicationRecord
 
     end
 
-    def self.assign_psns
-        ActiveRecord::Base.connection.execute("TRUNCATE invoices RESTART IDENTITY")
+    # def self.assign_psns
+    #     ActiveRecord::Base.connection.execute("TRUNCATE invoices RESTART IDENTITY")
 
-        invoice_15165 = ["20240329_AL", "20240329_KY", "20240401_IN", "20240401_TN", "20240401_WV", "20240404_WV", "20240405_AL", "20240405_KY", "20240405_NC", "20240405_TN", "20240406_VA", "20240407_LA", "20240408_GA"]
+    #     invoice_15165 = ["20240329_AL", "20240329_KY", "20240401_IN", "20240401_TN", "20240401_WV", "20240404_WV", "20240405_AL", "20240405_KY", "20240405_NC", "20240405_TN", "20240406_VA", "20240407_LA", "20240408_GA"]
 
-        invoice = Invoice.find_or_create_by!(
-            number: "15165",
-            invoice_date: "2024-04-10",
-            project: "SL",
-            amount: 0.0
-        )
+    #     invoice = Invoice.find_or_create_by!(
+    #         number: "15165",
+    #         invoice_date: "2024-04-10",
+    #         project: "SL",
+    #         amount: 0.0
+    #     )
 
-        PackingSlip.where(name: invoice_15165).each do |psn|
-            tile = psn.tiles.first
-            psn.update!(
-                invoice_id: invoice.id,
-                state_id: tile.state_id, 
-                state_abv: tile.state_abv
-            )
-        end
+    #     PackingSlip.where(name: invoice_15165).each do |psn|
+    #         tile = psn.tiles.first
+    #         psn.update!(
+    #             invoice_id: invoice.id,
+    #             state_id: tile.state_id, 
+    #             state_abv: tile.state_abv
+    #         )
+    #     end
 
-        invoice.calculate_total
+    #     invoice.calculate_total
 
-        invoice = Invoice.find_or_create_by!(
-            number: "15167",
-            invoice_date: "2024-04-26",
-            project: "SL",
-            amount: 0.0
-        )
+    #     invoice = Invoice.find_or_create_by!(
+    #         number: "15167",
+    #         invoice_date: "2024-04-26",
+    #         project: "SL",
+    #         amount: 0.0
+    #     )
 
-        PackingSlip.where(name: [
-            "20240425_IL",
-            "20240425_LA",
-            "20240425_MN",
-            "20240425_OH"]).each do |psn|
-            tile = psn.tiles.first
-            psn.update!(
-                invoice_id: invoice.id,
-                state_id: tile.state_id, 
-                state_abv: tile.state_abv
-            )
-        end
+    #     PackingSlip.where(name: [
+    #         "20240425_IL",
+    #         "20240425_LA",
+    #         "20240425_MN",
+    #         "20240425_OH"]).each do |psn|
+    #         tile = psn.tiles.first
+    #         psn.update!(
+    #             invoice_id: invoice.id,
+    #             state_id: tile.state_id, 
+    #             state_abv: tile.state_abv
+    #         )
+    #     end
 
-        invoice.calculate_total
+    #     invoice.calculate_total
 
-    end
+    # end
 
     private
 
@@ -682,5 +698,38 @@ class Invoice < ApplicationRecord
     #         errors.add(:title, "multiple Projects found in packing slips, must be NRI or SL")
     #     end
     # end
+
+    def self.nate_fix
+        invoice = Invoice.find(12)
+
+        state_totals = []
+
+        State.active_sl.each do |state|
+
+            # 
+
+            # add check for if last invoice
+            # => the selected sites + the previously invoiced sites = state total sites
+            # ==> then do normal round, otherwise round down 
+
+            delivered_acres = state.tiles.sl.shipped.sum(:easements_acres)
+            invoiced_acres = state.tiles.sl.invoiced.sum(:easements_acres)
+
+            total_to_invoice = delivered_acres - invoiced_acres
+
+            ppa = state.contract_awards.sl.first.ppa
+
+            p "#{state.abv} - #{ppa.to_f}"
+
+            next if total_to_invoice == 0
+
+            state_totals << {
+                [state.abv.to_sym] => (total_to_invoice.round * ppa).to_f
+            }
+        end
+
+        p state_totals
+
+    end
 
 end

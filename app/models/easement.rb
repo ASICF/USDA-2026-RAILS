@@ -393,10 +393,10 @@ class Easement < ApplicationRecord
                             # Find the State 
                             state = State.find_by(abv: record.attributes["STATE_ABBR"])
 
-                            # p "=-=-=-=-=-=-=-="
-                            # p state.name
-                            # p record.attributes["STATE_ABBR"]
-                            # p "=-=-=-=-=-=-=-="
+                            p "=-=-=-=-=-=-=-="
+                            p state.name
+                            p record.attributes["STATE_ABBR"]
+                            p "=-=-=-=-=-=-=-="
 
                             if state.nil?
                                 raise Exception, "Could not match State with FIPS: #{record.attributes["STATE_ABBR"]}"
@@ -424,7 +424,7 @@ class Easement < ApplicationRecord
                             # create the easement
                             easement = Easement.new(
                                 # scale: record.attributes["Scale"],
-                                acres: record.attributes["CalcAcres_"],
+                                acres: record.attributes["CalcAcresA"],
                                 # buffer_acres: record.attributes["BufferAcre"],
                                 latitude: record.attributes["Latitude"],
                                 longitude: record.attributes["Longitude"],
@@ -456,17 +456,21 @@ class Easement < ApplicationRecord
 
                             p record.attributes["FIPS"]
 
+                            fips = "#{record.attributes["STATE"]}#{record.attributes["COUNTY"]}"
+
                             # Find the county based on the selected state
-                            county = County.find_by(full_fips: "#{record.attributes["FIPS"]}")
+                            county = County.find_by(full_fips: "#{fips}")
 
                             if county.nil?
-                                raise Exception, "Could not match County with FIPS: #{record.attributes["FIPS"]}"
+                                raise Exception, "Could not match County with FIPS: #{fips}"
                             end
+
+                            p county.name
 
                             state = county.state
 
                             if state.nil?
-                                raise Exception, "Could not match State with FIPS: #{record.attributes["STATE_ABBR"]}"
+                                raise Exception, "Could not match State with FIPS: #{fips}"
                             end
 
                             # Find the contract award
@@ -475,12 +479,12 @@ class Easement < ApplicationRecord
                             # create the easement
                             easement = Easement.new(
                                 # scale: record.attributes["Scale"],
-                                acres: record.attributes["CalcAcres_"],
+                                acres: record.attributes["acreage"],
                                 # buffer_acres: record.attributes["BufferAcre"],
                                 latitude: record.geometry.centroid.y,
                                 longitude: record.geometry.centroid.x,
-                                original_poly_id: record.attributes["NESTID"],
-                                poly_id: record.attributes["NESTID"],
+                                original_poly_id: record.attributes["POLY_ID"],
+                                poly_id: record.attributes["POLY_ID"],
                                 project: params[:project],
                                 project_no: contract_award.project_no,
                                 project_state_name: state.name,
@@ -571,6 +575,9 @@ class Easement < ApplicationRecord
                         upload: upload,
                         message: "Uploaded #{count} Buffered Easements and generated their associated Tiles"
                     )
+
+                    p "--- taco ---"
+                    p user
 
                     # Log and send email
                     Mailbox.ship({

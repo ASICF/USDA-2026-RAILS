@@ -54,7 +54,7 @@ function SiteSidebar({ role }) {
               className="side-header"
             >
               <Icon name="close" /> 
-              USDA 2025
+              USDA 2026
             </Menu.Item>
 
             <Menu.Item as="a" href="/" className="home-sidebar">

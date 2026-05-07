@@ -199,7 +199,7 @@ class Footprint < ApplicationRecord
                                 arr = original_strip_frame.split("_")
 
                                 # If it's valid it should be similar to "1234_7890"
-                                if arr.count == 2 && arr[0].size == 4 && arr[1].size == 4 
+                                if arr.count == 2 && arr[0].size == 5 && arr[1].size == 5
                                     modified_strip_frame = original_strip_frame
                                 else
                                     raise Exception, "Invalid Strip Frame: #{original_strip_frame}"
@@ -215,19 +215,19 @@ class Footprint < ApplicationRecord
                                     arr.pop
                                 end
 
-                                if arr[0].length < 4
+                                if arr[0].length < 5
                                     # Buffer the second array with "0" to be 4 digits
-                                    arr[0] = "#{"0" * (4 - arr[0].length)}#{arr[0]}"
+                                    arr[0] = "#{"0" * (5 - arr[0].length)}#{arr[0]}"
                                 end
 
                                 # if the frame is greater than 5 digits then return the last 4 digits off 
-                                if arr[1].length > 4
-                                    arr[1] = arr[1][-4..-1]
+                                if arr[1].length > 5
+                                    arr[1] = arr[1][-5..-1]
                                 end
 
                                 # Buffer the second array with "0" to be 4 digits
-                                if arr[1].length < 4 
-                                    arr[1] = "#{"0" * (4 - arr[1].length)}#{arr[1]}"
+                                if arr[1].length < 5
+                                    arr[1] = "#{"0" * (5 - arr[1].length)}#{arr[1]}"
                                 end
 
                                 # Join with an underscore
@@ -414,7 +414,7 @@ class Footprint < ApplicationRecord
                             arr = original_strip_frame.split("_")
 
                             # If it's valid it should be similar to "1234_7890"
-                            if arr.count == 2 && arr[0].size == 4 && arr[1].size == 4 
+                            if arr.count == 2 && arr[0].size == 5 && arr[1].size == 5 
                                 modified_strip_frame = original_strip_frame
                             else
                                 raise Exception, "Invalid Strip Frame: #{original_strip_frame}"
@@ -430,19 +430,19 @@ class Footprint < ApplicationRecord
                                 arr.pop
                             end
 
-                            if arr[0].length < 4
+                            if arr[0].length < 5
                                 # Buffer the second array with "0" to be 4 digits
-                                arr[0] = "#{"0" * (4 - arr[0].length)}#{arr[0]}"
+                                arr[0] = "#{"0" * (5 - arr[0].length)}#{arr[0]}"
                             end
 
                             # if the frame is greater than 5 digits then return the last 4 digits off 
-                            if arr[1].length > 4
-                                arr[1] = arr[1][-4..-1]
+                            if arr[1].length > 5
+                                arr[1] = arr[1][-5..-1]
                             end
 
                             # Buffer the second array with "0" to be 4 digits
-                            if arr[1].length < 4 
-                                arr[1] = "#{"0" * (4 - arr[1].length)}#{arr[1]}"
+                            if arr[1].length < 5
+                                arr[1] = "#{"0" * (5 - arr[1].length)}#{arr[1]}"
                             end
 
                             # Join with an underscore

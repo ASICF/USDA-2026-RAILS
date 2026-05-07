@@ -311,17 +311,17 @@ class PhotoIndex < ApplicationRecord
                             skipped += 1
                             next
                         else
-                            strip = "#{"0" * (4 - arr[2].to_s.length)}#{arr[2]}"
+                            strip = "#{"0" * (5 - arr[2].to_s.length)}#{arr[2]}"
                             frame = arr[3]
 
                             # if the frame is greater than 5 digits then return the last 4 digits off 
-                            if frame.length > 4
-                                frame = frame[-4..-1]
+                            if frame.length > 5
+                                frame = frame[-5..-1]
                             end
 
-                            if frame.length < 4
+                            if frame.length < 5
                                 # Buffer the second array with "0" to be 4 digits
-                                frame = "#{"0" * (4 - frame.length)}#{frame}"
+                                frame = "#{"0" * (5 - frame.length)}#{frame}"
                             end
 
                             # frame = "#{"0" * (4 - arr[3].to_s.length)}#{arr[3]}"

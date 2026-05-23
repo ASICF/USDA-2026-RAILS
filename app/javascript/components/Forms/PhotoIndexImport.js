@@ -27,43 +27,13 @@ import axios from "axios";
 
 export default function PhotoIndexImport({
   companies,
-  cameras,
-  planes,
   projects,
-  loadouts,
   token,
 }) {
   const [message, setMessage] = useState(null);
   const [accordionState, setAccordionState] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
-  // const fileRef = useRef()
-
-  const [loadoutOnePlane, setLoadoutOnePlane] = useState(null);
-  const [loadoutOneCamera, setLoadoutOneCamera] = useState(null);
-  const [loadoutTwoPlane, setLoadoutTwoPlane] = useState(null);
-  const [loadoutTwoCamera, setLoadoutTwoCamera] = useState(null);
-
-  console.log({
-    loadoutOnePlane,
-    loadoutOneCamera,
-    loadoutTwoPlane,
-    loadoutTwoCamera,
-    cameras,
-    planes,
-  });
-
-  useEffect(() => {
-    console.log({ loadouts });
-
-    const underscore = loadouts.find((record) => record.name === "Underscore");
-    setLoadoutOnePlane(underscore.plane_id);
-    setLoadoutOneCamera(underscore.camera_id);
-
-    const other = loadouts.find((record) => record.name === "No Underscore");
-    setLoadoutTwoPlane(other.plane_id);
-    setLoadoutTwoCamera(other.camera_id);
-  }, []);
 
   const {
     handleSubmit,
@@ -76,7 +46,6 @@ export default function PhotoIndexImport({
 
   console.log("FrameCenterImport", {
     companies,
-    cameras,
     token,
     errors,
   });
@@ -89,8 +58,7 @@ export default function PhotoIndexImport({
     reset({
       project: "NRI/SL",
       flown_by_id: 1,
-      camera_id: "auto",
-      flight_date: "",
+      // flight_date: "",
       file: "",
     });
   };
@@ -101,27 +69,13 @@ export default function PhotoIndexImport({
     setLoading(true);
     const form = new FormData();
 
-    if (loadoutOnePlane === loadoutTwoPlane) {
-      alert("Loadout planes cannot be the same")
-    }
-
-    if (loadoutOneCamera === loadoutTwoCamera) {
-      alert("Loadout cameras cannot be the same")
-    }
-
-    form.append("photo_index[loadout_underscore_camera]", loadoutOneCamera);
-    form.append("photo_index[loadout_underscore_plane]", loadoutOnePlane);
-    form.append("photo_index[loadout_other_camera]", loadoutTwoCamera);
-    form.append("photo_index[loadout_other_plane]", loadoutTwoPlane);
-
     form.append("authenticity_token", token);
     form.append("photo_index[project]", data.project);
     form.append("photo_index[flown_by_id]", data.flown_by_id);
-    form.append("photo_index[camera_id]", data.camera_id);
-    form.append(
-      "photo_index[flight_date]",
-      moment(data.flight_date, "l").format("YYYY-MM-DD")
-    );
+    // form.append(
+    //   "photo_index[flight_date]",
+    //   moment(data.flight_date, "l").format("YYYY-MM-DD")
+    // );
     form.append("photo_index[file]", data.file[0]);
 
     setMessage({
@@ -340,105 +294,6 @@ export default function PhotoIndexImport({
         </Form.Group>
 
         <Divider />
-
-        <div className="ui grid">
-          <div className="eight wide column">
-            <Segment>
-              <h4>Loadout One (Underscore)</h4>
-              <Divider />
-
-              <Form.Select
-                fluid
-                search
-                selection
-                name={"loadout_underscore_plane"}
-                data-value={loadoutOnePlane}
-                label={"Plane"}
-                required={true}
-                value={loadoutOnePlane || ""}
-                defaultValue={loadoutOnePlane}
-                onChange={(e, i) => setLoadoutOnePlane(i.value)}
-                autoComplete="off"
-                options={planes.map((record) => {
-                  return {
-                    key: record.id,
-                    text: record.label,
-                    value: record.id,
-                  };
-                })}
-              />
-              <Form.Select
-                fluid
-                search
-                selection
-                name={"loadout_underscore_camera"}
-                data-value={loadoutOneCamera}
-                label={"Camera"}
-                required={true}
-                value={loadoutOneCamera || ""}
-                defaultValue={loadoutOneCamera}
-                onChange={(e, i) => setLoadoutOneCamera(i.value)}
-                autoComplete="off"
-                options={cameras.map((record) => {
-                  return {
-                    key: record.id,
-                    text: record.label,
-                    value: record.id,
-                  };
-                })}
-              />
-            </Segment>
-          </div>
-          <div className="eight wide column">
-            <Segment>
-              <h4>Loadout Two (No Underscore)</h4>
-              <Divider />
-              <Form.Select
-                fluid
-                search
-                selection
-                name={"loadout_other_plane"}
-                data-value={loadoutTwoPlane}
-                label={"Plane"}
-                required={true}
-                value={loadoutTwoPlane || ""}
-                defaultValue={loadoutTwoPlane}
-                // onChange={handleChange}
-                onChange={(e, i) => setLoadoutTwoPlane(i.value)}
-                autoComplete="off"
-                options={planes.map((record) => {
-                  return {
-                    key: record.id,
-                    text: record.label,
-                    value: record.id,
-                  };
-                })}
-              />
-
-              <Form.Select
-                fluid
-                search
-                selection
-                name={"loadout_other_camera"}
-                data-value={loadoutTwoCamera}
-                label={"Camera"}
-                required={true}
-                value={loadoutTwoCamera || ""}
-                defaultValue={loadoutTwoCamera}
-                // onChange={handleChange}
-                onChange={(e, i) => setLoadoutTwoCamera(i.value)}
-                autoComplete="off"
-                options={cameras.map((record) => {
-                  return {
-                    key: record.id,
-                    text: record.label,
-                    value: record.id,
-                  };
-                })}
-              />
-            </Segment>
-          </div>
-        </div>
 
         <Divider />
 

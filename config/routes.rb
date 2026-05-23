@@ -1,5 +1,4 @@
 Rails.application.routes.draw do
-  # get 'raw_tiff_compare/index'
   root 'pages#index'
 
   devise_for :users
@@ -18,6 +17,7 @@ Rails.application.routes.draw do
   resources :cameras
   resources :companies
   resources :planes
+  resources :loadouts
   resources :users, except: [:destroy]
 
   # => Unreject Tile

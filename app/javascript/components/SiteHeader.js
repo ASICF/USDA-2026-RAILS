@@ -122,6 +122,13 @@ const SiteHeader = (props) => {
                     </Dropdown.Item>
                     <Dropdown.Item
                       as="a"
+                      href="/loadouts"
+                      data-turbolinks="false"
+                    >
+                      Loadouts
+                    </Dropdown.Item>
+                    <Dropdown.Item
+                      as="a"
                       href="/planes"
                       data-turbolinks="false"
                     >

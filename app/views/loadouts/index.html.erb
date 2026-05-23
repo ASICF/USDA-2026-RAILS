@@ -1,0 +1,43 @@
+
+<div class="ui breadcrumb">
+    <div class="section">Manage</div>
+    <span class="divider">/</span>
+    <div class="section">Loadout</div>
+    <span class="divider">/</span>
+    <div class="active section">All</div>
+</div>
+
+<%= link_to new_loadout_path, class: "ui right floated labeled icon tiny primary button" do %>
+    <i class="plus icon"></i>
+    New Loadout
+<% end %>
+
+<div class="clear"></div>
+<div class="ui divider"></div>
+
+<table class="ui sortable center aligned celled padded table" style="margin-bottom: 2em;">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Plane</th>
+            <th>Camera</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        <% @loadouts.each do |record| %>
+            <tr>
+                <td><%= record.name %></td>
+                <td><%= record.plane.name %></td>
+                <td><%= record.camera.name %></td>
+                <td class="collapsing">
+                    <%= link_to edit_loadout_path(record), class: "ui tiny icon secondary button" do %>
+                        <i class="setting icon"></i>
+                    <% end %>
+                </td>
+            </tr>
+        <% end %>
+    </tbody>
+    
+</table>
+

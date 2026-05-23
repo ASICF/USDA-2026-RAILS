@@ -92,18 +92,18 @@ class PhotoIndex < ApplicationRecord
                 #     end
                 # end
 
-                loadout_underscore_camera = Camera.find_by(id: params[:loadout_underscore_camera])
-                loadout_underscore_plane = Plane.find_by(id: params[:loadout_underscore_plane])
-                loadout_other_camera = Camera.find_by(id: params[:loadout_other_camera])
-                loadout_other_plane = Plane.find_by(id: params[:loadout_other_plane])
+                # loadout_underscore_camera = Camera.find_by(id: params[:loadout_underscore_camera])
+                # loadout_underscore_plane = Plane.find_by(id: params[:loadout_underscore_plane])
+                # loadout_other_camera = Camera.find_by(id: params[:loadout_other_camera])
+                # loadout_other_plane = Plane.find_by(id: params[:loadout_other_plane])
 
-                raise Exception, "Loadout One Camera does not exist" if loadout_underscore_camera.nil?
-                raise Exception, "Loadout One Plane does not exist" if loadout_underscore_plane.nil?
-                raise Exception, "Loadout Two Camera does not exist" if loadout_other_camera.nil?
-                raise Exception, "Loadout Two Plane does not exist" if loadout_other_plane.nil?
+                # raise Exception, "Loadout One Camera does not exist" if loadout_underscore_camera.nil?
+                # raise Exception, "Loadout One Plane does not exist" if loadout_underscore_plane.nil?
+                # raise Exception, "Loadout Two Camera does not exist" if loadout_other_camera.nil?
+                # raise Exception, "Loadout Two Plane does not exist" if loadout_other_plane.nil?
 
-                raise Exception, "Loadout Cameras cannot be the same" if loadout_underscore_camera.id === loadout_other_camera.id
-                raise Exception, "Loadout Planes cannot be the same" if loadout_underscore_plane.id === loadout_other_plane.id
+                # raise Exception, "Loadout Cameras cannot be the same" if loadout_underscore_camera.id === loadout_other_camera.id
+                # raise Exception, "Loadout Planes cannot be the same" if loadout_underscore_plane.id === loadout_other_plane.id
 
                 # Copy the file to the server
                 # Get the folder name by converting the current time to seconds
@@ -177,6 +177,17 @@ class PhotoIndex < ApplicationRecord
         error_message = "Something went wrong. Contact Programming"
         auto_detect_camera = true
 
+        loadouts = {}
+        Loadout.includes(:plane, :camera).all.each do |loadout|
+            loadouts[loadout.name.upcase] = {
+                plane: loadout.plane,
+                camera: loadout.camera
+            }
+        end
+
+        p "LOADUTS"
+        pp loadouts
+
         uploads = {}
 
         # Start a Transaction Block
@@ -233,20 +244,20 @@ class PhotoIndex < ApplicationRecord
 
                 skipped = 0
 
-                loadout_underscore_camera = Camera.find_by(id: params[:loadout_underscore_camera])
-                loadout_underscore_plane = Plane.find_by(id: params[:loadout_underscore_plane])
-                loadout_other_camera = Camera.find_by(id: params[:loadout_other_camera])
-                loadout_other_plane = Plane.find_by(id: params[:loadout_other_plane])
+                # loadout_underscore_camera = Camera.find_by(id: params[:loadout_underscore_camera])
+                # loadout_underscore_plane = Plane.find_by(id: params[:loadout_underscore_plane])
+                # loadout_other_camera = Camera.find_by(id: params[:loadout_other_camera])
+                # loadout_other_plane = Plane.find_by(id: params[:loadout_other_plane])
 
-                # Update the loadout
-                Loadout.find_by(name: "Underscore").update(
-                    camera: loadout_underscore_camera,
-                    plane: loadout_underscore_plane
-                )
-                Loadout.find_by(name: "No Underscore").update(
-                    camera: loadout_other_camera,
-                    plane: loadout_other_plane
-                )
+                # # Update the loadout
+                # Loadout.find_by(name: "Underscore").update(
+                #     camera: loadout_underscore_camera,
+                #     plane: loadout_underscore_plane
+                # )
+                # Loadout.find_by(name: "No Underscore").update(
+                #     camera: loadout_other_camera,
+                #     plane: loadout_other_plane
+                # )
 
                 File.open(file, "r") do |f|
 
@@ -331,19 +342,43 @@ class PhotoIndex < ApplicationRecord
                         longitude = arr[5].to_f.round(6)
                         gpstime = arr[1]
 
-                        if auto_detect_camera
-                            if arr[7].include? "_"
-                                # camera = Camera.find(24)
-                                # plane = Plane.find(4)
-                                camera = loadout_underscore_camera
-                                plane = loadout_underscore_plane
-                            else
-                                # camera = Camera.find(4)
-                                # plane = Plane.find(1)
-                                camera = loadout_other_camera
-                                plane = loadout_other_plane
-                            end
+                        ## Query loadout
+
+                        # get the first letter in the film string
+                        film_letter = arr[7][0]
+
+                        p "film_letter: #{film_letter}"
+
+                        # check if it's a letter and not a number
+                        if !film_letter.match?(/[a-zA-Z]/)
+                            raise Exception, "Film number does not include a leading letter to match against Loadout: #{arr[7]}"
+                        else
+                            # Proceed with your logic (e.g., capitalizing it)
+                            film_letter = film_letter.upcase
                         end
+
+                        # check if the film letter has a loadout
+                        if loadouts[film_letter]
+                            plane = loadouts[film_letter][:plane]
+                            camera = loadouts[film_letter][:camera]
+                        else
+                            raise Exception, "Could not find a Loadout that matches #{arr[7]}"
+                        end
+
+
+                        # if auto_detect_camera
+                        #     if arr[7].include? "_"
+                        #         # camera = Camera.find(24)
+                        #         # plane = Plane.find(4)
+                        #         camera = loadout_underscore_camera
+                        #         plane = loadout_underscore_plane
+                        #     else
+                        #         # camera = Camera.find(4)
+                        #         # plane = Plane.find(1)
+                        #         camera = loadout_other_camera
+                        #         plane = loadout_other_plane
+                        #     end
+                        # end
 
                         # p "-------"
                         # p camera

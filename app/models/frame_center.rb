@@ -338,9 +338,9 @@ class FrameCenter < ApplicationRecord
 
                                 # Check if the photo index is equal to zero or greater than one and if so then abort and rollback
                                 if photo_index.count == 0
-                                    raise Exception, "No Photo Index found that matched Line #{index + 1}"
-                                    # photo_index_skip += 1
-                                    # next
+                                    # raise Exception, "No Photo Index found that matched Line #{index + 1}"
+                                    photo_index_skip += 1
+                                    next
                                 elsif photo_index.count > 1
                                     raise Exception, "More than one Photo Index found for Line #{index + 1}"
                                 else

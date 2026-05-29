@@ -96,11 +96,8 @@ function DailyProgressReport(props) {
         <Message.Header>Summary</Message.Header>
         <p>
           Choose the flight date to generate the report. A copy of the report
-          will be generated and saved as a text file at:{" "}
-          <i>
-            <b>{props.folder_path}</b>
-          </i>{" "}
-          and available to download via the Timeline Report.
+          will be generated and saved as a text file and available to download
+          via the Timeline Report.
         </p>
       </Message>
       <Divider />

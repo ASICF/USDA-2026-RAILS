@@ -1,7 +1,7 @@
 
 # README
 
-ASI Application to manage the USDA operations for 2025.
+ASI Application to manage the USDA operations for 2026.
 
 Versions
 -----

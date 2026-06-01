@@ -1,6 +1,6 @@
 class BufferedTile < ApplicationRecord
 
-    def self.export state_abv="GA", output_path="/vol1/bernard_test/2025/SL/buff_tiles_test/"
+    def self.export state_abv="GA", output_path="/vol1/bernard_test/2026/SL/buff_tiles_test/"
 
         p "++++++++++"
         p "TACO"

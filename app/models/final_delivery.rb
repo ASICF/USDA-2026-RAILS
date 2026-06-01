@@ -407,9 +407,9 @@ class FinalDelivery < ApplicationRecord
                     FileUtils.mkdir_p(county_path) unless File.directory?(county_path)
 
                     # Generate the metadata for the tif
-                    template = "#{Rails.root}/assets/2025_SL_Template.xml"
+                    template = "#{Rails.root}/assets/2026_SL_Template.xml"
                     if project == "NRI"
-                        template = "#{Rails.root}/assets/2025_NRI_Template.xml"
+                        template = "#{Rails.root}/assets/2026_NRI_Template.xml"
                     end
 
                     # Read the template file

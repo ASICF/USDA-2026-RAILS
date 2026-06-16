@@ -1909,13 +1909,13 @@ class Tile < ApplicationRecord
             # => if automatic then return the sun angle
 
 
-        f = File.open("/media/sf_shared/2025/Audit/overview.csv", "w+")
+        f = File.open("/media/sf_shared/2026/Audit/overview.csv", "w+")
         f.puts "PolyID, State, MultipleGeom, Coverage, RejectionCount\n"
 
-        c = File.open("/media/sf_shared/2025/Audit/potential_coverages.csv", "w+")
+        c = File.open("/media/sf_shared/2026/Audit/potential_coverages.csv", "w+")
         c.puts "PolyID, State, FlightDate, StripFrame, FlownBy\n"
 
-        r = File.open("/media/sf_shared/2025/Audit/potential_rejections.csv", "w+")
+        r = File.open("/media/sf_shared/2026/Audit/potential_rejections.csv", "w+")
         r.puts "PolyID, State, FlightDate, RejectedDate, RejectionType, RejectedSunAngle\n"
 
         multiple_coverage_poly_ids = Tile.count_geometries

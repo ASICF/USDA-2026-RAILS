@@ -24,7 +24,7 @@ class WebLogUpload < ApplicationRecord
         # WebLogUpload.destroy_all
         # WebLog.destroy_all
         # WebLogSummary.destroy_all
-        f = File.open("/media/sf_shared/2025/Audit/esri_log_import_not_imported.txt", "w+") if Rails.env.development?
+        f = File.open("/media/sf_shared/2026/Audit/esri_log_import_not_imported.txt", "w+") if Rails.env.development?
 
         total = 0
         count = 0

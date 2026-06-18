@@ -20,7 +20,7 @@ class Rejection
                 path = "#{Rails.root}/assets/rejections/#{folder}"
 
                 # Create a folder if it doesn't exist
-                FileUtils.mkdir_p("#{path}/projected") unless File.directory?(path)
+                FileUtils.mkdir_p("#{path}/original") unless File.directory?(path)
 
                 # Used to make sure the required files are found
                 txt = false
@@ -31,11 +31,11 @@ class Rejection
                 end
 
                 # Move the file
-                FileUtils.mv params[:file].tempfile, "#{path}/#{params[:file].original_filename}"
+                FileUtils.mv params[:file].tempfile, "#{path}/original/#{params[:file].original_filename}"
 
                 # Create upload instance to track the easements created
                 upload = Upload.create(
-                    folder_path: "#{path}/#{params[:file].original_filename}",
+                    folder_path: "#{path}",
                     upload_type: "Rejected Tile",
                     uploader: user
                 )

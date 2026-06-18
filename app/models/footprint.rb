@@ -1025,7 +1025,7 @@ class Footprint < ApplicationRecord
 
             # Returns all easements that do not have a Flight date that fall within the dissolved footprints
             # => Update the Flight Date on the Easements and add info to it's Tiles.
-            Easement.not_flown.joins("INNER JOIN dissolved_footprints ON dissolved_footprints.name='scoped' AND st_contains(dissolved_footprints.geom::geometry, easements.geom::geometry)").each do |easement|
+            Easement.not_flown.where("start_date <= ? AND end_date >= ?", flight_date, flight_date).joins("INNER JOIN dissolved_footprints ON dissolved_footprints.name='scoped' AND st_contains(dissolved_footprints.geom::geometry, easements.geom::geometry)").each do |easement|
                 easement.update(flight_date: flight_date)
                 easement.tiles.not_flown.each do |tile|
                     p "tile_assoc: #{tile.poly_id}"
@@ -1311,7 +1311,7 @@ class Footprint < ApplicationRecord
         DissolvedFootprint.dissolve_by_scope flight_date, first.flown_by_id, first.camera_id, project
 
         # Find all easements that are completely covered and marked as flown but not on the same flight date
-        Easement.flown.nri_sl.where.not(flight_date: flight_date).joins("INNER JOIN dissolved_footprints ON dissolved_footprints.name='scoped' AND st_contains(dissolved_footprints.geom::geometry, easements.geom::geometry)").each do |easement|
+        Easement.flown.nri_sl.where.not(flight_date: flight_date).where("start_date <= ? AND end_date >= ?", flight_date, flight_date).joins("INNER JOIN dissolved_footprints ON dissolved_footprints.name='scoped' AND st_contains(dissolved_footprints.geom::geometry, easements.geom::geometry)").each do |easement|
 
             # update the covered boolean on the Tile 
             easement.tiles.first.update(covered: true)
@@ -1430,47 +1430,47 @@ class Footprint < ApplicationRecord
     #     history
     # end
 
-    def self.fix_tiles_pilot_so
+    # def self.fix_tiles_pilot_so
 
-        # Create a new dissolved layer for specificallly here
-        # Upload.where(upload_type: "Footprint").order(:created_at).each do |upload|
-        Footprint.all.pluck(:pilot_name).uniq.each do |pilot|
+    #     # Create a new dissolved layer for specificallly here
+    #     # Upload.where(upload_type: "Footprint").order(:created_at).each do |upload|
+    #     Footprint.all.pluck(:pilot_name).uniq.each do |pilot|
 
-            name = "fix_for_pilot_#{pilot}"
+    #         name = "fix_for_pilot_#{pilot}"
 
-            # Create a new dissolved layer 
-            DissolvedFootprint.find_by(name: name).destroy if DissolvedFootprint.find_by(name: name).present?
-            DissolvedFootprint.create(name: name)
+    #         # Create a new dissolved layer 
+    #         DissolvedFootprint.find_by(name: name).destroy if DissolvedFootprint.find_by(name: name).present?
+    #         DissolvedFootprint.create(name: name)
 
-            # Add those footprints to the dissolved layer
-            sql = "UPDATE dissolved_footprints SET geom = (SELECT st_union(geom::geometry) AS the_geom from footprints WHERE pilot_name='#{pilot}') WHERE name='#{name}'"
-            results = ActiveRecord::Base.connection.execute(sql)
+    #         # Add those footprints to the dissolved layer
+    #         sql = "UPDATE dissolved_footprints SET geom = (SELECT st_union(geom::geometry) AS the_geom from footprints WHERE pilot_name='#{pilot}') WHERE name='#{name}'"
+    #         results = ActiveRecord::Base.connection.execute(sql)
 
-            Easement.flown.joins("INNER JOIN dissolved_footprints ON dissolved_footprints.name='#{name}' AND st_contains(dissolved_footprints.geom::geometry, easements.geom::geometry)").each do |easement|
-                easement.tiles.flown.where(pilot: nil).update(pilot: pilot)
-            end
+    #         Easement.flown.joins("INNER JOIN dissolved_footprints ON dissolved_footprints.name='#{name}' AND st_contains(dissolved_footprints.geom::geometry, easements.geom::geometry)").each do |easement|
+    #             easement.tiles.flown.where(pilot: nil).update(pilot: pilot)
+    #         end
 
-        end
+    #     end
 
-        Footprint.all.pluck(:camera_operator_name).uniq.each do |so|
+    #     Footprint.all.pluck(:camera_operator_name).uniq.each do |so|
 
-            name = "fix_for_so_#{so}"
+    #         name = "fix_for_so_#{so}"
 
-            # Create a new dissolved layer 
-            DissolvedFootprint.find_by(name: name).destroy if DissolvedFootprint.find_by(name: name).present?
-            DissolvedFootprint.create(name: name)
+    #         # Create a new dissolved layer 
+    #         DissolvedFootprint.find_by(name: name).destroy if DissolvedFootprint.find_by(name: name).present?
+    #         DissolvedFootprint.create(name: name)
 
-            # Add those footprints to the dissolved layer
-            sql = "UPDATE dissolved_footprints SET geom = (SELECT st_union(geom::geometry) AS the_geom from footprints WHERE camera_operator_name='#{so}') WHERE name='#{name}'"
-            results = ActiveRecord::Base.connection.execute(sql)
+    #         # Add those footprints to the dissolved layer
+    #         sql = "UPDATE dissolved_footprints SET geom = (SELECT st_union(geom::geometry) AS the_geom from footprints WHERE camera_operator_name='#{so}') WHERE name='#{name}'"
+    #         results = ActiveRecord::Base.connection.execute(sql)
 
-            Easement.flown.joins("INNER JOIN dissolved_footprints ON dissolved_footprints.name='#{name}' AND st_contains(dissolved_footprints.geom::geometry, easements.geom::geometry)").each do |easement|
-                easement.tiles.flown.where(sensor_operator: nil).update(sensor_operator: so)
-            end
+    #         Easement.flown.joins("INNER JOIN dissolved_footprints ON dissolved_footprints.name='#{name}' AND st_contains(dissolved_footprints.geom::geometry, easements.geom::geometry)").each do |easement|
+    #             easement.tiles.flown.where(sensor_operator: nil).update(sensor_operator: so)
+    #         end
 
-        end
+    #     end
 
-    end
+    # end
 
     # def self.fix_geom
 

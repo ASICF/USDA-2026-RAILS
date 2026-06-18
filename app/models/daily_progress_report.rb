@@ -365,7 +365,7 @@ class DailyProgressReport
 
     end
 
-    def self.sl_find_coverages flight_date="2025-03-11"
+    def self.sl_find_coverages flight_date="2026-03-11"
         poly_ids = []
         p flight_date
 
@@ -389,7 +389,7 @@ class DailyProgressReport
         poly_ids
     end
 
-    def self.nri_find_coverages flight_date="2025-03-11"
+    def self.nri_find_coverages flight_date="2026-03-11"
         poly_ids = []
         p flight_date
 

@@ -115,9 +115,13 @@ class PhotoIndex < ApplicationRecord
                 FileUtils.mkdir_p(path)
                 FileUtils.mkdir("#{path}/original")
 
-                file = "#{path}/original/#{File.basename(params[:file].original_filename)}"
+                # file = "#{path}/original/#{File.basename(params[:file].original_filename)}"
 
-                File.write("#{path}/original/#{File.basename(params[:file].original_filename)}", File.read(params[:file].path))
+                filename = File.basename(params[:file].original_filename)
+                normalized = filename.sub(/\.[^.]+$/) { |ext| ext.downcase }
+                file = "#{path}/original/#{normalized}"
+
+                File.write(file, File.read(params[:file].path))
 
                 response = {
                     pass: true,

@@ -40,8 +40,15 @@ class Rejection
                     uploader: user
                 )
 
+                # p "-------"
+                # p path
+                # p params[:file].original_filename
+                # p "#{path}/#{params[:file].original_filename}"
+                # p Dir.glob("#{path}/original/#{params[:file].original_filename}")
+                # p "-------"
+
                 # Get the first text file
-                txt = Dir.glob("#{path}/#{params[:file].original_filename}").first
+                txt = Dir.glob("#{path}/original/#{params[:file].original_filename}").first
 
                 if txt.empty?
                     output[:errors] << "Could not find text file to upload"
@@ -228,8 +235,17 @@ class Rejection
                     uploader: user
                 )
 
+                # p "-------"
+                # p path
+                # p params[:file].original_filename
+                # p "#{path}/#{params[:file].original_filename}"
+                # p Dir.glob("#{path}/original/#{params[:file].original_filename}")
+                # p "-------"
+
                 # Get the first text file
-                txt = Dir.glob("#{path}/#{params[:file].original_filename}").first
+                txt = Dir.glob("#{path}/original/#{params[:file].original_filename}").first
+
+
 
                 if txt.empty?
                     output[:errors] << "Could not find text file to upload"

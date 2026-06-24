@@ -20,6 +20,7 @@ export default function ReadyToShip({ states, projects, priorities, token }) {
     reset,
     setValue,
     control,
+    watch,
     formState: { errors },
   } = useForm();
 
@@ -98,7 +99,11 @@ export default function ReadyToShip({ states, projects, priorities, token }) {
       {renderForm()}
       <Divider />
       {renderLoading()}
-      <RenderTable results={results} priorities={priorities} />
+      <RenderTable
+        results={results}
+        priorities={priorities}
+        project={watch("project")}
+      />
     </div>
   );
 
@@ -256,7 +261,7 @@ export default function ReadyToShip({ states, projects, priorities, token }) {
     );
   }
 
-  function RenderTable({ results, priorities }) {
+  function RenderTable({ results, priorities, project }) {
     const [state, dispatch] = React.useReducer(tableSortReducer, {
       column: null,
       data: results || [],
@@ -389,7 +394,7 @@ export default function ReadyToShip({ states, projects, priorities, token }) {
                   key={record.county_id}
                   onClick={() => {
                     window.open(
-                      `/ready_to_ship/county/${record.county_id}`,
+                      `/ready_to_ship/county/${record.county_id}/${project}`,
                       "_blank"
                     );
                   }}

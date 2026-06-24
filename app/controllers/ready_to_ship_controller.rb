@@ -143,12 +143,18 @@ class ReadyToShipController < ApplicationController
         state_name: county.state.name
       }
 
-      if county.tiles.count == 0
+      if params[:project] === "SL"
+        county_tiles = county.tiles.sl
+      else 
+        county_tiles = county.tiles.nri
+      end
+
+      if county_tiles.count == 0
         @message = "#{county.name} County does not have any Tiles"
       else
         @tiles = []
   
-        county.tiles.each do |tile|
+        county_tiles.ready_to_ship.each do |tile|
           @tiles << {
             id: tile.id, 
             project: tile.project,

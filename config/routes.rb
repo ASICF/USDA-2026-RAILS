@@ -128,7 +128,7 @@ Rails.application.routes.draw do
   # => Ready to Ship
   get 'ready_to_ship', to: 'ready_to_ship#index', as: :ready_to_ship
   post 'ready_to_ship/query', to: 'ready_to_ship#query', as: :ready_to_ship_query
-  get 'ready_to_ship/county/:county_id', to: 'ready_to_ship#show', as: :county_ready_to_ship
+  get 'ready_to_ship/county/:county_id/:project', to: 'ready_to_ship#show', as: :county_ready_to_ship
 
   # => Total Delivery by State and Contractor
   get '/total_delivery_by_state_and_contractor', to: 'total_delivery_by_state_and_contractor#index', as: :total_delivery_by_state_and_contractor

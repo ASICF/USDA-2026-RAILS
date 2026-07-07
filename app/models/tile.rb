@@ -242,7 +242,7 @@ class Tile < ApplicationRecord
                     html += '<tr>'\
                         "<td align='center'>#{project}</td>"\
                         "<td align='center'>#{first.state_name}</td>"\
-                        "<td align='center'><a href='#{Rails.application.routes.url_helpers.county_ready_to_ship_url(county_id: county.id, only_path: false, host: Rails.application.secrets.host)}'>#{county.name}</a></td>"\
+                        # "<td align='center'><a href='#{Rails.application.routes.url_helpers.county_ready_to_ship_url(county_id: county.id, only_path: false, host: Rails.application.secrets.host)}'>#{county.name}</a></td>"\
                         "<td align='center'>#{first.county_flown_date.strftime("%m/%d/%Y")}</td>"\
                         "<td align='center'>#{first.county_due_date.strftime("%m/%d/%Y")}</td>"\
                         "<td align='center'>#{(first.county_due_date - Date.today).to_i}</td>"\
@@ -366,7 +366,7 @@ class Tile < ApplicationRecord
         # => if so then will query out the contract rate and build the totals based on USDA acreage
 
         # only proceed if the flight date is set
-        if self.flight_date
+        if self.flight_date && self.project === "SL"
 
             p self.flight_date
             p self.flown_by
@@ -406,6 +406,11 @@ class Tile < ApplicationRecord
                 return false
                 
             end
+
+        elsif self.flight_date && self.project === "NRI"
+            self.update(total_amount: self.contract_award.pps)
+            return true
+      
 
         end
     end

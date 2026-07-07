@@ -154,7 +154,7 @@ class ReadyToShipController < ApplicationController
       else
         @tiles = []
   
-        county_tiles.ready_to_ship.each do |tile|
+        county_tiles.each do |tile|
           @tiles << {
             id: tile.id, 
             project: tile.project,

@@ -1450,4 +1450,36 @@ class PhotoIndex < ApplicationRecord
 
     # end
 
+    def self.del_dups
+
+        history = History.find(595)
+
+        History.find(548).photo_indices.each do |pi|
+            # check if it has a footprint
+            # query the photo index in the history.find(595) and see if it matches lat, lng, gpstime, flight_date
+            # update footprint
+            # delete bad photo index
+
+            p "Has Footprint: #{pi.has_footprint}"
+
+            match = history.photo_indices.find_by(latitude: pi.latitude, longitude: pi.longitude, gpstime: pi.gpstime, flight_date: pi.flight_date)
+
+            p "Match?: #{match.nil? ? "No" : "Yes"}"
+
+            # footprint.flight_date = photo_index.flight_date
+            # footprint.camera = photo_index.camera
+            # footprint.plane = photo_index.plane
+            # footprint.has_pi = true
+
+            # footprint.camera_name = "#{photo_index.camera.model} | #{photo_index.camera.name}"
+            # footprint.plane_name = photo_index.plane_name
+            pi.footprint.update(photo_index: match)
+            # footprint.photo_index = match
+
+            pi.destroy
+
+            p "-----------------------------"
+        end
+    end
+
 end

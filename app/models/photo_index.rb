@@ -1462,20 +1462,24 @@ class PhotoIndex < ApplicationRecord
 
             p "Has Footprint: #{pi.has_footprint}"
 
-            match = history.photo_indices.find_by(latitude: pi.latitude, longitude: pi.longitude, gpstime: pi.gpstime, flight_date: pi.flight_date)
+            correct_pi = history.photo_indices.find_by(latitude: pi.latitude, longitude: pi.longitude, gpstime: pi.gpstime, flight_date: pi.flight_date)
+            correct_footprint = correct_pi.footprint
 
-            p "Match?: #{match.nil? ? "No" : "Yes"}"
+            p "Match?: #{correct_pi.nil? ? "No" : "Yes"}"
+            p "footprint: #{correct_footprint.id}"
 
-            # footprint.flight_date = photo_index.flight_date
-            # footprint.camera = photo_index.camera
-            # footprint.plane = photo_index.plane
-            # footprint.has_pi = true
+            # reject the tile associated with he pi.footprint
+            tiles = pi.footprint.tiles.pluck(:id)
 
-            # footprint.camera_name = "#{photo_index.camera.model} | #{photo_index.camera.name}"
-            # footprint.plane_name = photo_index.plane_name
-            pi.footprint.update(photo_index: match)
-            # footprint.photo_index = match
+            # delete out any existing tile footprint associations
+            TileFootprint.where(tile_id: tiles, footprint_id: pi.footprint_id).destroy_all
 
+            # iterate over the tile ids and add associations
+            tiles.each do |tile|
+                TileFootprint.create(tile_id: tile, footprint_id: correct_footprint)
+            end
+
+            pi.footprint.destroy
             pi.destroy
 
             p "-----------------------------"
